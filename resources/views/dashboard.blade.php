@@ -5,7 +5,6 @@
 @section('content')
 <div class="lux-container">
     
-    <!-- Welcome Section -->
     <div class="lux-card mb-5">
         <div class="flex-between">
             <div>

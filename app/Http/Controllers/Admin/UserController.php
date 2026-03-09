@@ -11,10 +11,35 @@ use Illuminate\Validation\Rules;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $users = User::with('roles')->paginate(10);
-        return view('admin.users.index', compact('users'));
+
+        if ($request->ajax()) {
+            return response()->json([
+                'html' => view('admin.users.partials.table', compact('users'))->render(),
+            ]);
+        }
+
+        $roles = Role::active()->get();
+        return view('admin.users.index', compact('users', 'roles'));
+    }
+
+    public function edit(User $user, Request $request)
+    {
+        $roles = Role::active()->get();
+        $userRoles = $user->roles->pluck('id')->toArray();
+
+        if ($request->ajax()) {
+            return response()->json([
+                'user' => $user,
+                'userRoles' => $userRoles,
+                'action' => route('admin.users.update', $user),
+            ]);
+        }
+
+        // fallback jika bukan ajax (opsional)
+        return view('admin.users.edit', compact('user', 'roles', 'userRoles'));
     }
 
     public function create()
@@ -43,21 +68,12 @@ class UserController extends Controller
 
         $user->assignRole($validated['roles']);
 
-        return redirect()->route('admin.users.index')
-            ->with('success', 'User berhasil dibuat!');
+        return redirect()->route('admin.users.index')->with('success', 'User berhasil dibuat!');
     }
 
     public function show(User $user)
     {
         return view('admin.users.show', compact('user'));
-    }
-
-    public function edit(User $user)
-    {
-        $roles = Role::active()->get();
-        $userRoles = $user->roles->pluck('id')->toArray();
-        
-        return view('admin.users.edit', compact('user', 'roles', 'userRoles'));
     }
 
     public function update(Request $request, User $user)
@@ -83,20 +99,17 @@ class UserController extends Controller
 
         $user->assignRole($validated['roles']);
 
-        return redirect()->route('admin.users.index')
-            ->with('success', 'User berhasil diupdate!');
+        return redirect()->route('admin.users.index')->with('success', 'User berhasil diupdate!');
     }
 
     public function destroy(User $user)
     {
         if ($user->id === auth()->id()) {
-            return redirect()->route('admin.users.index')
-                ->with('error', 'Anda tidak dapat menghapus akun sendiri!');
+            return redirect()->route('admin.users.index')->with('error', 'Anda tidak dapat menghapus akun sendiri!');
         }
 
         $user->delete();
 
-        return redirect()->route('admin.users.index')
-            ->with('success', 'User berhasil dihapus!');
+        return redirect()->route('admin.users.index')->with('success', 'User berhasil dihapus!');
     }
 }

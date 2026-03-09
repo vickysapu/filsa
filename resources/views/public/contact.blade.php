@@ -161,7 +161,6 @@
         </div>
     </section>
 
-    <!-- Map Section -->
     <section class="section" style="padding-top: 0;">
         <div class="fade-in">
             <div style="background: white; border-radius: 24px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
