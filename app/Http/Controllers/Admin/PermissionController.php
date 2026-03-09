@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class PermissionController extends Controller
 {
@@ -15,55 +16,103 @@ class PermissionController extends Controller
 
         $permissionGroups = $permissions->groupBy('group');
 
-        return view('admin.permissions.index', compact('permissions', 'permissionGroups'));
-    }
+        if (request()->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'data' => $permissionGroups
+                    ->map(function ($group, $groupName) {
+                        return [
+                            'group' => ucfirst($groupName),
+                            'count' => $group->count(),
+                            'permissions' => $group
+                                ->map(function ($perm) {
+                                    return [
+                                        'id' => $perm->id,
+                                        'name' => $perm->name,
+                                        'display_name' => $perm->display_name,
+                                        'description' => $perm->description,
+                                        'roles_count' => $perm->roles_count,
+                                    ];
+                                })
+                                ->values(),
+                        ];
+                    })
+                    ->values(),
+            ]);
+        }
 
-    public function create()
-    {
-        return view('admin.permissions.create');
+        return view('admin.permissions.index', compact('permissionGroups'));
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|unique:permissions,name|max:100',
-            'display_name' => 'required|string|max:100',
-            'group' => 'required|string|max:50',
-            'description' => 'nullable|string|max:255',
-        ]);
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|unique:permissions,name|max:100',
+                'display_name' => 'required|string|max:100',
+                'group' => 'required|string|max:50',
+                'description' => 'nullable|string|max:255',
+            ]);
 
-        Permission::create($validated);
+            $permission = Permission::create($validated);
 
-        return redirect()->route('admin.permissions.index')->with('success', 'Permission berhasil dibuat!');
+            return response()->json(
+                [
+                    'success' => true,
+                    'message' => 'Permission berhasil dibuat!',
+                    'permission' => [
+                        'id' => $permission->id,
+                        'name' => $permission->name,
+                        'display_name' => $permission->display_name,
+                        'group' => $permission->group,
+                        'description' => $permission->description,
+                        'roles_count' => 0,
+                    ],
+                ],
+                201,
+            );
+        } catch (ValidationException $e) {
+            return response()->json(
+                [
+                    'success' => false,
+                    'message' => 'Validasi gagal',
+                    'errors' => $e->errors(),
+                ],
+                422,
+            );
+        } catch (\Exception $e) {
+            Log::error('Permission store failed', ['error' => $e->getMessage()]);
+            return response()->json(
+                [
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan server',
+                ],
+                500,
+            );
+        }
     }
 
     public function destroy(Permission $permission)
     {
-        // Debug log
-        Log::info('🗑️ Permission destroy called', [
-            'permission_id' => $permission->id,
-            'permission_name' => $permission->display_name,
-            'roles_count_before_load' => $permission->roles_count, // Akan null
-        ]);
-
         $permission->loadCount('roles');
 
-        Log::info('📊 Roles count loaded', [
-            'roles_count' => $permission->roles_count,
-        ]);
-
         if ($permission->roles_count > 0) {
-            Log::warning('⚠️ Delete blocked: permission in use');
-            return redirect()
-                ->route('admin.permissions.index')
-                ->with('error', 'Permission tidak dapat dihapus karena masih digunakan oleh ' . $permission->roles_count . ' role.');
+            return response()->json(
+                [
+                    'success' => false,
+                    'message' => "Permission tidak dapat dihapus karena masih digunakan oleh {$permission->roles_count} role.",
+                ],
+                422,
+            );
         }
 
-        Log::info('✅ Deleting permission', ['id' => $permission->id]);
+        $displayName = $permission->display_name;
         $permission->delete();
 
-        return redirect()
-            ->route('admin.permissions.index')
-            ->with('success', 'Permission "' . $permission->display_name . '" berhasil dihapus!');
+        return response()->json([
+            'success' => true,
+            'message' => "Permission \"{$displayName}\" berhasil dihapus!",
+            'id' => $permission->id,
+        ]);
     }
 }

@@ -1,3 +1,191 @@
+@import 'bootstrap/scss/bootstrap';
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --bs-primary:        #d97706;
+    --bs-primary-rgb:    217, 119, 6;
+    --bs-link-color:     #d97706;
+    --bs-link-hover-color: #92400e;
+
+    --lux-primary:       #d97706;
+    --lux-primary-dark:  #92400e;
+    --lux-primary-light: #f59e0b;
+    --lux-primary-bg:    #fffbeb;
+
+    --lux-success:       #059669;
+    --lux-danger:        #dc2626;
+    --lux-warning:       #d97706;
+    --lux-info:          #0284c7;
+
+    --lux-radius:        6px;
+    --lux-radius-lg:     10px;
+    --lux-shadow:        0 10px 25px -5px rgba(0,0,0,0.1);
+}
+
+/* ── GLOBAL RESET & BASE ── */
+* { box-sizing: border-box; }
+body {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    background: #ffffff;
+    color: #111827;
+}
+
+/* ── MODAL – Mapping lux → bootstrap behavior ── */
+.lux-modal-overlay {
+    --bs-backdrop-bg:           rgba(15, 23, 42, 0.65);
+    --bs-backdrop-opacity:      1;
+    --bs-modal-width:           500px;
+    --bs-modal-border-radius:   var(--lux-radius-lg);
+    --bs-modal-box-shadow:      var(--lux-shadow);
+
+    position: fixed;
+    inset: 0;
+    z-index: 1060;              /* bootstrap default modal z-index */
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bs-backdrop-bg);
+    opacity: 0;
+    transition: opacity .15s linear;
+    pointer-events: none;
+}
+
+.lux-modal-overlay.show {
+    display: flex;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Modal dialog wrapper */
+.lux-modal {
+    position: relative;
+    width: 100%;
+    max-width: var(--bs-modal-width);
+    margin: 1.75rem auto;
+    pointer-events: auto;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid rgba(0,0,0,.2);
+    border-radius: var(--bs-modal-border-radius);
+    box-shadow: var(--bs-modal-box-shadow);
+    transform: translate(0, -50px);
+    transition: transform .3s ease-out;
+}
+
+.lux-modal-overlay.show .lux-modal {
+    transform: translate(0, 0);
+}
+
+/* Header, Body, Footer */
+.lux-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+    background: linear-gradient(to right, #f8fafc, #ffffff);
+}
+
+.lux-modal-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.lux-modal-close {
+    background: transparent;
+    border: none;
+    font-size: 1.6rem;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 50%;
+    line-height: 1;
+}
+
+.lux-modal-close:hover {
+    color: #dc2626;
+    background: #fee2e2;
+    transform: rotate(90deg);
+    transition: all 0.2s;
+}
+
+.lux-modal-body {
+    position: relative;
+    flex: 1 1 auto;
+    padding: 1.5rem;
+}
+
+.lux-modal-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    background: #f8fafc;
+}
+
+/* ── ANIMASI FADE (mirip bootstrap .fade) ── */
+.lux-modal-overlay.fade {
+    transition: opacity .15s linear;
+}
+.lux-modal-overlay.fade.show {
+    opacity: 1;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 576px) {
+    .lux-modal {
+        margin: 0.5rem;
+    }
+    .lux-modal-footer {
+        flex-direction: column-reverse;
+    }
+    .lux-modal-footer > * {
+        width: 100%;
+    }
+}
+
+/* ── BUTTONS tetap luxury tapi support bootstrap color vars ── */
+.lux-btn {
+    --bs-btn-padding-x:       1rem;
+    --bs-btn-padding-y:       0.5rem;
+    --bs-btn-font-weight:     500;
+    --bs-btn-border-radius:   var(--lux-radius);
+}
+
+.lux-btn-primary {
+    --bs-btn-color:           #fff;
+    --bs-btn-bg:              var(--lux-primary);
+    --bs-btn-border-color:    var(--lux-primary);
+    --bs-btn-hover-bg:        var(--lux-primary-dark);
+    --bs-btn-hover-border-color: var(--lux-primary-dark);
+}
+
+/* ... tambahkan variant lain sesuai kebutuhan (success, danger, dll) */
+
+/* ── FORM ── */
+.lux-input, .lux-textarea, .lux-select {
+    --bs-input-focus-border-color: var(--lux-primary);
+    --bs-input-focus-box-shadow: 0 0 0 0.25rem rgba(217,119,6,0.25);
+}
+
+/* ── BADGE, CARD, dll tetap pakai style luxury Anda ── */
+.lux-card {
+    border: 1px solid #e5e7eb;
+    border-radius: var(--lux-radius-lg);
+    background: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.lux-badge {
+    font-size: 0.75rem;
+    padding: 0.35em 0.65em;
+}
+
 /* =========================================
    LUXURY CORE - CLEAN GOLD EDITION
    Minimalist & Professional Design
@@ -173,6 +361,7 @@ img { max-width: 100%; height: auto; }
     transition: var(--transition);
     gap: 6px;
     font-family: inherit;
+    text-decoration: none;
 }
 
 .lux-btn-primary {

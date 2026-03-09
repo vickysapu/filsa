@@ -80,7 +80,6 @@ document.addEventListener('DOMContentLoaded', () => {
         dropdowns.forEach(d => d.classList.remove('active'));
     });
 
-    // 4. TABS SYSTEM
     const tabContainers = document.querySelectorAll('.lux-tabs');
 
     tabContainers.forEach(container => {
@@ -251,11 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     console.log('Luxury Core System Loaded - Clean Edition');
 
-        // ... (kode sebelumnya)
-
-    // 5. Modal Logic
     function setupModals() {
-        // Tombol Pembuka Modal
         document.querySelectorAll('[data-modal-target]').forEach(trigger => {
             trigger.addEventListener('click', () => {
                 const modalId = trigger.getAttribute('data-modal-target');
@@ -264,7 +259,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // Tombol Penutup Modal (di dalam modal)
         document.querySelectorAll('[data-modal-close]').forEach(closeBtn => {
             closeBtn.addEventListener('click', () => {
                 const modal = closeBtn.closest('.lux-modal-overlay');
@@ -272,7 +266,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // Klik di Luar Modal (Overlay) untuk menutup
         document.querySelectorAll('.lux-modal-overlay').forEach(overlay => {
             overlay.addEventListener('click', (e) => {
                 if (e.target === overlay) {
@@ -281,7 +274,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // Tutup dengan tombol ESC
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 const activeModal = document.querySelector('.lux-modal-overlay.active');
@@ -292,25 +284,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function openModal(modal) {
         modal.classList.add('active');
-        document.body.style.overflow = 'hidden'; // Mencegah scroll background
+        document.body.style.overflow = 'hidden';
         
-        // Fokus ke input pertama jika ada (UX Enhancement)
         const firstInput = modal.querySelector('input, select, textarea');
         if(firstInput) setTimeout(() => firstInput.focus(), 100);
     }
 
     function closeModal(modal) {
         modal.classList.remove('active');
-        document.body.style.overflow = ''; // Kembalikan scroll
-        
-        // Reset form jika diperlukan (opsional)
-        // const form = modal.querySelector('form');
-        // if(form) form.reset();
+        document.body.style.overflow = '';
     }
 
-    // Jalankan setup modals
     setupModals();
 
     console.log("Luxury Core System Loaded.");
+    
+    
 });
 
