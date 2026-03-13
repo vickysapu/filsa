@@ -74,38 +74,48 @@ class PemasukanController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'tanggal' => 'required|date|before_or_equal:today',
-            'kategori' => 'required|in:persembahan_minggu,persembahan_khusus,donasi,kegiatan,usaha_mandiri,lainnya',
-            'sumber_dana' => 'required|string|max:255',
-            'jumlah' => 'required|numeric|min:1000',
-            'keterangan' => 'nullable|string|max:1000',
-            'status' => 'in:pending,verified',
-            'bukti_foto' => 'nullable|image|mimes:jpg,png,jpeg,pdf|max:5120', // Max 5MB
+            'tanggal'      => 'required|date|before_or_equal:today',
+            'kategori'     => 'required|in:persembahan_minggu,persembahan_khusus,donasi,kegiatan,usaha_mandiri,lainnya',
+            'sumber_dana'  => 'required|string|max:255',
+            'jumlah'       => 'required|numeric|min:1000',
+            'keterangan'   => 'nullable|string|max:1000',
+            'status'       => 'in:pending,verified',
+            'bukti_foto'   => 'nullable|image|mimes:jpg,png,jpeg,pdf|max:5120',
         ], [
-            'jumlah.min' => 'Jumlah minimal Rp 1.000',
+            'jumlah.min'             => 'Jumlah minimal Rp 1.000',
             'tanggal.before_or_equal' => 'Tanggal tidak boleh lebih dari hari ini',
         ]);
 
         // Handle upload bukti foto
         $buktiPath = null;
-        if ($request->hasFile('bukti_foto')) {
+        if ($request->hasFile('bukti_foto') && $request->file('bukti_foto')->isValid()) {
             $buktiPath = $request->file('bukti_foto')->store('pemasukan/bukti', 'public');
         }
 
-        // Create pemasukan
-        Pemasukan::create([
-            'tanggal' => $validated['tanggal'],
-            'kategori' => $validated['kategori'],
-            'sumber_dana' => $validated['sumber_dana'],
-            'jumlah' => $validated['jumlah'],
-            'keterangan' => $validated['keterangan'] ?? null,
-            'status' => $validated['status'] ?? 'pending',
-            'bukti_foto' => $buktiPath,
-            'created_by' => Auth::id(),
-            'verified_by' => $validated['status'] === 'verified' ? Auth::id() : null,
-            'verified_at' => $validated['status'] === 'verified' ? now() : null,
+        // Buat pemasukan
+        $pemasukan = Pemasukan::create([
+            'tanggal'      => $validated['tanggal'],
+            'kategori'     => $validated['kategori'],
+            'sumber_dana'  => $validated['sumber_dana'],
+            'jumlah'       => $validated['jumlah'],
+            'keterangan'   => $validated['keterangan'] ?? null,
+            'status'       => $validated['status'] ?? 'pending',
+            'bukti_foto'   => $buktiPath,
+            'created_by'   => Auth::id(),
+            'verified_by'  => $validated['status'] === 'verified' ? Auth::id() : null,
+            'verified_at'  => $validated['status'] === 'verified' ? now() : null,
         ]);
 
+        // Response untuk AJAX
+        if ($request->ajax() || $request->input('ajax') == 1) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Pemasukan berhasil ditambahkan!',
+                'data'    => $pemasukan // optional: kirim data baru jika perlu
+            ]);
+        }
+
+        // Response untuk non-AJAX (redirect)
         return redirect()->route('admin.pemasukan.index')
             ->with('success', 'Pemasukan berhasil ditambahkan!');
     }

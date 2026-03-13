@@ -38,8 +38,13 @@ class DokumentasiController extends Controller
         }
 
         $albums = $query->paginate(12);
+
         $kategoris = DokumentasiKategori::active()->ordered()->get();
         $events = Event::published()->orderBy('tanggal_mulai', 'desc')->get();
+
+        if ($request->ajax() || $request->query('ajax')) {
+            return view('features.dokumentasi._grid', compact('albums'))->render();
+        }
 
         return view('features.dokumentasi.index', compact('albums', 'kategoris', 'events'));
     }
@@ -135,8 +140,27 @@ class DokumentasiController extends Controller
         return view('features.dokumentasi.show', compact('album'));
     }
 
-    public function edit(DokumentasiAlbum $album)
+    public function edit(DokumentasiAlbum $album, Request $request)
     {
+        if ($request->ajax() || $request->query('ajax')) {
+            return response()->json([
+                'success' => true,
+                'judul_album' => $album->judul_album,
+                'deskripsi' => $album->deskripsi,
+                'kategori_id' => $album->kategori_id,
+                'event_id' => $album->event_id,
+                'fotografer' => $album->fotografer,
+                'tanggal_album' => $album->tanggal_album?->format('Y-m-d'),
+                'lokasi' => $album->lokasi,
+                'status' => $album->status,
+                'is_featured' => $album->is_featured,
+                'allow_download' => $album->allow_download,
+                'show_in_website' => $album->show_in_website,
+                'photos' => $album->photos->pluck('file_path')->toArray(), // array path foto
+            ]);
+        }
+
+        // mode normal jika masih ada
         $kategoris = DokumentasiKategori::active()->ordered()->get();
         $events = Event::published()->orderBy('tanggal_mulai', 'desc')->get();
         return view('features.dokumentasi.edit', compact('album', 'kategoris', 'events'));

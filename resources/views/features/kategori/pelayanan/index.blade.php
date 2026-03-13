@@ -198,83 +198,114 @@
 @endsection
 
 @push('scripts')
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
     <script>
-        // Random color palette
-        const colorPalette = [
-            '#4f46e5', '#10b981', '#f59e0b', '#ec4899', '#06b6d4',
-            '#8b5cf6', '#ef4444', '#14b8a6', '#f97316', '#6366f1'
-        ];
+        $(document).ready(function() {
 
-        // Open Modal for Create
-        function openModal() {
-            resetForm();
-            randomizeColor(); // Auto random color for new
-            document.getElementById('modalTitle').textContent = 'Tambah Kategori';
-            document.getElementById('formKategori').action = "{{ route('admin.kategori.pelayanan.store') }}";
-            document.getElementById('kategoriId').value = '';
-            document.querySelector('input[name="_method"]').value = '';
-            document.getElementById('modalKategori').style.display = 'block';
-            document.body.style.overflow = 'hidden';
-        }
+            // Random color palette
+            const colorPalette = [
+                '#4f46e5', '#10b981', '#f59e0b', '#ec4899', '#06b6d4',
+                '#8b5cf6', '#ef4444', '#14b8a6', '#f97316', '#6366f1'
+            ];
 
-        // Open Modal for Edit - FIX: Properly load data
-        function openEditModal(kategori) {
-            // Parse if string
-            if (typeof kategori === 'string') {
-                kategori = JSON.parse(kategori);
+            // Fungsi buka modal Tambah
+            function openModal() {
+                resetForm();
+                randomizeColor(); // auto random warna saat tambah baru
+
+                $('#modalTitle').text('Tambah Kategori');
+                $('#formKategori')
+                    .attr('action', "{{ route('admin.kategori.pelayanan.store') }}")
+                    .find('input[name="_method"]').val('');
+
+                $('#kategoriId').val('');
+                $('#modalKategori').fadeIn(200);
+                $('body').css('overflow', 'hidden');
             }
 
-            document.getElementById('modalTitle').textContent = 'Edit Kategori';
-            document.getElementById('formKategori').action = "/admin/pelayanan/kategori/" + kategori.id;
-            document.getElementById('kategoriId').value = kategori.id;
-            document.querySelector('input[name="_method"]').value = 'PUT';
+            // Fungsi buka modal Edit
+            function openEditModal(kategori) {
+                // Parse jika dikirim sebagai string JSON
+                if (typeof kategori === 'string') {
+                    kategori = JSON.parse(kategori);
+                }
 
-            // Fill form data
-            document.getElementById('namaKategori').value = kategori.nama_kategori;
-            document.getElementById('deskripsiKategori').value = kategori.deskripsi || '';
-            document.getElementById('warnaKategori').value = kategori.warna || '#4f46e5';
-            document.getElementById('isActiveKategori').checked = kategori.is_active == 1;
+                $('#modalTitle').text('Edit Kategori');
 
-            document.getElementById('modalKategori').style.display = 'block';
-            document.body.style.overflow = 'hidden';
-        }
+                $('#formKategori')
+                    .attr('action', '/admin/pelayanan/kategori/' + kategori.id)
+                    .find('input[name="_method"]').val('PUT');
 
-        // Close Modal
-        function closeModal() {
-            document.getElementById('modalKategori').style.display = 'none';
-            document.body.style.overflow = '';
-        }
+                $('#kategoriId').val(kategori.id);
 
-        // Reset Form
-        function resetForm() {
-            document.getElementById('formKategori').reset();
-            document.getElementById('namaKategori').value = '';
-            document.getElementById('deskripsiKategori').value = '';
-            document.getElementById('isActiveKategori').checked = true;
-        }
+                // Isi field
+                $('#namaKategori').val(kategori.nama_kategori || '');
+                $('#deskripsiKategori').val(kategori.deskripsi || '');
+                $('#warnaKategori').val(kategori.warna || '#4f46e5');
+                $('#isActiveKategori').prop('checked', kategori.is_active == 1);
 
-        // Randomize Color
-        function randomizeColor() {
-            const randomColor = colorPalette[Math.floor(Math.random() * colorPalette.length)];
-            document.getElementById('warnaKategori').value = randomColor;
-        }
-
-        // Close with ESC key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeModal();
+                $('#modalKategori').fadeIn(200);
+                $('body').css('overflow', 'hidden');
             }
-        });
 
-        // Form validation
-        document.getElementById('formKategori').addEventListener('submit', function(e) {
-            const nama = document.getElementById('namaKategori').value.trim();
-            if (!nama) {
-                e.preventDefault();
-                alert('Nama kategori harus diisi!');
-                document.getElementById('namaKategori').focus();
-                return false;
+            // Fungsi tutup modal
+            function closeModal() {
+                $('#modalKategori').fadeOut(200, function() {
+                    // Optional: reset form setelah tertutup
+                    resetForm();
+                });
+                $('body').css('overflow', '');
             }
+
+            // Fungsi reset form
+            function resetForm() {
+                $('#formKategori')[0].reset();
+                $('#namaKategori').val('');
+                $('#deskripsiKategori').val('');
+                $('#isActiveKategori').prop('checked', true);
+                // warna tidak di-reset di sini karena randomizeColor dipanggil saat tambah
+            }
+
+            // Fungsi random warna
+            function randomizeColor() {
+                const randomColor = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+                $('#warnaKategori').val(randomColor);
+            }
+
+            // ================== EVENT LISTENER ==================
+
+            // Tutup dengan tombol Escape
+            $(document).on('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeModal();
+                }
+            });
+
+            // Validasi form sebelum submit (client-side sederhana)
+            $('#formKategori').on('submit', function(e) {
+                const nama = $('#namaKategori').val().trim();
+                if (!nama) {
+                    e.preventDefault();
+                    alert('Nama kategori harus diisi!');
+                    $('#namaKategori').focus();
+                    return false;
+                }
+            });
+
+            // Optional: tutup modal jika klik di luar modal-content
+            $('#modalKategori').on('click', function(e) {
+                if (e.target === this) {
+                    closeModal();
+                }
+            });
+
+            // Expose fungsi ke global scope (agar bisa dipanggil dari onclick inline)
+            window.openModal = openModal;
+            window.openEditModal = openEditModal;
+            window.closeModal = closeModal;
+            window.randomizeColor = randomizeColor;
+
         });
     </script>
 @endpush

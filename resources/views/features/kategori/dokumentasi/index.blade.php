@@ -126,42 +126,91 @@
 @endsection
 
 @push('scripts')
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
     <script>
-        function openModal() {
-            resetForm();
-            document.getElementById('modalTitle').textContent = 'Tambah Kategori';
-            document.getElementById('formKategori').action = "{{ route('admin.dokumentasi-kategori.store') }}";
-            document.getElementById('methodField').value = '';
-            document.getElementById('modalKategori').style.display = 'block';
-            document.body.style.overflow = 'hidden';
-        }
+        $(document).ready(function() {
 
-        function openEditModal(kategori) {
-            if (typeof kategori === 'string') kategori = JSON.parse(kategori);
-            document.getElementById('modalTitle').textContent = 'Edit Kategori';
-            document.getElementById('formKategori').action = "/admin/dokumentasi-kategori/" + kategori.id;
-            document.getElementById('methodField').value = 'PUT';
-            document.getElementById('namaKategori').value = kategori.nama_kategori;
-            document.getElementById('deskripsiKategori').value = kategori.deskripsi || '';
-            document.getElementById('warnaKategori').value = kategori.warna || '#4f46e5';
-            document.getElementById('isActiveKategori').checked = kategori.is_active == 1;
-            document.getElementById('modalKategori').style.display = 'block';
-            document.body.style.overflow = 'hidden';
-        }
+            // Fungsi buka modal tambah
+            function openModal() {
+                resetForm();
+                $('#modalTitle').text('Tambah Kategori');
+                $('#formKategori').attr('action', "{{ route('admin.dokumentasi-kategori.store') }}");
+                $('#methodField').val(''); // atau hapus jika tidak diperlukan saat create
+                $('#modalKategori').fadeIn(200);
+                $('body').css('overflow', 'hidden');
+            }
 
-        function closeModal() {
-            document.getElementById('modalKategori').style.display = 'none';
-            document.body.style.overflow = '';
-        }
+            // Fungsi buka modal edit
+            function openEditModal(kategori) {
+                // Jika dikirim sebagai string JSON dari blade (misal via onclick)
+                if (typeof kategori === 'string') {
+                    kategori = JSON.parse(kategori);
+                }
 
-        function resetForm() {
-            document.getElementById('formKategori').reset();
-            document.getElementById('methodField').value = '';
-            document.getElementById('formKategori').action = "{{ route('admin.dokumentasi-kategori.store') }}";
-        }
+                $('#modalTitle').text('Edit Kategori');
+                $('#formKategori').attr('action', '/admin/dokumentasi-kategori/' + kategori.id);
+                $('#methodField').val('PUT');
 
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') closeModal();
+                $('#namaKategori').val(kategori.nama_kategori);
+                $('#deskripsiKategori').val(kategori.deskripsi || '');
+                $('#warnaKategori').val(kategori.warna || '#4f46e5');
+                $('#isActiveKategori').prop('checked', kategori.is_active == 1);
+
+                $('#modalKategori').fadeIn(200);
+                $('body').css('overflow', 'hidden');
+            }
+
+            // Fungsi tutup modal
+            function closeModal() {
+                $('#modalKategori').fadeOut(200, function() {
+                    // Optional: reset form setelah fade out selesai
+                    resetForm();
+                });
+                $('body').css('overflow', '');
+            }
+
+            // Fungsi reset form
+            function resetForm() {
+                $('#formKategori')[0].reset();
+                $('#methodField').val('');
+                $('#formKategori').attr('action', "{{ route('admin.dokumentasi-kategori.store') }}");
+            }
+
+            // Event listener tombol (contoh pemanggilan - sesuaikan dengan HTML kamu)
+            // Misal: tombol tambah
+            // <button onclick="openModal()">Tambah Kategori</button>
+
+            // Tombol edit (contoh dengan data attribute)
+            // <button class="btn-edit" data-kategori='{"id":1,"nama_kategori":"Khotbah","is_active":1,...}'>Edit</button>
+
+            $(document).on('click', '.btn-edit', function() {
+                const kategori = $(this).data('kategori');
+                openEditModal(kategori);
+            });
+
+            // Tombol close / batal
+            $('#btnClose, #btnBatal').on('click', closeModal); // sesuaikan ID tombol close kamu
+
+            // Tutup dengan tombol Escape
+            $(document).on('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeModal();
+                }
+            });
+
+            // Optional: tutup modal jika klik di luar modal-content
+            $('#modalKategori').on('click', function(e) {
+                if (e.target === this) {
+                    closeModal();
+                }
+            });
+
+            // Expose fungsi ke global scope jika masih dipanggil dari inline onclick
+            window.openModal = openModal;
+            window.openEditModal = openEditModal;
+            window.closeModal = closeModal;
+
         });
     </script>
 @endpush

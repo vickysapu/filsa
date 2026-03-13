@@ -93,128 +93,328 @@
 @endsection
 
 @push('scripts')
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script>
-        $.ajaxSetup({
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            }
-        });
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-        const DebugLog = {
-            prefix: '[PERMISSIONS-AJAX]',
-            log: (m, d) => console.log(`${this.prefix} ${m}`, d || ''),
-            info: (m, d) => console.info(`${this.prefix} ℹ️ ${m}`, d || ''),
-            warn: (m, d) => console.warn(`${this.prefix} ⚠️ ${m}`, d || ''),
-            error: (m, d) => console.error(`${this.prefix} ❌ ${m}`, d || '')
-        };
+    <script>
+        // ==================== AJAX HELPER FUNCTIONS ====================
+        // Fungsi-fungsi sederhana untuk request AJAX
+
+        /**
+         * Fungsi untuk request GET (ambil data)
+         */
+        function ajaxGet(url, callback) {
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (callback) callback(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showError('Gagal mengambil data');
+            });
+        }
+
+        /**
+         * Fungsi untuk request POST (kirim data)
+         */
+        function ajaxPost(url, formData, callback) {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+            // Jika formData adalah FormData object (untuk upload file)
+            if (formData instanceof FormData) {
+                formData.append('_token', csrfToken);
+            } else {
+                // Jika object biasa, tambah CSRF token
+                formData._token = csrfToken;
+                formData = new URLSearchParams(formData);
+            }
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (callback) callback(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showError('Gagal mengirim data');
+            });
+        }
+
+        /**
+         * Fungsi untuk request DELETE (hapus data)
+         */
+        function ajaxDelete(url, callback) {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+            fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (callback) callback(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showError('Gagal menghapus data');
+            });
+        }
+
+        // ==================== NOTIFICATION FUNCTIONS ====================
+        // Fungsi-fungsi untuk menampilkan pesan
+
+        /**
+         * Tampilkan pesan sukses
+         */
+        function showSuccess(message) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: message,
+                timer: 2000,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        }
+
+        /**
+         * Tampilkan pesan error
+         */
+        function showError(message) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Terjadi Kesalahan',
+                text: message
+            });
+        }
+
+        /**
+         * Tampilkan pesan konfirmasi
+         */
+        function showConfirm(message, onConfirm) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Konfirmasi',
+                text: message,
+                showCancelButton: true,
+                confirmButtonText: 'Ya',
+                cancelButtonText: 'Batal'
+            }).then(result => {
+                if (result.isConfirmed && onConfirm) {
+                    onConfirm();
+                }
+            });
+        }
+
+        /**
+         * Tampilkan error validasi dari server
+         */
+        function showValidationErrors(errors) {
+            const errorBox = document.getElementById('formErrors');
+            const errorList = document.getElementById('errorList');
+
+            if (!errorBox || !errorList) return;
+
+            let html = '';
+            for (let field in errors) {
+                const messages = errors[field];
+                if (Array.isArray(messages)) {
+                    html += `<li><strong>${field}:</strong> ${messages.join(', ')}</li>`;
+                } else {
+                    html += `<li><strong>${field}:</strong> ${messages}</li>`;
+                }
+            }
+
+            errorList.innerHTML = html;
+            errorBox.style.display = 'block';
+
+            // Scroll ke error
+            errorBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        /**
+         * Tampilkan alert custom
+         */
+        function showAlert(type, message) {
+            const alertContainer = document.getElementById('alertContainer');
+            if (!alertContainer) return;
+
+            const bg = type === 'success' ? '#f0fdf4' : '#fef2f2';
+            const border = type === 'success' ? 'var(--success)' : 'var(--danger)';
+            const color = type === 'success' ? '#166534' : '#991b1b';
+            const icon = type === 'success' ? 'ri-checkbox-circle-line' : 'ri-error-warning-line';
+
+            const alertHtml = `
+                <div class="lux-card" style="border-left:4px solid ${border};background:${bg};display:flex;align-items:center;gap:10px;">
+                    <i class="${icon}" style="color:${border};font-size:1.5rem;"></i>
+                    <span style="color:${color};font-weight:600;">${message}</span>
+                </div>`;
+
+            alertContainer.innerHTML = alertHtml;
+
+            // Auto hide after 5 seconds
+            setTimeout(() => {
+                if (alertContainer.firstElementChild) {
+                    alertContainer.firstElementChild.style.display = 'none';
+                }
+            }, 5000);
+        }
+
+        // ==================== FORM FUNCTIONS ====================
+        // Fungsi-fungsi untuk mengelola form
+
+        /**
+         * Tampilkan loading state pada tombol
+         */
+        function showLoading(button, loadingText = 'Menyimpan...') {
+            button.disabled = true;
+            button.dataset.originalText = button.innerHTML;
+            button.innerHTML = `
+                <span class="spinner-border spinner-border-sm me-2"></span>
+                ${loadingText}
+            `;
+        }
+
+        /**
+         * Sembunyikan loading state dari tombol
+         */
+        function hideLoading(button) {
+            button.disabled = false;
+            button.innerHTML = button.dataset.originalText || 'Simpan';
+        }
+
+        /**
+         * Reset form ke kondisi awal
+         */
+        function resetForm() {
+            const form = document.getElementById('formAddPermission');
+            if (form) form.reset();
+        }
+
+        // ==================== MAIN APPLICATION CODE ====================
+        // Kode utama aplikasi
 
         let currentDeleteId = null;
 
-        $(document).ready(function() {
-            DebugLog.info('Script AJAX initialized');
+        document.addEventListener('DOMContentLoaded', function() {
+            // Inisialisasi modal
+            const modalPermission = new bootstrap.Modal(document.getElementById('modalPermission'));
+            const modalDelete = new bootstrap.Modal(document.getElementById('modalDelete'));
 
-            loadPermissions();
+            // ==================== EVENT LISTENERS ====================
 
-            $('#btnOpenAddModal').on('click', function() {
-                $('#formAddPermission')[0].reset();
-                const myModal = new bootstrap.Modal(document.getElementById('modalPermission'));
-                myModal.show();
+            // Tombol Tambah Permission
+            document.getElementById('btnOpenAddModal').addEventListener('click', function() {
+                resetForm();
+                modalPermission.show();
             });
 
-            $('#formAddPermission').on('submit', function(e) {
-                e.preventDefault();
-                const $btn = $('#btnSavePermission');
-                $btn.prop('disabled', true).text('Menyimpan...');
+            // Tombol Hapus Permission
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.btn-delete-trigger')) {
+                    const button = e.target.closest('.btn-delete-trigger');
+                    currentDeleteId = button.dataset.id;
+                    const name = button.dataset.name;
 
-                $.ajax({
-                    url: '{{ route('admin.permissions.store') }}',
-                    method: 'POST',
-                    data: $(this).serialize(),
-                    success: function(res) {
-                        if (res.success) {
-                            showAlert('success', res.message);
-                            loadPermissions();
-                            bootstrap.Modal.getInstance(document.getElementById('modalPermission')).hide();
-                        }
-                    },
-                    error: function(xhr) {
-                        const resp = xhr.responseJSON || {};
-                        if (xhr.status === 422 && resp.errors) {
-                            showAlert('error', 'Validasi gagal: ' + Object.values(resp.errors)[
-                                0][0]);
-                        } else {
-                            showAlert('error', resp.message || 'Gagal menyimpan permission');
-                        }
-                    },
-                    complete: () => $btn.prop('disabled', false).text('Simpan')
-                });
+                    document.getElementById('deletePermissionName').textContent = name;
+                    modalDelete.show();
+                }
             });
 
-            $(document).on('click', '.btn-delete-trigger', function() {
-                currentDeleteId = $(this).data('id');
-                const name = $(this).data('name');
-
-                $('#deletePermissionName').text(name);
-
-                const deleteModal = new bootstrap.Modal(document.getElementById('modalDelete'));
-                deleteModal.show();
-            });
-
-            $('#btnConfirmDelete').on('click', function() {
+            // Konfirmasi Hapus
+            document.getElementById('btnConfirmDelete').addEventListener('click', function() {
                 if (!currentDeleteId) return;
 
-                const $btn = $(this);
-                $btn.prop('disabled', true).html(
-                    '<i class="ri-loader-4-line animate-spin"></i> Menghapus...');
+                deletePermission(currentDeleteId);
+            });
 
-                $.ajax({
-                    url: `/admin/permissions/${currentDeleteId}`,
-                    method: 'DELETE',
-                    success: function(res) {
-                        if (res.success) {
-                            showAlert('success', res.message);
-                            loadPermissions();
-                            bootstrap.Modal.getInstance(document.getElementById('modalDelete')).hide();
+            // Escape key handler
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    modalPermission.hide();
+                    modalDelete.hide();
+                }
+            });
+
+            // Reset form when modal is hidden
+            document.getElementById('modalPermission').addEventListener('hidden.bs.modal', function() {
+                resetForm();
+            });
+
+            // ==================== FORM SUBMIT ====================
+
+            document.getElementById('formAddPermission').addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const form = this;
+                const button = document.getElementById('btnSavePermission');
+
+                // Validasi form
+                if (!form.checkValidity()) {
+                    form.classList.add('was-validated');
+                    return;
+                }
+
+                // Tampilkan loading
+                showLoading(button);
+
+                // Buat FormData
+                const formData = new FormData(form);
+
+                // Kirim data
+                ajaxPost('{{ route("admin.permissions.store") }}', formData, function(response) {
+                    hideLoading(button);
+
+                    if (response.success) {
+                        showAlert('success', response.message || 'Permission berhasil ditambahkan');
+                        modalPermission.hide();
+                        loadPermissions();
+                    } else {
+                        if (response.errors) {
+                            showAlert('error', 'Validasi gagal: ' + Object.values(response.errors)[0][0]);
+                        } else {
+                            showAlert('error', response.message || 'Gagal menyimpan permission');
                         }
-                    },
-                    error: function(xhr) {
-                        const resp = xhr.responseJSON || {};
-                        showAlert('error', resp.message || 'Gagal menghapus permission');
-                    },
-                    complete: () => {
-                        $btn.prop('disabled', false).html(
-                            '<i class="ri-delete-bin-line"></i> Ya, Hapus');
-                        currentDeleteId = null;
                     }
                 });
             });
 
-            $(document).on('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    closeModal('modalPermission');
-                    closeModal('modalDelete');
-                }
-            });
-        });
+            // ==================== FUNCTIONS ====================
 
-        function loadPermissions() {
-            $.ajax({
-                url: '{{ route('admin.permissions.index') }}',
-                method: 'GET',
-                dataType: 'json',
-                success: function(res) {
-                    if (!res.success) return;
+            /**
+             * Load daftar permissions
+             */
+            function loadPermissions() {
+                ajaxGet('{{ route("admin.permissions.index") }}', function(response) {
+                    if (!response.success) return;
 
                     let html = '';
-                    res.data.forEach(group => {
+
+                    response.data.forEach(group => {
                         html += `
-                <div class="lux-card mb-4">
-                    <div class="lux-card-header">
-                        <h3 class="lux-card-title">${group.group}</h3>
-                        <span class="lux-badge lux-badge-info">${group.count} Permissions</span>
-                    </div>
-                    <div class="lux-grid lux-grid-4">`;
+                            <div class="lux-card mb-4">
+                                <div class="lux-card-header">
+                                    <h3 class="lux-card-title">${group.group}</h3>
+                                    <span class="lux-badge lux-badge-info">${group.count} Permissions</span>
+                                </div>
+                                <div class="lux-grid lux-grid-4">`;
 
                         group.permissions.forEach(perm => {
                             const canDelete = perm.roles_count === 0;
@@ -250,33 +450,35 @@
                         html += `</div></div>`;
                     });
 
-                    $('#permissionsContainer').html(html);
-                },
-                error: function() {
-                    showAlert('error', 'Gagal memuat daftar permissions');
-                }
-            });
-        }
+                    document.getElementById('permissionsContainer').innerHTML = html;
+                });
+            }
 
-        function showAlert(type, message) {
-            const bg = type === 'success' ? '#f0fdf4' : '#fef2f2';
-            const border = type === 'success' ? 'var(--success)' : 'var(--danger)';
-            const color = type === 'success' ? '#166534' : '#991b1b';
-            const icon = type === 'success' ? 'ri-checkbox-circle-line' : 'ri-error-warning-line';
+            /**
+             * Hapus permission
+             */
+            function deletePermission(id) {
+                const url = `/admin/permissions/${id}`;
+                const button = document.getElementById('btnConfirmDelete');
 
-            const alertHtml = `
-                <div class="lux-card" style="border-left:4px solid ${border};background:${bg};display:flex;align-items:center;gap:10px;">
-                    <i class="${icon}" style="color:${border};font-size:1.5rem;"></i>
-                    <span style="color:${color};font-weight:600;">${message}</span>
-                </div>`;
+                showLoading(button, 'Menghapus...');
 
-            $('#alertContainer').html(alertHtml);
+                ajaxDelete(url, function(response) {
+                    hideLoading(button);
 
-            setTimeout(() => $('#alertContainer').fadeOut(400), 5000);
-        }
+                    if (response.success) {
+                        showAlert('success', response.message || 'Permission berhasil dihapus');
+                        modalDelete.hide();
+                        loadPermissions();
+                        currentDeleteId = null;
+                    } else {
+                        showAlert('error', response.message || 'Gagal menghapus permission');
+                    }
+                });
+            }
 
-        $('#modalPermission').on('hidden.bs.modal', function() {
-            $('#formAddPermission')[0].reset();
+            // Load data awal
+            loadPermissions();
         });
     </script>
 @endpush
