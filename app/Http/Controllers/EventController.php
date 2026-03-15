@@ -14,7 +14,12 @@ class EventController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Event::with(['kategori', 'creator'])->latest();
+        // Fetch semua kategori (untuk dropdown filter & form modal)
+        $kategoris = EventKategori::all(); // atau Kategori::where('type', 'event')->get(); dll
+
+        // Query events dengan filter
+        $query = Event::with('kategori') // eager load relasi kategori
+            ->latest();
 
         if ($request->filled('kategori_id')) {
             $query->where('kategori_id', $request->kategori_id);
@@ -25,15 +30,22 @@ class EventController extends Controller
         }
 
         if ($request->filled('search')) {
-            $query->where(function($q) use ($request) {
-                $q->where('nama_event', 'LIKE', "%{$request->search}%")
-                  ->orWhere('lokasi', 'LIKE', "%{$request->search}%");
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('nama_event', 'like', "%{$search}%")
+                  ->orWhere('lokasi', 'like', "%{$search}%")
+                  ->orWhere('deskripsi', 'like', "%{$search}%");
             });
         }
 
-        $events = $query->paginate(12);
-        $kategoris = EventKategori::active()->ordered()->get();
+        $events = $query->paginate(9); // atau berapa pun jumlah per halaman
 
+        // Handle AJAX request untuk reload grid saja
+        if ($request->ajax() || $request->input('ajax')) {
+            return view('features.event._grid', compact('events'));
+        }
+
+        // Untuk request normal (full page load)
         return view('features.event.index', compact('events', 'kategoris'));
     }
 
@@ -73,7 +85,7 @@ class EventController extends Controller
             $gambarFeaturedPath = $request->file('gambar_featured')->store('events/featured', 'public');
         }
 
-        // Upload gallery images
+        // Upload gallery
         $gambarGaleriPaths = [];
         if ($request->hasFile('gambar_galeri')) {
             foreach ($request->file('gambar_galeri') as $image) {
@@ -105,7 +117,17 @@ class EventController extends Controller
             'created_by' => Auth::id(),
         ]);
 
-        return redirect()->route('admin.events.index')
+        // Jika AJAX
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Event berhasil dibuat'
+            ]);
+        }
+
+        // Jika normal form
+        return redirect()
+            ->route('admin.events.index')
             ->with('success', 'Event berhasil dibuat!');
     }
 
@@ -115,9 +137,36 @@ class EventController extends Controller
         return view('features.event.show', compact('event'));
     }
 
-    public function edit(Event $event)
+    public function edit(Event $event, Request $request)
     {
-        $kategoris = EventKategori::active()->ordered()->get();
+        $kategoris = EventKategori::all(); // atau model kategori kamu
+
+        if ($request->ajax() || $request->query('ajax')) {
+            return response()->json([
+                'success' => true,
+                'nama_event' => $event->nama_event,
+                'kategori_id' => $event->kategori_id,
+                'deskripsi' => $event->deskripsi,
+                'deskripsi_lengkap' => $event->deskripsi_lengkap,
+                'tanggal_mulai' => $event->tanggal_mulai?->format('Y-m-d H:i:s'),
+                'tanggal_selesai' => $event->tanggal_selesai?->format('Y-m-d H:i:s'),
+                'lokasi' => $event->lokasi,
+                'alamat_lengkap' => $event->alamat_lengkap,
+                'pembicara' => $event->pembicara,
+                'kontak_person' => $event->kontak_person,
+                'whatsapp_kontak' => $event->whatsapp_kontak,
+                'email_kontak' => $event->email_kontak,
+                'harga_tiket' => $event->harga_tiket,
+                'kuota_peserta' => $event->kuota_peserta,
+                'status' => $event->status,
+                'is_featured' => $event->is_featured,
+                'show_in_website' => $event->show_in_website,
+                'gambar_featured' => $event->gambar_featured,
+                'gambar_galeri' => $event->gambar_galeri ?? [], // array path gambar galeri
+            ]);
+        }
+
+        // Untuk mode normal (halaman edit terpisah, jika masih dipakai)
         return view('features.event.edit', compact('event', 'kategoris'));
     }
 

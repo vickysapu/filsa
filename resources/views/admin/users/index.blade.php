@@ -146,125 +146,401 @@
 
 @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <script>
-        $(document).ready(function () {
+        // ==================== AJAX HELPER FUNCTIONS ====================
+        // Fungsi-fungsi sederhana untuk request AJAX
 
+        /**
+         * Fungsi untuk request GET (ambil data)
+         */
+        function ajaxGet(url, callback) {
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (callback) callback(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showError('Gagal mengambil data');
+            });
+        }
+
+        /**
+         * Fungsi untuk request POST (kirim data)
+         */
+        function ajaxPost(url, formData, callback) {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+            // Jika formData adalah FormData object (untuk upload file)
+            if (formData instanceof FormData) {
+                formData.append('_token', csrfToken);
+            } else {
+                // Jika object biasa, tambah CSRF token
+                formData._token = csrfToken;
+                formData = new URLSearchParams(formData);
+            }
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (callback) callback(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showError('Gagal mengirim data');
+            });
+        }
+
+        /**
+         * Fungsi untuk request PUT (update data)
+         */
+        function ajaxPut(url, data, callback) {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+            data._token = csrfToken;
+            data._method = 'PUT';
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (callback) callback(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showError('Gagal mengubah data');
+            });
+        }
+
+        /**
+         * Fungsi untuk request DELETE (hapus data)
+         */
+        function ajaxDelete(url, callback) {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+            fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (callback) callback(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showError('Gagal menghapus data');
+            });
+        }
+
+        // ==================== NOTIFICATION FUNCTIONS ====================
+        // Fungsi-fungsi untuk menampilkan pesan
+
+        /**
+         * Tampilkan pesan sukses
+         */
+        function showSuccess(message) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: message,
+                timer: 2000,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        }
+
+        /**
+         * Tampilkan pesan error
+         */
+        function showError(message) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Terjadi Kesalahan',
+                text: message
+            });
+        }
+
+        /**
+         * Tampilkan pesan konfirmasi
+         */
+        function showConfirm(message, onConfirm) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Konfirmasi',
+                text: message,
+                showCancelButton: true,
+                confirmButtonText: 'Ya',
+                cancelButtonText: 'Batal'
+            }).then(result => {
+                if (result.isConfirmed && onConfirm) {
+                    onConfirm();
+                }
+            });
+        }
+
+        /**
+         * Tampilkan error validasi dari server
+         */
+        function showValidationErrors(errors) {
+            const errorBox = document.getElementById('formErrors');
+            const errorList = document.getElementById('errorList');
+
+            if (!errorBox || !errorList) return;
+
+            let html = '';
+            for (let field in errors) {
+                const messages = errors[field];
+                if (Array.isArray(messages)) {
+                    html += `<li><strong>${field}:</strong> ${messages.join(', ')}</li>`;
+                } else {
+                    html += `<li><strong>${field}:</strong> ${messages}</li>`;
+                }
+            }
+
+            errorList.innerHTML = html;
+            errorBox.style.display = 'block';
+
+            // Scroll ke error
+            errorBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // ==================== FORM FUNCTIONS ====================
+        // Fungsi-fungsi untuk mengelola form
+
+        /**
+         * Tampilkan loading state pada tombol
+         */
+        function showLoading(button, loadingText = 'Menyimpan...') {
+            button.disabled = true;
+            button.dataset.originalText = button.innerHTML;
+            button.innerHTML = `
+                <span class="spinner-border spinner-border-sm me-2"></span>
+                ${loadingText}
+            `;
+        }
+
+        /**
+         * Sembunyikan loading state dari tombol
+         */
+        function hideLoading(button) {
+            button.disabled = false;
+            button.innerHTML = button.dataset.originalText || '<i class="ri-save-line"></i> Simpan User';
+        }
+
+        /**
+         * Reset form ke kondisi awal
+         */
+        function resetForm(mode = 'create') {
+            const form = document.getElementById('formUser');
+            const errorBox = document.getElementById('formErrors');
+
+            // Reset form
+            form.reset();
+
+            // Reset action URL
+            form.action = '{{ route("admin.users.store") }}';
+            document.getElementById('formMethod').value = 'POST';
+            document.getElementById('userId').value = '';
+
+            // Sembunyikan error
+            if (errorBox) errorBox.style.display = 'none';
+
+            // Set default values untuk create
+            if (mode === 'create') {
+                document.getElementById('modalUserLabel').textContent = 'Tambah User Baru';
+                document.getElementById('passwordLabel').textContent = 'Password *';
+                document.getElementById('password').required = true;
+                document.getElementById('password_confirmation').required = true;
+            }
+        }
+
+        /**
+         * Isi form dengan data untuk edit
+         */
+        function populateForm(data) {
+            document.getElementById('name').value = data.user.name || '';
+            document.getElementById('email').value = data.user.email || '';
+            document.getElementById('is_active').checked = !!data.user.is_active;
+
+            // Set roles
+            const roleCheckboxes = document.querySelectorAll('input[name="roles[]"]');
+            roleCheckboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+
+            if (data.userRoles && Array.isArray(data.userRoles)) {
+                data.userRoles.forEach(roleId => {
+                    const checkbox = document.querySelector(`input[name="roles[]"][value="${roleId}"]`);
+                    if (checkbox) checkbox.checked = true;
+                });
+            }
+        }
+
+        // ==================== MAIN APPLICATION CODE ====================
+        // Kode utama aplikasi
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Inisialisasi modal
             const modal = new bootstrap.Modal(document.getElementById('modalUserForm'));
-            const form = $('#formUser');
-            const tableBody = $('#tabel-users tbody');
 
-            // Load data awal
-            loadUsers();
+            // ==================== EVENT LISTENERS ====================
 
-            // Tombol Tambah
-            $('#btn-tambah-user').click(function () {
-                resetForm();
-                $('#modalUserLabel').text('Tambah User Baru');
-                $('#passwordLabel').text('Password *');
-                $('#password, #password_confirmation').prop('required', true);
+            // Tombol Tambah User
+            document.getElementById('btn-tambah-user').addEventListener('click', function() {
+                resetForm('create');
                 modal.show();
             });
 
-            // Submit form (tambah / edit)
-            form.on('submit', function (e) {
+            // Tombol Edit User
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.btn-edit')) {
+                    const button = e.target.closest('.btn-edit');
+                    const id = button.dataset.id;
+                    loadUserForEdit(id);
+                }
+            });
+
+            // Tombol Hapus User
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.btn-delete')) {
+                    e.preventDefault();
+                    const button = e.target.closest('.btn-delete');
+                    const id = button.dataset.id;
+
+                    showConfirm('Hapus user ini? Aksi ini tidak dapat dibatalkan.', function() {
+                        deleteUser(id);
+                    });
+                }
+            });
+
+            // ==================== FORM SUBMIT ====================
+
+            document.getElementById('formUser').addEventListener('submit', function(e) {
                 e.preventDefault();
-                const url = form.attr('action') || '{{ route("admin.users.store") }}';
-                const method = $('#formMethod').val();
 
-                $.ajax({
-                    url: url,
-                    method: method,
-                    data: form.serialize(),
-                    success: function (response) {
-                        if (response.success) {
-                            alert(response.message || 'Operasi berhasil');
-                            modal.hide();
-                            loadUsers();
+                const form = this;
+                const button = form.querySelector('button[type="submit"]');
+
+                // Validasi form
+                if (!form.checkValidity()) {
+                    form.classList.add('was-validated');
+                    return;
+                }
+
+                // Tampilkan loading
+                showLoading(button);
+
+                // Buat FormData
+                const formData = new FormData(form);
+
+                // Kirim data
+                ajaxPost(form.action, formData, function(response) {
+                    hideLoading(button);
+
+                    if (response.success) {
+                        showSuccess(response.message || 'User berhasil disimpan');
+                        modal.hide();
+                        loadUsers();
+                    } else {
+                        if (response.errors) {
+                            showValidationErrors(response.errors);
+                        } else {
+                            showError(response.message || 'Gagal menyimpan user');
                         }
-                    },
-                    error: function (xhr) {
-                        const errors = xhr.responseJSON?.errors || {};
-                        let errorHtml = '';
-                        $.each(errors, function (key, val) {
-                            errorHtml += `<li>${val[0]}</li>`;
-                        });
-                        $('#errorList').html(errorHtml);
-                        $('#formErrors').show();
                     }
                 });
             });
 
-            // Event delegation untuk tombol edit & delete
-            tableBody.on('click', '.btn-edit', function () {
-                const id = $(this).data('id');
-                editUser(id);
-            });
+            // ==================== FUNCTIONS ====================
 
-            tableBody.on('click', '.btn-delete', function () {
-                if (!confirm('Hapus user ini? Aksi ini tidak dapat dibatalkan.')) return;
-
-                const id = $(this).data('id');
-                $.ajax({
-                    url: '{{ route("admin.users.destroy", ":id") }}'.replace(':id', id),
-                    method: 'POST',
-                    data: {
-                        _token: '{{ csrf_token() }}',
-                        _method: 'DELETE'
-                    },
-                    success: function (response) {
-                        if (response.success) {
-                            alert(response.message || 'User dihapus');
-                            loadUsers();
-                        }
-                    },
-                    error: function () {
-                        alert('Gagal menghapus user');
-                    }
-                });
-            });
-
+            /**
+             * Load daftar users
+             */
             function loadUsers() {
-                $.get('{{ route("admin.users.index") }}?ajax=1', function (data) {
-                    tableBody.html(data.html);
-                });
-            }
+                const url = '{{ route("admin.users.index") }}?ajax=1';
 
-            function editUser(id) {
-                $.get('{{ route("admin.users.edit", ":id") }}'.replace(':id', id) + '?ajax=1', function (data) {
-                    resetForm();
-
-                    $('#modalUserLabel').text('Edit User');
-                    $('#formMethod').val('PUT');
-                    $('#formUser').attr('action', data.action);
-                    $('#userId').val(data.user.id);
-                    $('#name').val(data.user.name);
-                    $('#email').val(data.user.email);
-                    $('#is_active').prop('checked', data.user.is_active);
-
-                    $('#passwordLabel').text('Password Baru (kosongkan jika tidak ingin ubah)');
-                    $('#password, #password_confirmation').prop('required', false);
-
-                    // Set roles
-                    $('input[name="roles[]"]').prop('checked', false);
-                    if (data.userRoles) {
-                        data.userRoles.forEach(roleId => {
-                            $(`input[name="roles[]"][value="${roleId}"]`).prop('checked', true);
-                        });
+                ajaxGet(url, function(data) {
+                    if (data.html) {
+                        document.querySelector('#tabel-users tbody').innerHTML = data.html;
                     }
-
-                    modal.show();
                 });
             }
 
-            function resetForm() {
-                form[0].reset();
-                $('#formMethod').val('POST');
-                $('#formUser').removeAttr('action');
-                $('#userId').val('');
-                $('#formErrors').hide();
-                $('#errorList').empty();
+            /**
+             * Load data user untuk edit
+             */
+            function loadUserForEdit(id) {
+                const url = '{{ route("admin.users.edit", ":id") }}'.replace(':id', id) + '?ajax=1';
+
+                ajaxGet(url, function(data) {
+                    if (data) {
+                        resetForm('edit');
+
+                        // Set form action untuk update
+                        const form = document.getElementById('formUser');
+                        form.action = data.action;
+                        document.getElementById('formMethod').value = 'PUT';
+                        document.getElementById('userId').value = data.user.id;
+
+                        // Isi form dengan data
+                        populateForm(data);
+
+                        // Update modal title dan password field
+                        document.getElementById('modalUserLabel').textContent = 'Edit User';
+                        document.getElementById('passwordLabel').textContent = 'Password Baru (kosongkan jika tidak ingin ubah)';
+                        document.getElementById('password').required = false;
+                        document.getElementById('password_confirmation').required = false;
+
+                        modal.show();
+                    } else {
+                        showError('Gagal memuat data user');
+                    }
+                });
             }
 
+            /**
+             * Hapus user
+             */
+            function deleteUser(id) {
+                const url = '{{ route("admin.users.destroy", ":id") }}'.replace(':id', id);
+
+                ajaxDelete(url, function(response) {
+                    if (response.success) {
+                        showSuccess(response.message || 'User berhasil dihapus');
+                        loadUsers();
+                    } else {
+                        showError(response.message || 'Gagal menghapus user');
+                    }
+                });
+            }
+
+            // Load data awal
+            loadUsers();
         });
     </script>
 @endpush

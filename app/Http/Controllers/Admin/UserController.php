@@ -104,7 +104,7 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
-        if ($user->id === auth()->id()) {
+        if ($user->id === auth()->id) {
             return redirect()->route('admin.users.index')->with('error', 'Anda tidak dapat menghapus akun sendiri!');
         }
 

@@ -49,18 +49,28 @@ class Pengeluaran extends Model
     /**
      * Generate nomor transaksi unik
      * Format: PGL-YYYYMMDD-XXXX
+     * Only checks active (non-deleted) records
+     * Must be called within a database transaction for proper locking
      */
     public static function generateNomorTransaksi()
     {
         $date = now()->format('Ymd');
-        $lastPengeluaran = self::whereDate('created_at', now())
-            ->orderBy('id', 'desc')
+        $prefix = 'PGL-' . $date . '-';
+        
+        // Get the highest number for today using a subquery with MAX
+        // Include soft-deleted records too so we never reuse a number still in DB
+        // Lock the rows to prevent race conditions (requires active transaction)
+        $maxNumber = self::withTrashed()
+            ->whereDate('created_at', now())
+            ->where('nomor_transaksi', 'LIKE', $prefix . '%')
+            ->selectRaw('MAX(CAST(SUBSTRING(nomor_transaksi, -4) AS UNSIGNED)) as max_num')
+            ->lockForUpdate()
             ->first();
         
-        $lastNumber = $lastPengeluaran ? intval(substr($lastPengeluaran->nomor_transaksi, -4)) : 0;
+        $lastNumber = $maxNumber && $maxNumber->max_num ? intval($maxNumber->max_num) : 0;
         $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
         
-        return 'PGL-' . $date . '-' . $newNumber;
+        return $prefix . $newNumber;
     }
 
     /**

@@ -18,37 +18,34 @@ class JemaatController extends Controller
     {
         $query = Jemaat::query();
 
-        // Search Filter (Nama, NIK, Email)
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('nama_lengkap', 'LIKE', "%{$search}%")
-                    ->orWhere('NIK', 'LIKE', "%{$search}%")
-                    ->orWhere('email', 'LIKE', "%{$search}%");
+        if ($request->search) {
+            $query->where(function ($q) use ($request) {
+                $q->where('nama_lengkap', 'like', "%{$request->search}%")
+                    ->orWhere('NIK', 'like', "%{$request->search}%")
+                    ->orWhere('email', 'like', "%{$request->search}%");
             });
         }
 
-        // Filter Jenis Kelamin
-        if ($request->filled('jenis_kelamin')) {
+        if ($request->jenis_kelamin !== null && $request->jenis_kelamin !== '') {
             $query->where('jenis_kelamin', $request->jenis_kelamin);
         }
 
-        // Filter Status Pernikahan
-        if ($request->filled('status_pernikahan')) {
+        if ($request->status_pernikahan) {
             $query->where('status_pernikahan', $request->status_pernikahan);
         }
 
-        // Filter Status Jemaat
-        if ($request->filled('status_jemaat')) {
+        if ($request->status_jemaat !== null && $request->status_jemaat !== '') {
             $query->where('status_jemaat', $request->status_jemaat);
         }
 
-        // Order by terbaru
-        $jemaats = $query->orderBy('created_at', 'desc')->paginate(15);
+        $jemaats = $query->latest()->paginate(15);
+
+        if ($request->ajax()) {
+            return view('features.jemaat._table', compact('jemaats'))->render();
+        }
 
         return view('features.jemaat.index', compact('jemaats'));
     }
-
     /**
      * Show the form for creating a new jemaat
      */
@@ -112,6 +109,13 @@ class JemaatController extends Controller
             'foto' => $fotoPath,
         ]);
 
+        if (request()->ajax() || request()->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Data jemaat berhasil disimpan'
+            ]);
+        }
+
         return redirect()->route('admin.jemaat.index')->with('success', 'Jemaat berhasil ditambahkan!');
     }
 
@@ -128,6 +132,10 @@ class JemaatController extends Controller
      */
     public function edit(Jemaat $jemaat)
     {
+        if (request()->ajax()) {
+            return response()->json($jemaat);
+        }
+
         return view('features.jemaat.edit', compact('jemaat'));
     }
 
@@ -191,6 +199,13 @@ class JemaatController extends Controller
             'foto' => $fotoPath,
         ]);
 
+        if (request()->ajax() || request()->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Data jemaat berhasil disimpan'
+            ]);
+        }
+
         return redirect()->route('admin.jemaat.index')->with('success', 'Data jemaat berhasil diupdate!');
     }
 
@@ -199,13 +214,12 @@ class JemaatController extends Controller
      */
     public function destroy(Jemaat $jemaat)
     {
-        if ($jemaat->foto) {
-            Storage::disk('public')->delete($jemaat->foto);
-        }
-
         $jemaat->delete();
 
-        return redirect()->admin('features.jemaat.index')->with('success', 'Data jemaat berhasil dihapus!');
+        return response()->json([
+            'success' => true,
+            'message' => 'Data jemaat berhasil dihapus'
+        ]);
     }
 
     public function export()
