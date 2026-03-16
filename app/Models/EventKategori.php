@@ -5,13 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
 class EventKategori extends Model
 {
     use HasFactory, SoftDeletes;
 
+    public $incrementing = false;
+    protected $keyType = 'string';
+
     protected $fillable = [
+        'branch_id',
         'nama_kategori', 'slug', 'deskripsi', 'warna', 'icon',
         'is_active', 'urutan', 'show_in_website',
     ];
@@ -25,14 +31,27 @@ class EventKategori extends Model
     {
         parent::boot();
 
-        static::creating(function ($kategori) {
-            if (empty($kategori->slug)) {
-                $kategori->slug = Str::slug($kategori->nama_kategori);
+        static::creating(function ($model) {
+            if (empty($model->{$model->getKeyName()})) {
+                $model->{$model->getKeyName()} = Str::uuid();
+            }
+            if (empty($model->slug)) {
+                $model->slug = Str::slug($model->nama_kategori);
             }
         });
     }
 
-    public function events()
+    protected static function booted()
+    {
+        static::addGlobalScope(new \App\Models\Scopes\BranchScope);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(brances::class);
+    }
+
+    public function events(): HasMany
     {
         return $this->hasMany(Event::class, 'kategori_id');
     }

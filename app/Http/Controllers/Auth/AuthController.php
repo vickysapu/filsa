@@ -36,7 +36,7 @@ class AuthController extends Controller
             'remember' => 'boolean',
         ]);
 
-        $user = User::where('email', $credentials['email'])->first();
+        $user = User::with('branch', 'roles')->where('email', $credentials['email'])->first();
 
         // Log Attempt
         $this->logLoginAttempt($request, $user, false);
@@ -55,6 +55,16 @@ class AuthController extends Controller
             $this->incrementFailedAttempts($request);
             throw ValidationException::withMessages([
                 'email' => 'Akun Anda telah dinonaktifkan. Hubungi administrator.',
+            ]);
+        }
+
+        // ✅ FIX: Cek branch hanya jika kolom is_active benar-benar ada
+        if ($user->branch && 
+            $user->branch->getConnection()->getSchemaBuilder()->hasColumn('branches', 'is_active') && 
+            !$user->branch->is_active) {
+            $this->logLoginAttempt($request, $user, false, 'branch_disabled');
+            throw ValidationException::withMessages([
+                'email' => 'Cabang Anda sedang dinonaktifkan. Hubungi administrator pusat.',
             ]);
         }
 
@@ -84,7 +94,7 @@ class AuthController extends Controller
         // Update last login
         $user->update(['last_login_at' => now()]);
 
-        // Log success
+        // Log success with branch_id for audit
         $this->logLoginAttempt($request, $user, true);
 
         // Regenerate session for security
@@ -131,6 +141,7 @@ class AuthController extends Controller
     protected function logLoginAttempt(Request $request, ?User $user, bool $success, ?string $failureReason = null): void
     {
         LoginActivities::create([
+            'branch_id' => $user?->branch_id,
             'user_id' => $user?->id,
             'email_attempt' => $request->input('email'),
             'ip_address' => $request->ip(),

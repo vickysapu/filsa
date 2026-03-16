@@ -8,15 +8,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('dokumentasi_kategoris', function (Blueprint $table) {
-            $table->id();
+        Schema::create('event_kategoris', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->foreignUuid('branch_id')->nullable()->constrained('branches')->onDelete('cascade');
             $table->string('nama_kategori');
             $table->string('slug')->unique();
             $table->text('deskripsi')->nullable();
             $table->string('warna')->default('#4f46e5');
+            $table->string('icon')->nullable();
             $table->boolean('is_active')->default(true);
-            $table->boolean('show_in_website')->default(true);
             $table->integer('urutan')->default(0);
+            $table->boolean('show_in_website')->default(true);
             $table->timestamps();
             $table->softDeletes();
         });
@@ -24,6 +26,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('dokumentasi_kategoris');
+        Schema::dropIfExists('event_kategoris');
     }
 };

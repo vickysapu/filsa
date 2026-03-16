@@ -5,12 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
+use \App\Models\Scopes\BranchScope;
 
 class Jemaat extends Model
 {
     use HasFactory, SoftDeletes;
 
+    public $incrementing = false;
+    protected $keyType = 'string';
+
     protected $fillable = [
+        'branch_id',
         'NIK',
         'nama_lengkap',
         'jenis_kelamin',
@@ -35,6 +42,26 @@ class Jemaat extends Model
         'tanggal_bergabung' => 'date',
         'status_jemaat' => 'boolean',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+        static::creating(function ($model) {
+            if (empty($model->{$model->getKeyName()})) {
+                $model->{$model->getKeyName()} = Str::uuid();
+            }
+        });
+    }
+
+    protected static function booted()
+    {
+        static::addGlobalScope(new BranchScope);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(brances::class);
+    }
 
     /**
      * Scope untuk jemaat aktif

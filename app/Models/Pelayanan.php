@@ -5,12 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Pelayanan extends Model
 {
     use HasFactory, SoftDeletes;
 
+    public $incrementing = false;
+    protected $keyType = 'string';
+
     protected $fillable = [
+        'branch_id',
         'nomor_jadwal',
         'kategori_id',
         'nama_pelayanan',
@@ -31,18 +38,27 @@ class Pelayanan extends Model
     {
         parent::boot();
 
-        static::creating(function ($pelayanan) {
-            if (empty($pelayanan->nomor_jadwal)) {
-                $pelayanan->nomor_jadwal = self::generateNomorJadwal();
+        static::creating(function ($model) {
+            if (empty($model->{$model->getKeyName()})) {
+                $model->{$model->getKeyName()} = Str::uuid();
+            }
+            
+            if (empty($model->nomor_jadwal)) {
+                $model->nomor_jadwal = self::generateNomorJadwal();
             }
         });
+    }
+
+    protected static function booted()
+    {
+        static::addGlobalScope(new \App\Models\Scopes\BranchScope);
     }
 
     public static function generateNomorJadwal()
     {
         $date = now()->format('Ymd');
         $last = self::whereDate('created_at', now())
-            ->orderBy('id', 'desc')
+            ->orderBy('created_at', 'desc')
             ->first();
         
         $lastNumber = $last ? intval(substr($last->nomor_jadwal, -4)) : 0;
@@ -51,17 +67,22 @@ class Pelayanan extends Model
         return 'JDL-' . $date . '-' . $newNumber;
     }
 
-    public function kategori()
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(brances::class);
+    }
+
+    public function kategori(): BelongsTo
     {
         return $this->belongsTo(KategoriPelayanan::class, 'kategori_id');
     }
 
-    public function creator()
+    public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function details()
+    public function details(): HasMany
     {
         return $this->hasMany(PelayananDetail::class);
     }

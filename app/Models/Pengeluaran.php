@@ -5,13 +5,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use League\CommonMark\Delimiter\Bracket;
 
 class Pengeluaran extends Model
 {
     use HasFactory, SoftDeletes;
 
+    public $incrementing = false;
+    protected $keyType = 'string';
+
     protected $fillable = [
+        'branch_id',
         'nomor_transaksi',
         'tanggal',
         'kategori',
@@ -32,34 +39,30 @@ class Pengeluaran extends Model
         'verified_at' => 'datetime',
     ];
 
-    /**
-     * Boot method untuk auto-generate nomor transaksi
-     */
     protected static function boot()
     {
         parent::boot();
 
-        static::creating(function ($pengeluaran) {
-            if (empty($pengeluaran->nomor_transaksi)) {
-                $pengeluaran->nomor_transaksi = self::generateNomorTransaksi();
+        static::creating(function ($model) {
+            if (empty($model->{$model->getKeyName()})) {
+                $model->{$model->getKeyName()} = Str::uuid();
+            }
+            if (empty($model->nomor_transaksi)) {
+                $model->nomor_transaksi = self::generateNomorTransaksi();
             }
         });
     }
 
-    /**
-     * Generate nomor transaksi unik
-     * Format: PGL-YYYYMMDD-XXXX
-     * Only checks active (non-deleted) records
-     * Must be called within a database transaction for proper locking
-     */
+    protected static function booted()
+    {
+        static::addGlobalScope(new \App\Models\Scopes\BranchScope);
+    }
+
     public static function generateNomorTransaksi()
     {
         $date = now()->format('Ymd');
         $prefix = 'PGL-' . $date . '-';
         
-        // Get the highest number for today using a subquery with MAX
-        // Include soft-deleted records too so we never reuse a number still in DB
-        // Lock the rows to prevent race conditions (requires active transaction)
         $maxNumber = self::withTrashed()
             ->whereDate('created_at', now())
             ->where('nomor_transaksi', 'LIKE', $prefix . '%')
@@ -73,49 +76,36 @@ class Pengeluaran extends Model
         return $prefix . $newNumber;
     }
 
-    /**
-     * Relasi ke User yang membuat
-     */
-    public function creator()
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(brances::class);
+    }
+
+    public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    /**
-     * Relasi ke User yang verifikasi
-     */
-    public function verifier()
+    public function verifier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'verified_by');
     }
 
-    /**
-     * Scope untuk pengeluaran verified
-     */
     public function scopeVerified($query)
     {
         return $query->where('status', 'verified');
     }
 
-    /**
-     * Scope untuk pengeluaran pending
-     */
     public function scopePending($query)
     {
         return $query->where('status', 'pending');
     }
 
-    /**
-     * Scope untuk filter tanggal
-     */
     public function scopeTanggalRange($query, $start, $end)
     {
         return $query->whereBetween('tanggal', [$start, $end]);
     }
 
-    /**
-     * Get label kategori
-     */
     public function getKategoriLabelAttribute()
     {
         $labels = [
@@ -131,9 +121,6 @@ class Pengeluaran extends Model
         return $labels[$this->kategori] ?? $this->kategori;
     }
 
-    /**
-     * Get label status
-     */
     public function getStatusLabelAttribute()
     {
         $labels = [
@@ -144,17 +131,11 @@ class Pengeluaran extends Model
         return $labels[$this->status] ?? $this->status;
     }
 
-    /**
-     * Get formatted jumlah
-     */
     public function getJumlahFormattedAttribute()
     {
         return 'Rp ' . number_format($this->jumlah, 0, ',', '.');
     }
 
-    /**
-     * Total pengeluaran verified
-     */
     public static function getTotalVerified($start = null, $end = null)
     {
         $query = self::verified();
@@ -164,9 +145,6 @@ class Pengeluaran extends Model
         return $query->sum('jumlah');
     }
 
-    /**
-     * Total pengeluaran per kategori
-     */
     public static function getTotalPerKategori($start = null, $end = null)
     {
         $query = self::verified();

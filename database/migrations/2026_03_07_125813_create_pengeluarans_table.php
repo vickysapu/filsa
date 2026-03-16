@@ -9,7 +9,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('pengeluarans', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('branch_id')->nullable()->constrained('branches')->onDelete('cascade');
             $table->string('nomor_transaksi')->unique();
             $table->date('tanggal');
             $table->enum('kategori', [
@@ -28,13 +29,12 @@ return new class extends Migration
             $table->text('keterangan')->nullable();
             $table->enum('status', ['pending', 'verified', 'rejected'])->default('pending');
             $table->string('bukti_foto')->nullable();
-            $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
-            $table->foreignId('verified_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignUuid('created_by')->constrained('users')->onDelete('cascade');
+            $table->foreignUuid('verified_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamp('verified_at')->nullable();
             $table->timestamps();
             $table->softDeletes();
             
-            // Index untuk performa
             $table->index('tanggal');
             $table->index('kategori');
             $table->index('status');
