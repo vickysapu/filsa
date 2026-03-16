@@ -4,14 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
+    public $incrementing = false;
+    protected $keyType = 'string';
+
     protected $fillable = [
+        'branch_id',
         'name',
         'email',
         'password',
@@ -32,25 +38,51 @@ class User extends Authenticatable
         'last_login_at' => 'datetime',
     ];
 
+    protected static function boot()
+    {
+        parent::boot();
+        static::creating(function ($model) {
+            if (empty($model->{$model->getKeyName()})) {
+                $model->{$model->getKeyName()} = Str::uuid();
+            }
+        });
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class, 'user_role')
                     ->withTimestamps();
     }
 
+    public function isHeadquarter(): bool
+    {
+        return $this->branch && $this->branch->is_headquarter;
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->hasRole('administrator') || $this->isHeadquarter();
+    }
+
     public function hasPermission(string $permissionName): bool
     {
-        foreach ($this->roles as $role) {
-            if ($role->hasPermission($permissionName)) {
-                return true;
-            }
-        }
-        return false;
+        return $this->roles()
+            ->whereHas('permissions', function ($query) use ($permissionName) {
+                $query->where('name', $permissionName);
+            })
+            ->exists();
     }
 
     public function hasRole(string $roleName): bool
     {
-        return $this->roles->contains('name', $roleName);
+        return $this->roles()
+            ->where('name', $roleName)
+            ->exists();
     }
 
     public function assignRole(array $roleIds): void
@@ -60,7 +92,11 @@ class User extends Authenticatable
 
     public function getRoleNamesAttribute(): string
     {
-        return $this->roles->pluck('display_name')->join(', ');
+        if ($this->relationLoaded('roles')) {
+            return $this->roles->pluck('display_name')->join(', ');
+        }
+        
+        return $this->roles()->get()->pluck('display_name')->join(', ');
     }
 
     public function scopeActive($query)

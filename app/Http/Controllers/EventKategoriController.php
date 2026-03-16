@@ -1,8 +1,6 @@
 <?php
-
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\EventKategori;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -11,7 +9,7 @@ class EventKategoriController extends Controller
 {
     public function index()
     {
-        $kategoris = EventKategori::ordered()->get();
+        $kategoris = EventKategori::orderBy('urutan')->orderBy('nama_kategori')->get();
         return view('features.kategori.event.index', compact('kategoris'));
     }
 
@@ -25,7 +23,7 @@ class EventKategoriController extends Controller
             'urutan' => 'nullable|integer',
         ]);
 
-        EventKategori::create([
+        $kategori = EventKategori::create([
             'nama_kategori' => $validated['nama_kategori'],
             'slug' => Str::slug($validated['nama_kategori']),
             'deskripsi' => $validated['deskripsi'] ?? null,
@@ -36,8 +34,11 @@ class EventKategoriController extends Controller
             'show_in_website' => true,
         ]);
 
-        return redirect()->route('admin.event-kategori.index')
-            ->with('success', 'Kategori event berhasil ditambahkan!');
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Kategori event berhasil ditambahkan!', 'data' => $kategori]);
+        }
+
+        return redirect()->route('admin.event-kategori.index')->with('success', 'Kategori event berhasil ditambahkan!');
     }
 
     public function update(Request $request, EventKategori $kategori)
@@ -52,22 +53,39 @@ class EventKategoriController extends Controller
             'show_in_website' => 'boolean',
         ]);
 
-        $kategori->update($validated);
+        $kategori->update([
+            'nama_kategori' => $validated['nama_kategori'],
+            'slug' => Str::slug($validated['nama_kategori']),
+            'deskripsi' => $validated['deskripsi'] ?? $kategori->deskripsi,
+            'warna' => $validated['warna'] ?? $kategori->warna,
+            'icon' => $validated['icon'] ?? $kategori->icon,
+            'is_active' => $validated['is_active'] ?? true,
+            'urutan' => $validated['urutan'] ?? $kategori->urutan,
+            'show_in_website' => $validated['show_in_website'] ?? true,
+        ]);
 
-        return redirect()->route('admin.event-kategori.index')
-            ->with('success', 'Kategori event berhasil diupdate!');
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Kategori event berhasil diupdate!', 'data' => $kategori]);
+        }
+
+        return redirect()->route('admin.event-kategori.index')->with('success', 'Kategori event berhasil diupdate!');
     }
 
     public function destroy(EventKategori $kategori)
     {
         if ($kategori->events()->count() > 0) {
-            return redirect()->route('admin.event-kategori.index')
-                ->with('error', 'Kategori tidak dapat dihapus karena masih memiliki event!');
+            if (request()->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Kategori tidak dapat dihapus karena masih memiliki event!'], 400);
+            }
+            return redirect()->route('admin.event-kategori.index')->with('error', 'Kategori tidak dapat dihapus karena masih memiliki event!');
         }
 
         $kategori->delete();
 
-        return redirect()->route('admin.event-kategori.index')
-            ->with('success', 'Kategori event berhasil dihapus!');
+        if (request()->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Kategori event berhasil dihapus!']);
+        }
+
+        return redirect()->route('admin.event-kategori.index')->with('success', 'Kategori event berhasil dihapus!');
     }
 }

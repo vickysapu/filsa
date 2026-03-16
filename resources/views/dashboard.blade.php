@@ -95,4 +95,31 @@
     </div>
 
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const currentToken = '{{ request()->attributes->get("page_token") }}';
+    
+    if (currentToken && window.location.pathname.startsWith('/admin')) {
+        document.querySelectorAll('a[href*="/admin"]').forEach(link => {
+            try {
+                const url = new URL(link.href, window.location.origin);
+                if (url.pathname.startsWith('/admin')) {
+                    url.searchParams.set('_token_nav', currentToken);
+                    link.href = url.toString();
+                }
+            } catch(e) {}
+        });
+        
+        document.querySelectorAll('form[action*="/admin"]').forEach(form => {
+            try {
+                const url = new URL(form.action, window.location.origin);
+                if (url.pathname.startsWith('/admin')) {
+                    url.searchParams.set('_token_nav', currentToken);
+                    form.action = url.toString();
+                }
+            } catch(e) {}
+        });
+    }
+});
+</script>
 @endsection

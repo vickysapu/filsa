@@ -4,9 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 class LoginActivities extends Model
 {
+    public $incrementing = false;
+    protected $keyType = 'string';
+
     protected $fillable = [
         'user_id',
         'email_attempt',
@@ -26,6 +30,16 @@ class LoginActivities extends Model
 
     const CREATED_AT = 'attempted_at';
     const UPDATED_AT = null;
+
+    protected static function boot()
+    {
+        parent::boot();
+        static::creating(function ($model) {
+            if (empty($model->{$model->getKeyName()})) {
+                $model->{$model->getKeyName()} = Str::uuid();
+            }
+        });
+    }
 
     public function user(): BelongsTo
     {

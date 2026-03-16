@@ -4,17 +4,18 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         Schema::create('roles', function (Blueprint $table) {
-            $table->id();
-            $table->string('name')->unique(); 
+            $table->uuid('id')->primary();
+            $table->foreignUuid('branch_id')->nullable()->constrained('branches')->onDelete('cascade')->after('id');
+            $table->string('name')->unique();
             $table->string('display_name');
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

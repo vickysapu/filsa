@@ -10,7 +10,6 @@ class PermissionSeeder extends Seeder
     public function run(): void
     {
         $permissions = [
-
             // USERS
             ['name' => 'users.view', 'display_name' => 'Lihat User', 'group' => 'users'],
             ['name' => 'users.create', 'display_name' => 'Buat User', 'group' => 'users'],
@@ -87,13 +86,21 @@ class PermissionSeeder extends Seeder
             ['name' => 'dokumentasi.kategori.edit', 'display_name' => 'Edit Kategori Dokumentasi', 'group' => 'Dokumentasi'],
             ['name' => 'dokumentasi.kategori.delete', 'display_name' => 'Hapus Kategori Dokumentasi', 'group' => 'Dokumentasi'],
 
+            // BRANCH MANAGEMENT
+            ['name' => 'branches.view', 'display_name' => 'Lihat Cabang', 'group' => 'branches'],
+            ['name' => 'branches.create', 'display_name' => 'Tambah Cabang', 'group' => 'branches'],
+            ['name' => 'branches.edit', 'display_name' => 'Edit Cabang', 'group' => 'branches'],
+            ['name' => 'branches.delete', 'display_name' => 'Hapus Cabang', 'group' => 'branches'],
+
+            // MEETINGS
+            ['name' => 'meetings.view', 'display_name' => 'Lihat Meeting', 'group' => 'meetings'],
+            ['name' => 'meetings.create', 'display_name' => 'Buat Meeting', 'group' => 'meetings'],
+            ['name' => 'meetings.edit', 'display_name' => 'Edit Meeting', 'group' => 'meetings'],
+            ['name' => 'meetings.delete', 'display_name' => 'Hapus Meeting', 'group' => 'meetings'],
         ];
 
         foreach ($permissions as $permission) {
-            Permission::firstOrCreate(
-                ['name' => $permission['name']],
-                $permission
-            );
+            Permission::firstOrCreate(['name' => $permission['name']], $permission);
         }
     }
 }

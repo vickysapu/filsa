@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Permission;
+use App\Models\User; // Import User
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
@@ -13,7 +15,6 @@ class PermissionController extends Controller
     public function index()
     {
         $permissions = Permission::orderBy('group')->orderBy('display_name')->withCount('roles')->get();
-
         $permissionGroups = $permissions->groupBy('group');
 
         if (request()->expectsJson()) {

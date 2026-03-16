@@ -9,7 +9,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('kategori_pelayanans', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('branch_id')->nullable()->constrained('branches')->onDelete('cascade');
             $table->string('nama_kategori');
             $table->text('deskripsi')->nullable();
             $table->string('warna')->default('#4f46e5');

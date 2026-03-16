@@ -5,18 +5,51 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 class KategoriPelayanan extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['nama_kategori', 'deskripsi', 'warna', 'is_active', 'urutan'];
+    public $incrementing = false;
+    protected $keyType = 'string';
+
+    protected $fillable = [
+        'branch_id',
+        'nama_kategori',
+        'deskripsi',
+        'warna',
+        'is_active',
+        'urutan',
+    ];
 
     protected $casts = [
         'is_active' => 'boolean',
     ];
 
-    public function pelayanans()
+    protected static function boot()
+    {
+        parent::boot();
+        static::creating(function ($model) {
+            if (empty($model->{$model->getKeyName()})) {
+                $model->{$model->getKeyName()} = Str::uuid();
+            }
+        });
+    }
+
+    protected static function booted()
+    {
+        static::addGlobalScope(new \App\Models\Scopes\BranchScope);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(brances::class);
+    }
+
+    public function pelayanans(): HasMany
     {
         return $this->hasMany(Pelayanan::class, 'kategori_id');
     }

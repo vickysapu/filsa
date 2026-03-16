@@ -9,16 +9,30 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->boolean('is_active')->default(true)->after('email');
-            $table->timestamp('last_login_at')->nullable()->after('is_active');
-            $table->string('avatar')->nullable()->after('last_login_at');
+            if (!Schema::hasColumn('users', 'is_active')) {
+                $table->boolean('is_active')->default(true)->after('email');
+            }
+            if (!Schema::hasColumn('users', 'last_login_at')) {
+                $table->timestamp('last_login_at')->nullable()->after('is_active');
+            }
+            if (!Schema::hasColumn('users', 'avatar')) {
+                $table->string('avatar')->nullable()->after('last_login_at');
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['is_active', 'last_login_at', 'avatar']);
+            if (Schema::hasColumn('users', 'is_active')) {
+                $table->dropColumn('is_active');
+            }
+            if (Schema::hasColumn('users', 'last_login_at')) {
+                $table->dropColumn('last_login_at');
+            }
+            if (Schema::hasColumn('users', 'avatar')) {
+                $table->dropColumn('avatar');
+            }
         });
     }
 };

@@ -9,12 +9,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('dokumentasi_albums', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('branch_id')->nullable()->constrained('branches')->onDelete('cascade');
             $table->string('slug')->unique();
             $table->string('judul_album');
             $table->text('deskripsi')->nullable();
-            $table->foreignId('kategori_id');
-            $table->foreignId('event_id')->nullable()->constrained('events')->onDelete('set null'); // Optional link to event
+            $table->foreignUuid('kategori_id')->constrained('dokumentasi_kategoris')->onDelete('cascade');
+            $table->foreignUuid('event_id')->nullable()->constrained('events')->onDelete('set null');
             $table->string('cover_image')->nullable();
             $table->string('fotografer')->nullable();
             $table->date('tanggal_album');
@@ -25,7 +26,7 @@ return new class extends Migration
             $table->boolean('allow_download')->default(false);
             $table->boolean('show_in_website')->default(true);
             $table->json('meta_tags')->nullable();
-            $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
+            $table->foreignUuid('created_by')->constrained('users')->onDelete('cascade');
             $table->timestamps();
             $table->softDeletes();
             

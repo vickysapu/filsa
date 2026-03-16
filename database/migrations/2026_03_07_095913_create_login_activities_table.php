@@ -9,8 +9,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('login_activities', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
+            $table->uuid('id')->primary();
+            $table->foreignUuid('user_id')->nullable()->constrained('users')->onDelete('cascade');
             $table->string('email_attempt')->nullable();
             $table->string('ip_address', 45);
             $table->string('user_agent')->nullable();

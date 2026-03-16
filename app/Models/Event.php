@@ -5,13 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class Event extends Model
 {
     use HasFactory, SoftDeletes;
 
+    public $incrementing = false;
+    protected $keyType = 'string';
+
     protected $fillable = [
+        'branch_id',
         'slug', 'nama_event', 'deskripsi', 'deskripsi_lengkap', 'kategori_id',
         'tanggal_mulai', 'tanggal_selesai', 'lokasi', 'alamat_lengkap',
         'gambar_featured', 'gambar_galeri', 'pembicara', 'kontak_person',
@@ -34,11 +40,19 @@ class Event extends Model
     {
         parent::boot();
 
-        static::creating(function ($event) {
-            if (empty($event->slug)) {
-                $event->slug = self::generateUniqueSlug($event->nama_event);
+        static::creating(function ($model) {
+            if (empty($model->{$model->getKeyName()})) {
+                $model->{$model->getKeyName()} = Str::uuid();
+            }
+            if (empty($model->slug)) {
+                $model->slug = self::generateUniqueSlug($model->nama_event);
             }
         });
+    }
+
+    protected static function booted()
+    {
+        static::addGlobalScope(new \App\Models\Scopes\BranchScope);
     }
 
     public static function generateUniqueSlug($name)
@@ -55,22 +69,27 @@ class Event extends Model
         return $slug;
     }
 
-    public function kategori()
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(brances::class);
+    }
+
+    public function kategori(): BelongsTo
     {
         return $this->belongsTo(EventKategori::class, 'kategori_id');
     }
 
-    public function creator()
+    public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function updater()
+    public function updater(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
 
-    public function dokumentasiAlbums()
+    public function dokumentasiAlbums(): HasMany
     {
         return $this->hasMany(DokumentasiAlbum::class);
     }

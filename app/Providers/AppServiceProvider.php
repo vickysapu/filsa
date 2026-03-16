@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Blade;
+use App\Helpers\UrlHelper;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +21,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+    Blade::directive('routeToken', function ($expression) {
+        return "<?php echo \App\Helpers\UrlHelper::routeWithToken({$expression}); ?>";
+    });
+    
+    Blade::directive('urlToken', function ($expression) {
+        return "<?php echo \App\Helpers\UrlHelper::urlWithToken({$expression}); ?>";
+    });
     }
 }

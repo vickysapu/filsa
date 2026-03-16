@@ -9,18 +9,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('events', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('branch_id')->nullable()->constrained('branches')->onDelete('cascade');
             $table->string('slug')->unique();
             $table->string('nama_event');
             $table->text('deskripsi');
-            $table->text('deskripsi_lengkap')->nullable(); // Untuk website
-            $table->foreignId('kategori_id');
+            $table->text('deskripsi_lengkap')->nullable();
+            $table->foreignUuid('kategori_id')->constrained('event_kategoris')->onDelete('cascade');
             $table->datetime('tanggal_mulai');
             $table->datetime('tanggal_selesai')->nullable();
             $table->string('lokasi');
             $table->string('alamat_lengkap')->nullable();
             $table->string('gambar_featured')->nullable();
-            $table->json('gambar_galeri')->nullable(); // Multiple images
+            $table->json('gambar_galeri')->nullable();
             $table->string('pembicara')->nullable();
             $table->string('kontak_person')->nullable();
             $table->string('email_kontak')->nullable();
@@ -31,13 +32,12 @@ return new class extends Migration
             $table->enum('status', ['draft', 'published', 'ongoing', 'completed', 'cancelled'])->default('draft');
             $table->boolean('is_featured')->default(false);
             $table->boolean('show_in_website')->default(true);
-            $table->json('meta_tags')->nullable(); // SEO
-            $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
-            $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->json('meta_tags')->nullable();
+            $table->foreignUuid('created_by')->constrained('users')->onDelete('cascade');
+            $table->foreignUuid('updated_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamps();
             $table->softDeletes();
             
-            // Indexes
             $table->index('slug');
             $table->index('status');
             $table->index('tanggal_mulai');
