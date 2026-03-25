@@ -14,12 +14,7 @@ class Branch extends Model
     public $incrementing = false;
     protected $keyType = 'string';
 
-    protected $fillable = [
-        'name',
-        'code',
-        'is_headquarter',
-        'is_active'
-    ];
+    protected $fillable = ['name', 'code', 'is_headquarter', 'is_active'];
 
     protected $casts = [
         'is_headquarter' => 'boolean',
@@ -38,5 +33,15 @@ class Branch extends Model
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    public function isHeadquarter(): bool
+    {
+        return $this->is_headquarter;
     }
 }

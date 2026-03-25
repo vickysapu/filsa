@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\brances;
 use App\Models\Branch;
 use App\Models\Role;
 use App\Models\User;
@@ -21,7 +20,7 @@ class UserSeeder extends Seeder
             [
                 'id' => Str::uuid(),
                 'branch_id' => $headquarter?->id,
-                'name' => 'Administrator',
+                'name' => 'Vicky Saputra',
                 'password' => Hash::make('R4hasia4dmin1strator'),
                 'is_active' => true,
             ]

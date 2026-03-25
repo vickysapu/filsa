@@ -6,17 +6,19 @@ use App\Http\Controllers\Controller;
 use App\Models\Jemaat;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
 
 class JemaatController extends Controller
 {
-    /**
-     * Display a listing of jemaats with search and filter
-     */
     public function index(Request $request)
     {
         $query = Jemaat::query();
+
+        $branchId = Auth::user()?->roles->first()?->branch_id;
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
 
         if ($request->search) {
             $query->where(function ($q) use ($request) {
@@ -38,6 +40,10 @@ class JemaatController extends Controller
             $query->where('status_jemaat', $request->status_jemaat);
         }
 
+        if (!$branchId && $request->branch_id) {
+            $query->where('branch_id', $request->branch_id);
+        }
+
         $jemaats = $query->latest()->paginate(15);
 
         if ($request->ajax()) {
@@ -46,20 +52,14 @@ class JemaatController extends Controller
 
         return view('features.jemaat.index', compact('jemaats'));
     }
-    /**
-     * Show the form for creating a new jemaat
-     */
+
     public function create()
     {
         return view('features.jemaat.create');
     }
 
-    /**
-     * Store a newly created jemaat in storage
-     */
     public function store(Request $request)
     {
-        // Validasi Input
         $validated = $request->validate(
             [
                 'NIK' => 'required|numeric|digits:16|unique:jemaats,NIK',
@@ -75,7 +75,7 @@ class JemaatController extends Controller
                 'pendidikan' => 'nullable|string|max:50',
                 'tanggal_bergabung' => 'required|date',
                 'status_jemaat' => 'boolean',
-                'foto' => 'nullable|image|mimes:jpg,png,jpeg|max:2048', // Max 2MB
+                'foto' => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
             ],
             [
                 'NIK.digits' => 'NIK harus 16 digit',
@@ -85,14 +85,13 @@ class JemaatController extends Controller
             ],
         );
 
-        // Handle Upload Foto
         $fotoPath = null;
         if ($request->hasFile('foto')) {
             $fotoPath = $request->file('foto')->store('jemaat/foto', 'public');
         }
 
-        // Create Jemaat
         Jemaat::create([
+            'branch_id' => Auth::user()?->roles->first()?->branch_id,
             'NIK' => $validated['NIK'],
             'nama_lengkap' => $validated['nama_lengkap'],
             'jenis_kelamin' => $validated['jenis_kelamin'],
@@ -112,39 +111,48 @@ class JemaatController extends Controller
         if (request()->ajax() || request()->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Data jemaat berhasil disimpan'
+                'message' => 'Data jemaat berhasil disimpan',
             ]);
         }
 
         return redirect()->route('admin.jemaat.index')->with('success', 'Jemaat berhasil ditambahkan!');
     }
 
-    /**
-     * Display the specified jemaat
-     */
-    public function show(Jemaat $jemaat)
+    public function show(Jemaat $jemaat, Request $request)
     {
+        $branchId = Auth::user()?->roles->first()?->branch_id;
+        if ($branchId && $jemaat->branch_id !== $branchId) {
+            abort(403);
+        }
+
+        if ($request->ajax()) {
+            return response()->json($jemaat);
+        }
+
         return view('features.jemaat.show', compact('jemaat'));
     }
 
-    /**
-     * Show the form for editing the specified jemaat
-     */
-    public function edit(Jemaat $jemaat)
+    public function edit(Jemaat $jemaat, Request $request)
     {
-        if (request()->ajax()) {
+        $branchId = Auth::user()?->roles->first()?->branch_id;
+        if ($branchId && $jemaat->branch_id !== $branchId) {
+            abort(403);
+        }
+
+        if ($request->ajax()) {
             return response()->json($jemaat);
         }
 
         return view('features.jemaat.edit', compact('jemaat'));
     }
 
-    /**
-     * Update the specified jemaat in storage
-     */
     public function update(Request $request, Jemaat $jemaat)
     {
-        // Validasi Input
+        $branchId = Auth::user()?->roles->first()?->branch_id;
+        if ($branchId && $jemaat->branch_id !== $branchId) {
+            abort(403);
+        }
+
         $validated = $request->validate(
             [
                 'NIK' => 'sometimes|required|numeric|digits:16|unique:jemaats,NIK,' . $jemaat->id,
@@ -160,7 +168,7 @@ class JemaatController extends Controller
                 'pendidikan' => 'nullable|string|max:50',
                 'tanggal_bergabung' => 'required|date',
                 'status_jemaat' => 'boolean',
-                'foto' => 'nullable|image|mimes:jpg,png,jpeg|max:2048', // Max 2MB
+                'foto' => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
             ],
             [
                 'NIK.digits' => 'NIK harus 16 digit',
@@ -170,18 +178,14 @@ class JemaatController extends Controller
             ],
         );
 
-        // Handle Upload Foto Baru
-        $fotoPath = $jemaat->foto; // Keep existing photo
+        $fotoPath = $jemaat->foto;
         if ($request->hasFile('foto')) {
-            // Delete old photo if exists
             if ($fotoPath) {
                 Storage::disk('public')->delete($fotoPath);
             }
-            // Upload new photo
             $fotoPath = $request->file('foto')->store('jemaat/foto', 'public');
         }
 
-        // Update Jemaat
         $jemaat->update([
             'NIK' => $validated['NIK'],
             'nama_lengkap' => $validated['nama_lengkap'],
@@ -202,23 +206,25 @@ class JemaatController extends Controller
         if (request()->ajax() || request()->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Data jemaat berhasil disimpan'
+                'message' => 'Data jemaat berhasil disimpan',
             ]);
         }
 
         return redirect()->route('admin.jemaat.index')->with('success', 'Data jemaat berhasil diupdate!');
     }
 
-    /**
-     * Remove the specified jemaat from storage
-     */
     public function destroy(Jemaat $jemaat)
     {
+        $branchId = Auth::user()?->roles->first()?->branch_id;
+        if ($branchId && $jemaat->branch_id !== $branchId) {
+            abort(403);
+        }
+
         $jemaat->delete();
 
         return response()->json([
             'success' => true,
-            'message' => 'Data jemaat berhasil dihapus'
+            'message' => 'Data jemaat berhasil dihapus',
         ]);
     }
 

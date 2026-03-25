@@ -38,10 +38,8 @@ class AuthController extends Controller
 
         $user = User::with('branch', 'roles')->where('email', $credentials['email'])->first();
 
-        // Log Attempt
         $this->logLoginAttempt($request, $user, false);
 
-        // Check if user exists
         if (!$user) {
             $this->incrementFailedAttempts($request);
             throw ValidationException::withMessages([
@@ -49,7 +47,6 @@ class AuthController extends Controller
             ]);
         }
 
-        // Check if account is active
         if (!$user->is_active) {
             $this->logLoginAttempt($request, $user, false, 'account_disabled');
             $this->incrementFailedAttempts($request);
@@ -58,7 +55,6 @@ class AuthController extends Controller
             ]);
         }
 
-        // ✅ FIX: Cek branch hanya jika kolom is_active benar-benar ada
         if ($user->branch && 
             $user->branch->getConnection()->getSchemaBuilder()->hasColumn('branches', 'is_active') && 
             !$user->branch->is_active) {
@@ -68,7 +64,6 @@ class AuthController extends Controller
             ]);
         }
 
-        // Check password
         if (!Hash::check($credentials['password'], $user->password)) {
             $this->logLoginAttempt($request, $user, false, 'invalid_password');
             $this->incrementFailedAttempts($request);
@@ -77,7 +72,6 @@ class AuthController extends Controller
             ]);
         }
 
-        // Check if user has at least one role
         if ($user->roles->isEmpty()) {
             $this->logLoginAttempt($request, $user, false, 'no_role_assigned');
             throw ValidationException::withMessages([
@@ -85,22 +79,17 @@ class AuthController extends Controller
             ]);
         }
 
-        // Success - Clear rate limiter
         RateLimiter::clear($this->throttleKey($request));
 
-        // Login user
         Auth::login($user, $request->boolean('remember'));
 
-        // Update last login
         $user->update(['last_login_at' => now()]);
 
-        // Log success with branch_id for audit
         $this->logLoginAttempt($request, $user, true);
 
-        // Regenerate session for security
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard'))
+        return redirect()->intended(route('admin.api.dashboard'))
             ->with('success', 'Selamat datang, ' . $user->name . '!');
     }
 

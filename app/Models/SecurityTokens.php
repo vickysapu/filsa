@@ -36,7 +36,7 @@ class SecurityToken extends Model
 
     public function branch(): BelongsTo
     {
-        return $this->belongsTo(brances::class);
+        return $this->belongsTo(Branch::class);
     }
 
     // Generate token baru dengan prefix

@@ -24,26 +24,26 @@ class ValidatePageToken
         }
 
         $urlToken = $request->query('_token_nav');
-        
+
         $tokenKey = 'page_token_' . md5($request->path());
-        
+
         $sessionToken = Session::get($tokenKey);
-        
+
         if (!$sessionToken) {
             $sessionToken = Str::random(32);
             Session::put($tokenKey, $sessionToken);
         }
-        
+
         if (!$urlToken) {
             return redirect()->to($request->fullUrlWithQuery(['_token_nav' => $sessionToken]));
         }
-        
+
         if ($urlToken !== $sessionToken) {
             return redirect()->to($request->url() . '?' . http_build_query(array_merge($request->query(), ['_token_nav' => $sessionToken])));
         }
-        
+
         $request->attributes->set('page_token', $sessionToken);
-        
+
         return $next($request);
     }
 }

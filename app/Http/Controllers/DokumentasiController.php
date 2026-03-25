@@ -70,12 +70,13 @@ class DokumentasiController extends Controller
             'is_featured' => 'boolean',
             'allow_download' => 'boolean',
             'show_in_website' => 'boolean',
-            'photos.*' => 'required|image|mimes:jpg,png,jpeg|max:10240', // Max 10MB per photo
+            'photos.*' => 'required|image|mimes:jpg,png,jpeg|max:10240',
             'captions.*' => 'nullable|string|max:500',
         ]);
 
         // Create album
         $album = DokumentasiAlbum::create([
+            'branch_id' => auth()->user()->roles()->branch_id,
             'judul_album' => $validated['judul_album'],
             'slug' => DokumentasiAlbum::generateUniqueSlug($validated['judul_album']),
             'deskripsi' => $validated['deskripsi'] ?? null,
@@ -111,6 +112,7 @@ class DokumentasiController extends Controller
                 }
 
                 DokumentasiPhoto::create([
+                    'branch_id' => auth()->user()->roles()->branch_id,
                     'album_id' => $album->id,
                     'file_path' => $filePath,
                     'file_name' => $photo->hashName(),
@@ -119,7 +121,7 @@ class DokumentasiController extends Controller
                     'file_size' => $photo->getSize(),
                     'caption' => $validated['captions'][$index] ?? null,
                     'urutan' => $urutan++,
-                    'is_cover' => $urutan == 2, // Second photo as cover
+                    'is_cover' => $urutan == 2,
                     'metadata' => $metadata,
                     'uploaded_by' => Auth::id(),
                 ]);
@@ -160,7 +162,6 @@ class DokumentasiController extends Controller
             ]);
         }
 
-        // mode normal jika masih ada
         $kategoris = DokumentasiKategori::active()->ordered()->get();
         $events = Event::published()->orderBy('tanggal_mulai', 'desc')->get();
         return view('features.dokumentasi.edit', compact('album', 'kategoris', 'events'));
@@ -202,7 +203,6 @@ class DokumentasiController extends Controller
 
         $album->update($updateData);
 
-        // Delete photos
         if (!empty($validated['delete_photos'])) {
             foreach ($validated['delete_photos'] as $photoId) {
                 $photo = DokumentasiPhoto::find($photoId);
@@ -214,7 +214,6 @@ class DokumentasiController extends Controller
             $album->updateFotoCount();
         }
 
-        // Upload new photos
         if ($request->hasFile('photos')) {
             $maxUrutan = $album->photos()->max('urutan') ?? 0;
             $urutan = $maxUrutan + 1;
@@ -257,7 +256,6 @@ class DokumentasiController extends Controller
 
     public function destroy(DokumentasiAlbum $album)
     {
-        // Delete all photos
         foreach ($album->photos as $photo) {
             Storage::disk('public')->delete($photo->file_path);
         }
@@ -267,9 +265,6 @@ class DokumentasiController extends Controller
         return redirect()->route('admin.dokumentasi.index')->with('success', 'Album berhasil dihapus!');
     }
 
-    /**
-     * Upload photos to existing album
-     */
     public function uploadPhotos(Request $request, DokumentasiAlbum $album)
     {
         $validated = $request->validate([
@@ -316,9 +311,6 @@ class DokumentasiController extends Controller
         return redirect()->back()->with('success', 'Foto berhasil diupload!');
     }
 
-    /**
-     * API for public website
-     */
     public function apiFeatured()
     {
         $albums = DokumentasiAlbum::published()

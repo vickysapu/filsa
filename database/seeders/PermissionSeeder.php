@@ -97,6 +97,18 @@ class PermissionSeeder extends Seeder
             ['name' => 'meetings.create', 'display_name' => 'Buat Meeting', 'group' => 'meetings'],
             ['name' => 'meetings.edit', 'display_name' => 'Edit Meeting', 'group' => 'meetings'],
             ['name' => 'meetings.delete', 'display_name' => 'Hapus Meeting', 'group' => 'meetings'],
+
+            //API Request Data
+            ['name' => 'data.access.view', 'display_name' => 'View Data Requests', 'group' => 'data-access'],
+            ['name' => 'data.access.manage', 'display_name' => 'Manage Data Access', 'group' => 'data-access'],
+            ['name' => 'data.access.logs', 'display_name' => 'View Access Logs', 'group' => 'data-access'],
+
+            // DATA TABLES
+            ['name' => 'data-tables.view', 'display_name' => 'Lihat Data Tables', 'group' => 'data-tables'],
+            ['name' => 'data-tables.create', 'display_name' => 'Tambah Data Tables', 'group' => 'data-tables'],
+            ['name' => 'data-tables.edit', 'display_name' => 'Edit Data Tables', 'group' => 'data-tables'],
+            ['name' => 'data-tables.delete', 'display_name' => 'Hapus Data Tables', 'group' => 'data-tables'],
+            ['name' => 'data-tables.toggleStatus', 'display_name' => 'Status Data Tables', 'group' => 'data-tables'],
         ];
 
         foreach ($permissions as $permission) {
