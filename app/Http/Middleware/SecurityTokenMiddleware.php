@@ -29,7 +29,7 @@ class SecurityTokenMiddleware
 
         // Branch isolation untuk token
         if ($securityToken->branch_id && Auth::check()) {
-            /** @var \App\Models\User $user */ // ✅ Fix warning isSuperAdmin
+            /** @var User $user */
             $user = Auth::user();
             
             if (!$user->isSuperAdmin() && $user->branch_id !== $securityToken->branch_id) {
@@ -47,7 +47,6 @@ class SecurityTokenMiddleware
         // Update last_used
         $securityToken->markAsUsed();
 
-        // Attach token info to request for audit
         $request->attributes->set('security_token', $securityToken);
 
         return $next($request);

@@ -9,7 +9,6 @@
 @section('content')
     <div class="lux-container">
 
-        <!-- Header -->
         <div class="flex-between mb-5">
             <div>
                 <h1 class="text-gradient" style="font-size: 2rem; font-weight: 800;">Data Jemaat</h1>
@@ -20,7 +19,6 @@
             </button>
         </div>
 
-        <!-- Alert Success -->
         @if (session('success'))
             <div class="lux-card mb-4"
                 style="border-left: 4px solid var(--success); background: #f0fdf4; display: flex; align-items: center; gap: 10px;">
@@ -29,13 +27,27 @@
             </div>
         @endif
 
-        <div id="successToast">
-        </div>
+        <div id="successToast"></div>
 
-        <!-- Filter & Search Card -->
         <div class="lux-card mb-4">
             <form id="formFilter"
-                style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 1rem; align-items: end;">
+                style="display: grid; grid-template-columns: {{ !Auth::user()?->roles->first()?->branch_id ? '2fr 1fr 1fr 1fr 1fr auto' : '2fr 1fr 1fr 1fr auto' }}; gap: 1rem; align-items: end;">
+
+                @if (!Auth::user()?->roles->first()?->branch_id)
+                    <div>
+                        <label class="lux-label">Filter Cabang</label>
+                        <select id="branch_id" name="branch_id" class="lux-select">
+                            <option value="">Semua Cabang</option>
+                            @foreach (\App\Models\Branch::all() as $branch)
+                                <option value="{{ $branch->id }}"
+                                    {{ request('branch_id') == $branch->id ? 'selected' : '' }}>
+                                    {{ $branch->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endif
+
                 <div>
                     <label class="lux-label">Cari Jemaat</label>
                     <div style="position: relative;">
@@ -81,7 +93,6 @@
             </form>
         </div>
 
-        <!-- Table Card -->
         <div class="lux-card" style="padding: 0; overflow: hidden;">
             <div style="overflow-x: auto;">
                 <table style="width: 100%; border-collapse: collapse;" id="tabel-jemaat">
@@ -104,13 +115,95 @@
                                 Aksi</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        @include('features.jemaat._table')
+                    <tbody id="tabel-body">
+                        @forelse($jemaats as $jemaat)
+                            <tr style="border-bottom: 1px solid #f1f5f9; transition: 0.2s;"
+                                onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
+                                <td style="padding: 15px;">
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        @if ($jemaat->foto)
+                                            <img src="{{ asset('storage/' . $jemaat->foto) }}"
+                                                alt="{{ $jemaat->nama_lengkap }}"
+                                                style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid white; box-shadow: var(--shadow-sm);">
+                                        @else
+                                            <div
+                                                style="width: 45px; height: 45px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--accent)); 
+                                                 display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.2rem;">
+                                                {{ substr($jemaat->nama_lengkap, 0, 1) }}
+                                            </div>
+                                        @endif
+                                        <div>
+                                            <div style="font-weight: 600; color: var(--text-main);">
+                                                {{ $jemaat->nama_lengkap }}</div>
+                                            <div style="font-size: 0.8rem; color: var(--text-muted);">
+                                                NIK: {{ number_format($jemaat->NIK, 0, ',', '.') }} •
+                                                {{ $jemaat->jenis_kelamin == 1 ? 'L' : 'P' }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td style="padding: 15px;">
+                                    <div style="font-size: 0.9rem; font-weight: 500;">{{ $jemaat->no_hp }}</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-muted);">{{ $jemaat->email ?? '-' }}
+                                    </div>
+                                </td>
+                                <td style="padding: 15px;">
+                                    <div style="margin-bottom: 5px;">
+                                        @if ($jemaat->status_jemaat)
+                                            <span class="lux-badge lux-badge-success">Aktif</span>
+                                        @else
+                                            <span class="lux-badge lux-badge-danger">Non-Aktif</span>
+                                        @endif
+                                    </div>
+                                    <div>
+                                        <span class="lux-badge"
+                                            style="background: #f1f5f9; color: var(--text-muted); font-size: 0.7rem;">
+                                            {{ ucfirst($jemaat->status_pernikahan) }}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td style="padding: 15px;">
+                                    <div style="font-size: 0.9rem;">
+                                        {{ \Carbon\Carbon::parse($jemaat->tanggal_bergabung)->format('d M Y') }}</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-muted);">
+                                        {{ \Carbon\Carbon::parse($jemaat->tanggal_bergabung)->diffForHumans() }}
+                                    </div>
+                                </td>
+                                <td style="padding: 15px; text-align: center;">
+                                    <div style="display: flex; gap: 8px; justify-content: center;">
+                                        <button type="button" class="lux-btn lux-btn-outline lux-btn-sm btn-show-jemaat"
+                                            data-id="{{ $jemaat->id }}" title="Detail">
+                                            <i class="ri-eye-line"></i>
+                                        </button>
+                                        <button type="button" class="lux-btn lux-btn-primary lux-btn-sm btn-edit-jemaat"
+                                            data-id="{{ $jemaat->id }}" title="Edit">
+                                            <i class="ri-pencil-line"></i>
+                                        </button>
+                                        <button type="button"
+                                            class="lux-btn lux-btn-outline lux-btn-sm btn-delete-jemaat"
+                                            data-id="{{ $jemaat->id }}" data-nama="{{ $jemaat->nama_lengkap }}"
+                                            style="border-color: var(--danger); color: var(--danger);" title="Hapus">
+                                            <i class="ri-delete-bin-line"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" style="padding: 3rem; text-align: center; color: var(--text-muted);">
+                                    <i class="ri-inbox-line" style="font-size: 3rem; opacity: 0.3;"></i>
+                                    <p style="margin-top: 1rem;">Belum ada data jemaat</p>
+                                    <button type="button" class="lux-btn lux-btn-primary btn-tambah-jemaat"
+                                        style="margin-top: 1rem;">
+                                        <i class="ri-user-add-line"></i> Tambah Jemaat Pertama
+                                    </button>
+                                </td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
 
-            <!-- Pagination -->
             @if ($jemaats->hasPages())
                 <div
                     style="padding: 15px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
@@ -125,7 +218,6 @@
 
     </div>
 
-    <!-- ================== MODAL FORM (Tambah & Edit) ================== -->
     <div class="modal fade" id="modalJemaatForm" tabindex="-1" aria-labelledby="modalJemaatLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content"
@@ -148,7 +240,6 @@
                         </div>
 
                         <div class="lux-grid lux-grid-2">
-                            <!-- Kolom Kiri: Identitas Diri -->
                             <div class="lux-card">
                                 <div class="lux-card-header">
                                     <h3 class="lux-card-title">Identitas Diri</h3>
@@ -206,7 +297,6 @@
                                 </div>
                             </div>
 
-                            <!-- Kolom Kanan: Kontak & Data Tambahan -->
                             <div class="lux-card">
                                 <div class="lux-card-header">
                                     <h3 class="lux-card-title">Kontak & Data</h3>
@@ -274,6 +364,7 @@
                                 <div class="lux-form-group mt-4 p-3 bg-light rounded">
                                     <label
                                         style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600;">
+                                        <input type="hidden" name="status_jemaat" value="0">
                                         <input type="checkbox" name="status_jemaat" id="status_jemaat" value="1"
                                             checked>
                                         <span>Status Jemaat Aktif</span>
@@ -294,7 +385,42 @@
         </div>
     </div>
 
-    <!-- ================== MODAL KONFIRMASI HAPUS ================== -->
+    <div class="modal fade" id="modalShowJemaat" tabindex="-1" aria-labelledby="modalShowLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content"
+                style="border-radius: var(--radius-lg); border: none; box-shadow: 0 20px 40px rgba(0,0,0,0.15);">
+
+                <div class="modal-header lux-card-header"
+                    style="border-bottom: 1px solid #e2e8f0; justify-content: space-between;">
+                    <h5 class="modal-title" id="modalShowLabel">Detail Jemaat</h5>
+                    <div>
+                        <button type="button" class="lux-btn lux-btn-primary btn-edit-from-show" style="display:none;"
+                            id="btnEditFromShow">
+                            <i class="ri-pencil-line"></i> Edit
+                        </button>
+                        <button type="button" class="lux-btn lux-btn-outline btn-delete-from-show"
+                            style="display:none; border-color: var(--danger); color: var(--danger);"
+                            id="btnDeleteFromShow">
+                            <i class="ri-delete-bin-line"></i> Hapus
+                        </button>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body lux-container" id="showJemaatContent">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-3 text-muted">Memuat data...</p>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="lux-btn lux-btn-outline" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="modalConfirmDelete" tabindex="-1" aria-labelledby="modalConfirmDeleteLabel"
         aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -329,8 +455,8 @@
     <script>
         $(document).ready(function() {
 
-            // Inisialisasi modal Bootstrap
             const modalForm = new bootstrap.Modal('#modalJemaatForm');
+            const modalShow = new bootstrap.Modal('#modalShowJemaat');
             const modalDelete = new bootstrap.Modal('#modalConfirmDelete');
 
             const $form = $('#formJemaat');
@@ -338,21 +464,43 @@
             const $errorBox = $('#formErrors');
             const $errorList = $('#errorList');
 
-            // --------------------------------------------------
-            // Tombol Tambah Jemaat
-            // --------------------------------------------------
+            let currentJemaatId = null;
+
             $('.btn-tambah-jemaat').on('click', function() {
                 resetForm('create');
                 $('#modalJemaatLabel').text('Tambah Jemaat Baru');
+                $('#btnEditFromShow').hide();
+                $('#btnDeleteFromShow').hide();
                 modalForm.show();
             });
 
-            // --------------------------------------------------
-            // Event delegation untuk tombol Edit & Delete di tabel
-            // --------------------------------------------------
             $('#tabel-jemaat tbody').on('click', '.btn-edit-jemaat', function() {
                 const id = $(this).data('id');
                 loadDataForEdit(id);
+            });
+
+            $('#tabel-jemaat tbody').on('click', '.btn-show-jemaat', function() {
+                const id = $(this).data('id');
+                loadShowJemaat(id);
+            });
+
+            $('#btnEditFromShow').on('click', function() {
+                if (currentJemaatId) {
+                    modalShow.hide();
+                    setTimeout(() => loadDataForEdit(currentJemaatId), 300);
+                }
+            });
+
+            $('#btnDeleteFromShow').on('click', function() {
+                if (currentJemaatId) {
+                    modalShow.hide();
+                    setTimeout(() => {
+                        const nama = $('#deleteNamaJemaat').data('nama') || 'Jemaat ini';
+                        $('#deleteNamaJemaat').text(nama).data('nama', nama);
+                        $('#btnConfirmDelete').data('id', currentJemaatId);
+                        modalDelete.show();
+                    }, 300);
+                }
             });
 
             $('#tabel-jemaat tbody').on('click', '.btn-delete-jemaat', function(e) {
@@ -360,15 +508,12 @@
                 const id = $(this).data('id');
                 const nama = $(this).data('nama') || 'Jemaat ini';
 
-                $('#deleteNamaJemaat').text(nama);
+                $('#deleteNamaJemaat').text(nama).data('nama', nama);
                 $('#btnConfirmDelete').data('id', id);
 
                 modalDelete.show();
             });
 
-            // --------------------------------------------------
-            // Konfirmasi Hapus via AJAX
-            // --------------------------------------------------
             $('#btnConfirmDelete').on('click', function() {
                 const id = $(this).data('id');
 
@@ -402,9 +547,153 @@
                 });
             });
 
-            // --------------------------------------------------
-            // Load data untuk Edit (AJAX GET)
-            // --------------------------------------------------
+            function loadShowJemaat(id) {
+                currentJemaatId = id;
+                $('#showJemaatContent').html(`
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-3 text-muted">Memuat data...</p>
+                    </div>
+                `);
+                $('#btnEditFromShow').hide();
+                $('#btnDeleteFromShow').hide();
+                modalShow.show();
+
+                $.ajax({
+                    url: '{{ route('admin.jemaat.show', ':id') }}'.replace(':id', id) + '?ajax=1',
+                    type: 'GET',
+                    success: function(data) {
+                        const j = data;
+                        const usia = j.tanggal_lahir ? new Date().getFullYear() - new Date(j
+                            .tanggal_lahir).getFullYear() : '-';
+                        const fotoHtml = j.foto ?
+                            `<img src="{{ asset('storage') }}/${j.foto}" class="img-fluid rounded-circle" style="max-width: 180px; border: 5px solid white; box-shadow: var(--shadow-lg);">` :
+                            `<div style="width: 180px; height: 180px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--accent)); 
+                               display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 4rem; margin: 0 auto; border: 5px solid white; box-shadow: var(--shadow-lg);">
+                               ${j.nama_lengkap ? j.nama_lengkap.charAt(0).toUpperCase() : '?'}</div>`;
+
+                        const statusBadge = j.status_jemaat ?
+                            '<span class="lux-badge lux-badge-success" style="border: 3px solid white; font-size: 0.75rem; padding: 5px 12px;">Aktif</span>' :
+                            '<span class="lux-badge lux-badge-danger" style="border: 3px solid white; font-size: 0.75rem; padding: 5px 12px;">Non-Aktif</span>';
+
+                        const noHpWa = j.no_hp ? j.no_hp.replace(/^0/, '62') : '';
+
+                        $('#showJemaatContent').html(`
+                            <div class="text-center mb-4">
+                                ${fotoHtml}
+                                <h2 class="mt-3 mb-1" style="font-size: 1.5rem; font-weight: 700;">${j.nama_lengkap || '-'}</h2>
+                                <p class="text-muted">NIK: ${j.NIK ? Number(j.NIK).toLocaleString('id-ID') : '-'}</p>
+                                <div style="margin-top: 10px;">${statusBadge}</div>
+                            </div>
+                            
+                            <div class="lux-grid lux-grid-2 mb-4" style="gap: 1rem; padding: 1rem; background: #f8fafc; border-radius: var(--radius);">
+                                <div>
+                                    <p class="lux-label mb-1">Jenis Kelamin</p>
+                                    <p class="fw-bold">${j.jenis_kelamin == 1 ? 'Laki-laki' : 'Perempuan'}</p>
+                                </div>
+                                <div>
+                                    <p class="lux-label mb-1">Usia</p>
+                                    <p class="fw-bold">${usia} tahun</p>
+                                </div>
+                                <div>
+                                    <p class="lux-label mb-1">Status Pernikahan</p>
+                                    <p class="fw-bold">${j.status_pernikahan ? j.status_pernikahan.charAt(0).toUpperCase() + j.status_pernikahan.slice(1) : '-'}</p>
+                                </div>
+                                <div>
+                                    <p class="lux-label mb-1">Bergabung</p>
+                                    <p class="fw-bold">${j.tanggal_bergabung ? new Date(j.tanggal_bergabung).toLocaleDateString('id-ID', {month:'short', year:'numeric'}) : '-'}</p>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem;">
+                                ${j.no_hp ? `<a href="https://wa.me/${noHpWa}" target="_blank" class="lux-btn lux-btn-outline" style="border-color: #25D366; color: #25D366; justify-content: center;">
+                                        <i class="ri-whatsapp-line"></i> Chat WhatsApp
+                                    </a>` : ''}
+                                ${j.email ? `<a href="mailto:${j.email}" class="lux-btn lux-btn-outline" style="justify-content: center;">
+                                        <i class="ri-mail-line"></i> Kirim Email
+                                    </a>` : ''}
+                            </div>
+
+                            <hr>
+
+                            <h6 class="text-muted mb-3">Informasi Pribadi</h6>
+                            <div class="lux-grid lux-grid-2 mb-4">
+                                <div>
+                                    <p class="lux-label mb-1">Tempat, Tanggal Lahir</p>
+                                    <p class="fw-bold">${j.tempat_lahir || '-'}, ${j.tanggal_lahir ? new Date(j.tanggal_lahir).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'}) : '-'}</p>
+                                </div>
+                                <div>
+                                    <p class="lux-label mb-1">Usia</p>
+                                    <p class="fw-bold">${usia} tahun</p>
+                                </div>
+                                <div>
+                                    <p class="lux-label mb-1">Jenis Kelamin</p>
+                                    <p class="fw-bold">${j.jenis_kelamin == 1 ? 'Laki-laki' : 'Perempuan'}</p>
+                                </div>
+                                <div>
+                                    <p class="lux-label mb-1">Status Pernikahan</p>
+                                    <p class="fw-bold">${j.status_pernikahan ? j.status_pernikahan.charAt(0).toUpperCase() + j.status_pernikahan.slice(1) : '-'}</p>
+                                </div>
+                            </div>
+
+                            <hr>
+
+                            <h6 class="text-muted mb-3">Informasi Kontak</h6>
+                            <div class="lux-grid lux-grid-2 mb-4">
+                                <div>
+                                    <p class="lux-label mb-1">Nomor Telepon</p>
+                                    <p class="fw-bold">${j.no_hp || '-'}</p>
+                                </div>
+                                <div>
+                                    <p class="lux-label mb-1">Email</p>
+                                    <p class="fw-bold">${j.email || '-'}</p>
+                                </div>
+                                <div style="grid-column: span 2;">
+                                    <p class="lux-label mb-1">Alamat Lengkap</p>
+                                    <p class="fw-bold" style="line-height: 1.6;">${j.alamat || '-'}</p>
+                                </div>
+                            </div>
+
+                            <hr>
+
+                            <h6 class="text-muted mb-3">Pendidikan & Pekerjaan</h6>
+                            <div class="lux-grid lux-grid-2 mb-4">
+                                <div>
+                                    <p class="lux-label mb-1">Pendidikan Terakhir</p>
+                                    <p class="fw-bold">${j.pendidikan || '-'}</p>
+                                </div>
+                                <div>
+                                    <p class="lux-label mb-1">Pekerjaan</p>
+                                    <p class="fw-bold">${j.pekerjaan || '-'}</p>
+                                </div>
+                            </div>
+
+                            <hr>
+
+                            <h6 class="text-muted mb-3">Data Gerejawi</h6>
+                            <div class="lux-grid lux-grid-2">
+                                <div>
+                                    <p class="lux-label mb-1">Tanggal Bergabung</p>
+                                    <p class="fw-bold">${j.tanggal_bergabung ? new Date(j.tanggal_bergabung).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'}) : '-'}</p>
+                                </div>
+                                <div>
+                                    <p class="lux-label mb-1">Status Jemaat</p>
+                                    <p class="fw-bold">${j.status_jemaat ? '<span class="lux-badge lux-badge-success">Aktif</span>' : '<span class="lux-badge lux-badge-danger">Non-Aktif</span>'}</p>
+                                </div>
+                            </div>
+                        `);
+
+                        $('#btnEditFromShow').show();
+                        $('#btnDeleteFromShow').show();
+                        $('#deleteNamaJemaat').data('nama', j.nama_lengkap);
+                    },
+                    error: function() {
+                        $('#showJemaatContent').html(
+                            '<p class="text-danger text-center">Gagal memuat data jemaat</p>');
+                    }
+                });
+            }
+
             function loadDataForEdit(id) {
                 $.ajax({
                     url: '{{ route('admin.jemaat.edit', ':id') }}'.replace(':id', id) + '?ajax=1',
@@ -412,13 +701,13 @@
                     success: function(data) {
                         resetForm('edit');
 
-                        // Set form untuk UPDATE
                         $form.attr('action', '{{ route('admin.jemaat.update', ':id') }}'.replace(':id',
                             id));
                         $('#formMethod').val('PUT');
                         $('#jemaatId').val(id);
+                        $('#btnEditFromShow').hide();
+                        $('#btnDeleteFromShow').hide();
 
-                        // Isi field identitas
                         $('#nama_lengkap').val(data.nama_lengkap || '');
                         $('#NIK').val(data.NIK || '').prop('readonly', true);
                         $('#tempat_lahir').val(data.tempat_lahir || '');
@@ -433,43 +722,24 @@
                         $('#tanggal_bergabung').val(data.tanggal_bergabung ? data.tanggal_bergabung
                             .split('T')[0] : '');
 
-                        // =============================================
-                        // Tambahan yang diminta: Jenis Kelamin
-                        // =============================================
                         if (data.jenis_kelamin !== null && data.jenis_kelamin !== undefined) {
                             $('input[name="jenis_kelamin"][value="' + data.jenis_kelamin + '"]').prop(
                                 'checked', true);
                         } else {
-                            // Jika null, kosongkan semua radio (opsional)
                             $('input[name="jenis_kelamin"]').prop('checked', false);
                         }
 
-                        // =============================================
-                        // Tambahan: Status Jemaat (checkbox)
-                        // =============================================
                         const isActive = data.status_jemaat == 1 || data.status_jemaat === true || data
                             .status_jemaat === '1';
                         $('#status_jemaat').prop('checked', isActive);
 
-                        // =============================================
-                        // Tambahan: Foto Profil
-                        // =============================================
                         if (data.foto && data.foto.trim() !== '') {
                             $('#imgPreview').attr('src', '{{ asset('storage') }}/' + data.foto);
                             $('#fotoPreview').show();
                         } else {
                             $('#fotoPreview').hide();
-                            $('#imgPreview').attr('src', ''); // clear src agar tidak tampil gambar lama
+                            $('#imgPreview').attr('src', '');
                         }
-
-                        // Debug (bisa dihapus setelah testing)
-                        console.log('Data edit loaded:', {
-                            id: id,
-                            nama: data.nama_lengkap,
-                            jenis_kelamin: data.jenis_kelamin,
-                            status_jemaat: data.status_jemaat,
-                            foto: data.foto
-                        });
 
                         $('#modalJemaatLabel').text('Edit Data Jemaat');
                         modalForm.show();
@@ -481,9 +751,6 @@
                 });
             }
 
-            // --------------------------------------------------
-            // Reset Form (create / edit)
-            // --------------------------------------------------
             function resetForm(mode = 'create') {
                 $form[0].reset();
                 $form.attr('action', '{{ route('admin.jemaat.store') }}');
@@ -494,23 +761,20 @@
                 $('#imgPreview').attr('src', '');
                 $errorBox.hide();
                 $errorList.empty();
+                $('input[name="jenis_kelamin"]').prop('checked', false);
+                $('#status_jemaat').prop('checked', true);
 
                 if (mode === 'create') {
                     $('#modalJemaatLabel').text('Tambah Jemaat Baru');
-                    // Optional: set default tanggal bergabung hari ini
                     $('#tanggal_bergabung').val('{{ date('Y-m-d') }}');
                 }
             }
 
-            // --------------------------------------------------
-            // Submit Form via AJAX (Create & Update)
-            // --------------------------------------------------
             $form.on('submit', function(e) {
                 e.preventDefault();
 
-                $btnSubmit
-                    .prop('disabled', true)
-                    .html('<span class="spinner-border spinner-border-sm me-2"></span> Menyimpan...');
+                $btnSubmit.prop('disabled', true).html(
+                    '<span class="spinner-border spinner-border-sm me-2"></span> Menyimpan...');
 
                 const formData = new FormData(this);
 
@@ -535,7 +799,11 @@
                                 position: 'top-end'
                             });
                             modalForm.hide();
-                            reloadTable();
+                            if (modalShow._isShown) {
+                                loadShowJemaat(currentJemaatId);
+                            } else {
+                                reloadTable();
+                            }
                         } else {
                             alert(res.message || 'Operasi gagal');
                         }
@@ -555,26 +823,29 @@
                         }
                     },
                     complete: function() {
-                        $btnSubmit
-                            .prop('disabled', false)
-                            .html('<i class="ri-save-line"></i> Simpan');
+                        $btnSubmit.prop('disabled', false).html(
+                            '<i class="ri-save-line"></i> Simpan');
                     }
                 });
             });
 
-            // --------------------------------------------------
-            // Filter & Reload Table
-            // --------------------------------------------------
             $('#btnFilter').on('click', reloadTable);
 
             function getFilterParams() {
-                return {
+                const params = {
                     search: $('#search').val().trim(),
                     jenis_kelamin: $('#jenis_kelamin').val(),
                     status_pernikahan: $('#status_pernikahan').val(),
                     status_jemaat: $('#status_jemaat').val(),
                     ajax: 1
                 };
+                @if (!Auth::user()?->roles->first()?->branch_id)
+                    const branchVal = $('#branch_id').val();
+                    if (branchVal) {
+                        params.branch_id = branchVal;
+                    }
+                @endif
+                return params;
             }
 
             function reloadTable() {
@@ -582,32 +853,20 @@
                 const queryString = $.param(params);
 
                 $.get('{{ route('admin.jemaat.index') }}?' + queryString, function(html) {
-                    $('#tabel-jemaat tbody').html(html);
+                    $('#tabel-body').html(html);
                 }).fail(function() {
-                    alert('Gagal memuat tabel');
                 });
             }
 
-            // Load awal
             reloadTable();
 
-            // Auto buka modal jika ada error validasi dari server (redirect back)
             @if ($errors->any())
                 modalForm.show();
             @endif
 
-            // Tambahkan di akhir $(document).ready(...)
-            function showSuccessToast(message) {
-                $('#toastMessage').text(message);
-                const toastEl = document.getElementById('successToast');
-                if (toastEl) {
-                    const toast = new bootstrap.Toast(toastEl);
-                    toast.show();
-                } else {
-                    // fallback jika toast HTML belum ada
-                    alert(message);
-                }
-            }
+            $('input[type="number"], input[type="tel"]').on('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '');
+            });
         });
     </script>
 @endpush

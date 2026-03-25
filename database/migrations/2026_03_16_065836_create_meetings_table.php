@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('meetings', function (Blueprint $table) {
             $table->uuid('id')->primary();
+            $table->foreignUuid('branch_id')->nullable()->constrained('branches')->onDelete('cascade')->after('id');
             $table->string('nama_meeting');
             $table->text('deskripsi')->nullable();
             $table->string('meeting_id')->unique();

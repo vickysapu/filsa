@@ -13,7 +13,7 @@ class Meeting extends Model
     public $incrementing = false;
     protected $keyType = 'string';
 
-    protected $fillable = ['nama_meeting', 'deskripsi', 'meeting_id', 'meeting_url', 'platform', 'tanggal_mulai', 'tanggal_selesai', 'is_active', 'show_in_website', 'created_by', 'updated_by'];
+    protected $fillable = ['branch_id', 'nama_meeting', 'deskripsi', 'meeting_id', 'meeting_url', 'platform', 'tanggal_mulai', 'tanggal_selesai', 'is_active', 'show_in_website', 'created_by', 'updated_by'];
 
     protected $casts = [
         'tanggal_mulai' => 'datetime',

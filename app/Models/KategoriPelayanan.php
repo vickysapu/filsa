@@ -46,7 +46,7 @@ class KategoriPelayanan extends Model
 
     public function branch(): BelongsTo
     {
-        return $this->belongsTo(brances::class);
+        return $this->belongsTo(Branch::class);
     }
 
     public function pelayanans(): HasMany

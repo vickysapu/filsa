@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Admin Dashboard')</title>
+    <title>Filadelfia - @yield('title', 'Admin Dashboard')</title>
     <link rel="stylesheet" href="{{ asset('css/luxury-core.css?v=2.0') }}">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -142,6 +142,24 @@
                 <a href="@routeToken('admin.branches.index')"
                     class="lux-nav-item {{ request()->routeIs('admin.branches.*') ? 'active' : '' }}">
                     <i class="ri-building-line"></i> Branch
+                </a>
+            @endif
+            @if (auth()->user()->hasPermission('users.view') ||
+                    auth()->user()->hasPermission('roles.view') ||
+                    auth()->user()->hasPermission('permissions.view') ||
+                    auth()->user()->hasPermission('branches.view'))
+                <div class="lux-nav-label">API</div>
+            @endif
+            @if (auth()->user()->hasPermission('data.access.view'))
+                <a href="@routeToken('admin.data-access.requests')"
+                    class="lux-nav-item {{ request()->routeIs('admin.data-access.*') ? 'active' : '' }}">
+                    <i class="ri-lock-line"></i> Request API
+                </a>
+            @endif
+            @if (auth()->user()->hasPermission('data-tables.view'))
+                <a href="@routeToken('admin.data-tables.index')"
+                    class="lux-nav-item {{ request()->routeIs('admin.data-tables.*') ? 'active' : '' }}">
+                    <i class="ri-lock-line"></i> Request Table
                 </a>
             @endif
         </nav>

@@ -20,19 +20,5 @@ class RoleSeeder extends Seeder
             ],
         );
         $administratorRole->givePermission(Permission::pluck('id')->toArray());
-
-        $adminRole = Role::firstOrCreate(
-            ['name' => 'admin'],
-            [
-                'display_name' => 'Admin Cabang',
-                'description' => 'Akses operasional untuk cabang tertentu',
-                'is_active' => true,
-            ],
-        );
-        $adminRole->givePermission(
-            Permission::whereNotIn('group', ['roles', 'permissions'])
-                ->pluck('id')
-                ->toArray(),
-        );
     }
 }

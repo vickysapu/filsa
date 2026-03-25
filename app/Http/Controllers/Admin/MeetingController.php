@@ -15,6 +15,11 @@ class MeetingController extends Controller
     {
         $query = Meeting::with('creator')->latest();
 
+        $branchId = Auth::user()?->roles->first()?->branch_id;
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
         if ($request->filled('status')) {
             if ($request->status === 'upcoming') {
                 $query->where('tanggal_mulai', '>', now());
@@ -50,19 +55,17 @@ class MeetingController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate(
-            [
-                'nama_meeting' => 'required|string|max:255',
-                'deskripsi' => 'nullable|string|max:1000',
-                'platform' => 'required|in:jitsi,zoom,google_meet',
-                'meeting_id' => 'nullable|string|max:100',
-                'meeting_url' => 'nullable|url|max:500',
-                'tanggal_mulai' => 'required|date',
-                'tanggal_selesai' => 'nullable',
-                'is_active' => 'boolean',
-                'show_in_website' => 'boolean',
-            ],
-        );
+        $validated = $request->validate([
+            'nama_meeting' => 'required|string|max:255',
+            'deskripsi' => 'nullable|string|max:1000',
+            'platform' => 'required|in:jitsi,zoom,google_meet',
+            'meeting_id' => 'nullable|string|max:100',
+            'meeting_url' => 'nullable|url|max:500',
+            'tanggal_mulai' => 'required|date',
+            'tanggal_selesai' => 'nullable',
+            'is_active' => 'boolean',
+            'show_in_website' => 'boolean',
+        ]);
 
         if ($validated['platform'] === 'jitsi') {
             $validated['meeting_id'] = $validated['meeting_id'] ?? 'filadelfia-' . Str::random(12);
@@ -70,6 +73,7 @@ class MeetingController extends Controller
         }
 
         $validated['created_by'] = Auth::id();
+        $validated['branch_id'] = Auth::user()?->roles->first()?->branch_id;
         $validated['is_active'] = $request->has('is_active');
         $validated['show_in_website'] = $request->has('show_in_website');
 
@@ -87,6 +91,11 @@ class MeetingController extends Controller
 
     public function edit(Request $request, Meeting $meeting)
     {
+        $branchId = Auth::user()?->roles->first()?->branch_id;
+        if ($branchId && $meeting->branch_id !== $branchId) {
+            abort(403);
+        }
+
         if ($request->ajax()) {
             return response()->json([
                 'success' => true,
@@ -98,19 +107,22 @@ class MeetingController extends Controller
 
     public function update(Request $request, Meeting $meeting)
     {
-        $validated = $request->validate(
-            [
-                'nama_meeting' => 'required|string|max:255',
-                'deskripsi' => 'nullable|string|max:1000',
-                'platform' => 'required|in:jitsi,zoom,google_meet',
-                'meeting_id' => 'nullable|string|max:100',
-                'meeting_url' => 'nullable|url|max:500',
-                'tanggal_mulai' => 'required|date',
-                'tanggal_selesai' => 'nullable|date',
-                'is_active' => 'boolean',
-                'show_in_website' => 'boolean',
-            ],
-        );
+        $branchId = Auth::user()?->roles->first()?->branch_id;
+        if ($branchId && $meeting->branch_id !== $branchId) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'nama_meeting' => 'required|string|max:255',
+            'deskripsi' => 'nullable|string|max:1000',
+            'platform' => 'required|in:jitsi,zoom,google_meet',
+            'meeting_id' => 'nullable|string|max:100',
+            'meeting_url' => 'nullable|url|max:500',
+            'tanggal_mulai' => 'required|date',
+            'tanggal_selesai' => 'nullable|date',
+            'is_active' => 'boolean',
+            'show_in_website' => 'boolean',
+        ]);
 
         $validated['updated_by'] = Auth::id();
         $validated['is_active'] = $request->has('is_active');
@@ -130,6 +142,11 @@ class MeetingController extends Controller
 
     public function destroy(Meeting $meeting)
     {
+        $branchId = Auth::user()?->roles->first()?->branch_id;
+        if ($branchId && $meeting->branch_id !== $branchId) {
+            abort(403);
+        }
+
         $meeting->delete();
 
         if (request()->ajax()) {
@@ -144,6 +161,11 @@ class MeetingController extends Controller
 
     public function show(Meeting $meeting, Request $request)
     {
+        $branchId = Auth::user()?->roles->first()?->branch_id;
+        if ($branchId && $meeting->branch_id !== $branchId) {
+            abort(403);
+        }
+
         $meeting->load('creator');
 
         if ($request->ajax()) {
@@ -158,20 +180,32 @@ class MeetingController extends Controller
 
     public function apiUpcoming()
     {
-        $meetings = Meeting::active()->where('tanggal_mulai', '>', now())->orderBy('tanggal_mulai')->limit(10)->get();
+        $query = Meeting::active()->where('tanggal_mulai', '>', now());
+
+        $branchId = Auth::user()?->roles->first()?->branch_id;
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
+        $meetings = $query->orderBy('tanggal_mulai')->limit(10)->get();
 
         return response()->json($meetings);
     }
 
     public function apiOngoing()
     {
-        $meetings = Meeting::active()
+        $query = Meeting::active()
             ->where('tanggal_mulai', '<=', now())
             ->where(function ($q) {
                 $q->whereNull('tanggal_selesai')->orWhere('tanggal_selesai', '>=', now());
-            })
-            ->orderBy('tanggal_mulai')
-            ->get();
+            });
+
+        $branchId = Auth::user()?->roles->first()?->branch_id;
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
+        $meetings = $query->orderBy('tanggal_mulai')->get();
 
         return response()->json($meetings);
     }
