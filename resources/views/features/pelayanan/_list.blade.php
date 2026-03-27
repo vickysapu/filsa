@@ -11,7 +11,7 @@
     </div>
 @else
     @foreach ($pelayanans as $pelayanan)
-        <div class="lux-card" style="border-top: 5px solid {{ $pelayanan->kategori->warna ?? '#6b7280' }}; position: relative; overflow: hidden;">
+        <div class="lux-card" style="border-top: 5px solid #6b7280; position: relative; overflow: hidden;">
 
             <!-- Badge Status (pojok kanan atas) -->
             <div style="position: absolute; top: 1rem; right: 1rem; z-index: 2;">
@@ -26,13 +26,6 @@
                 @endphp
                 <span class="lux-badge {{ $cfg['class'] }}">
                     {{ $cfg['label'] }}
-                </span>
-            </div>
-
-            <!-- Kategori Badge -->
-            <div style="margin-bottom: 1rem;">
-                <span class="lux-badge" style="background: {{ $pelayanan->kategori->warna ?? '#6b7280' }}20; color: {{ $pelayanan->kategori->warna ?? '#4b5563' }};">
-                    {{ $pelayanan->kategori->nama_kategori ?? 'Tidak berkategori' }}
                 </span>
             </div>
 

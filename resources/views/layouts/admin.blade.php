@@ -34,6 +34,12 @@
                     <i class="ri-calendar-line"></i> Data Pelayanan
                 </a>
             @endif
+            @if (auth()->user()->hasPermission('pelayanan.view'))
+                <a href="@routeToken('admin.jadwal.index')"
+                    class="lux-nav-item {{ request()->routeIs('admin.jadwal.*') ? 'active' : '' }}">
+                    <i class="ri-calendar-line"></i> Latihan Pelayanan
+                </a>
+            @endif
 
             @if (auth()->user()->hasPermission('laporan.view') ||
                     auth()->user()->hasPermission('pemasukan.view') ||

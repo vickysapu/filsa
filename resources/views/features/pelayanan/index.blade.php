@@ -56,17 +56,6 @@
                         value="{{ request('tanggal_end') }}">
                 </div>
                 <div>
-                    <label class="lux-label">Kategori</label>
-                    <select id="kategori_id" name="kategori_id" class="lux-select">
-                        <option value="">Semua Kategori</option>
-                        @foreach ($kategoris as $kat)
-                            <option value="{{ $kat->id }}" {{ request('kategori_id') == $kat->id ? 'selected' : '' }}>
-                                {{ $kat->nama_kategori }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
                     <label class="lux-label">Status</label>
                     <select id="status" name="status" class="lux-select">
                         <option value="">Semua Status</option>
@@ -130,16 +119,6 @@
                             <div class="lux-card">
                                 <div class="lux-card-header">
                                     <h3 class="lux-card-title">Informasi Jadwal</h3>
-                                </div>
-
-                                <div class="lux-form-group">
-                                    <label class="lux-label">Kategori Pelayanan *</label>
-                                    <select name="kategori_id" id="kategori_id" class="lux-select" required>
-                                        <option value="">Pilih Kategori...</option>
-                                        @foreach ($kategoris as $kategori)
-                                            <option value="{{ $kategori->id }}">{{ $kategori->nama_kategori }}</option>
-                                        @endforeach
-                                    </select>
                                 </div>
 
                                 <div class="lux-form-group">
@@ -283,7 +262,7 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                showError('Gagal mengambil data');
+                showError('Gagal mengambil data 1');
             });
         }
 
@@ -522,7 +501,7 @@
          * Isi form dengan data untuk edit
          */
         function populateForm(data) {
-            document.getElementById('kategori_id').value = data.kategori_id || '';
+            // document.getElementById('kategori_id').value = data.kategori_id || '';
             document.getElementById('nama_pelayanan').value = data.nama_pelayanan || '';
             document.getElementById('tanggal').value = data.tanggal || '{{ date("Y-m-d") }}';
             document.getElementById('waktu').value = data.waktu || '08:00';
@@ -781,7 +760,7 @@
                 const params = {
                     tanggal_start: document.getElementById('tanggal_start').value,
                     tanggal_end: document.getElementById('tanggal_end').value,
-                    kategori_id: document.getElementById('kategori_id').value,
+                    // kategori_id: document.getElementById('kategori_id').value,
                     status: document.getElementById('status').value,
                     search: document.getElementById('search').value.trim(),
                     ajax: 1

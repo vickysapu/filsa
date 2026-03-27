@@ -3,13 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\Pelayanan;
-use App\Models\KategoriPelayanan;
 use App\Models\Jemaat;
+use App\Models\KategoriPelayanan;
+use App\Models\Pelayanan;
 use App\Models\PelayananDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class PelayananController extends Controller
 {
@@ -18,7 +19,7 @@ class PelayananController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Pelayanan::with(['kategori', 'details.jemaat'])
+        $query = Pelayanan::with(['details.jemaat'])
             ->latest('tanggal');
 
         // Filter Kategori
@@ -55,7 +56,7 @@ class PelayananController extends Controller
 
         // AJAX untuk reload list (filter & pagination)
         if ($request->ajax() || $request->input('ajax') == 1) {
-            return view('features.pelayanan._list', compact('pelayanans'))->render();
+            return view('features.pelayanan._list', compact('pelayanans', 'kategoris'))->render();
         }
 
         return view('features.pelayanan.index', compact('pelayanans', 'kategoris'));
@@ -70,12 +71,14 @@ class PelayananController extends Controller
         $jemaats = Jemaat::where('status_jemaat', true)
             ->orderBy('nama_lengkap')
             ->get(['id', 'nama_lengkap', 'no_hp']);
+        $kategoris = KategoriPelayanan::active()->ordered()->get();
 
         if ($request->ajax() || $request->input('ajax') == 1) {
             $selected = $request->input('selected', []); // array ID yang sudah dipilih (kosong saat create)
 
             $petugas_html = view('features.pelayanan._petugas_list', [
                 'jemaats'  => $jemaats,
+                'kategoris' => $kategoris,
                 'selected' => $selected,   // untuk pre-check checkbox
                 'roles'    => [],          // kosong saat create
             ])->render();
@@ -87,7 +90,6 @@ class PelayananController extends Controller
         }
 
         // Non-AJAX (jika dibutuhkan halaman create terpisah)
-        $kategoris = KategoriPelayanan::active()->ordered()->get();
         return view('features.pelayanan.create', compact('kategoris', 'jemaats'));
     }
 
@@ -114,6 +116,7 @@ class PelayananController extends Controller
         try {
             $pelayanan = Pelayanan::create([
                 'kategori_id'     => $validated['kategori_id'],
+                'branch_id' => Auth::user()?->roles->first()?->branch_id,
                 'nama_pelayanan'  => $validated['nama_pelayanan'],
                 'tanggal'         => $validated['tanggal'],
                 'waktu'           => $validated['waktu'],
@@ -127,8 +130,11 @@ class PelayananController extends Controller
             $details = [];
             foreach ($validated['jemaat_ids'] as $jemaatId) {
                 $details[] = [
+                    'id'           => Str::uuid(),
+                    'branch_id' => Auth::user()?->roles->first()?->branch_id,
                     'pelayanan_id' => $pelayanan->id,
                     'jemaat_id'    => $jemaatId,
+                    'kategori_id'  => $validated['kategori_id'][$jemaatId],
                     'role'         => $validated['roles'][$jemaatId] ?? null,
                     'status'       => 'active',
                     'created_at'   => now(),
@@ -174,16 +180,19 @@ class PelayananController extends Controller
             $jemaats = Jemaat::where('status_jemaat', true)
                 ->orderBy('nama_lengkap')
                 ->get();
+            $kategoris = KategoriPelayanan::active()->ordered()->get();
 
             $petugas_html = view('features.pelayanan._petugas_list', [
                 'jemaats'  => $jemaats,
+                'kategoris' => $kategoris,
                 'selected' => $pelayanan->details->pluck('jemaat_id')->toArray(),
                 'roles'    => $pelayanan->details->pluck('role', 'jemaat_id')->toArray(),
+                'kategori_ids' => $pelayanan->details->pluck('kategori_id', 'jemaat_id')->toArray(),
             ])->render();
 
             return response()->json([
                 'success'        => true,
-                'kategori_id'    => $pelayanan->kategori_id,
+                // 'kategori_id'    => $pelayanan->kategori_id,
                 'nama_pelayanan' => $pelayanan->nama_pelayanan,
                 'tanggal'        => $pelayanan->tanggal->format('Y-m-d'),
                 'waktu'          => \Carbon\Carbon::parse($pelayanan->waktu)->format('H:i'), // FIX: hanya H:i
@@ -248,6 +257,7 @@ class PelayananController extends Controller
             $details = [];
             foreach ($validated['jemaat_ids'] as $jemaatId) {
                 $details[] = [
+                    'id'           => Str::uuid(),
                     'pelayanan_id' => $pelayanan->id,
                     'jemaat_id'    => $jemaatId,
                     'role'         => $validated['roles'][$jemaatId] ?? null,

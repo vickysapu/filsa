@@ -19,7 +19,6 @@ class Pelayanan extends Model
     protected $fillable = [
         'branch_id',
         'nomor_jadwal',
-        'kategori_id',
         'nama_pelayanan',
         'tanggal',
         'waktu',
@@ -70,11 +69,6 @@ class Pelayanan extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
-    }
-
-    public function kategori(): BelongsTo
-    {
-        return $this->belongsTo(KategoriPelayanan::class, 'kategori_id');
     }
 
     public function creator(): BelongsTo

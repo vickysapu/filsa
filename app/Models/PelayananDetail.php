@@ -18,6 +18,7 @@ class PelayananDetail extends Model
         'branch_id',
         'pelayanan_id',
         'jemaat_id',
+        'kategori_id',
         'role',
         'status',
         'tanggal_off',
@@ -47,6 +48,11 @@ class PelayananDetail extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function kategori(): BelongsTo
+    {
+        return $this->belongsTo(KategoriPelayanan::class, 'kategori_id');
     }
 
     public function pelayanan(): BelongsTo

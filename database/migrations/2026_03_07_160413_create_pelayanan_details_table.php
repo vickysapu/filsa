@@ -13,6 +13,7 @@ return new class extends Migration
             $table->foreignUuid('branch_id')->nullable()->constrained('branches')->onDelete('cascade');
             $table->foreignUuid('pelayanan_id')->constrained('pelayanans')->onDelete('cascade');
             $table->foreignUuid('jemaat_id')->constrained('jemaats')->onDelete('cascade');
+            $table->foreignUuid('kategori_id')->constrained('kategori_pelayanans')->onDelete('cascade');
             $table->string('role')->nullable(); 
             $table->enum('status', ['active', 'off', 'cancelled'])->default('active');
             $table->date('tanggal_off')->nullable();

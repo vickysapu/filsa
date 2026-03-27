@@ -12,7 +12,6 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('branch_id')->nullable()->constrained('branches')->onDelete('cascade');
             $table->string('nomor_jadwal')->unique();
-            $table->foreignUuid('kategori_id')->constrained('kategori_pelayanans')->onDelete('cascade');
             $table->string('nama_pelayanan');
             $table->date('tanggal');
             $table->time('waktu');

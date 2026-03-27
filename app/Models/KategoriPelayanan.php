@@ -51,7 +51,7 @@ class KategoriPelayanan extends Model
 
     public function pelayanans(): HasMany
     {
-        return $this->hasMany(Pelayanan::class, 'kategori_id');
+        return $this->hasMany(PelayananDetail::class, 'kategori_id');
     }
 
     public function scopeActive($query)
