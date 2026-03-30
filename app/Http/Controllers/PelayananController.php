@@ -24,7 +24,9 @@ class PelayananController extends Controller
 
         // Filter Kategori
         if ($request->filled('kategori_id')) {
-            $query->where('kategori_id', $request->kategori_id);
+            $query->whereHas('details', function ($q) use ($request) {
+                $q->where('kategori_id', $request->kategori_id);
+            });
         }
 
         // Filter Status
@@ -99,15 +101,16 @@ class PelayananController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'kategori_id'     => 'required|exists:kategori_pelayanans,id',
             'nama_pelayanan'  => 'required|string|max:255',
-            'tanggal'         => 'required|date|after_or_equal:today',
+            'tanggal'         => 'required|date|after_or_equal:2026-03-01',
             'waktu'           => 'required',
             'lokasi'          => 'required|string|max:255',
             'keterangan'      => 'nullable|string|max:1000',
             'status'          => 'required|in:draft,active',
             'jemaat_ids'      => 'required|array|min:1',
             'jemaat_ids.*'    => 'exists:jemaats,id',
+            'kategori_id'     => 'required|array',
+            'kategori_id.*'   => 'required|exists:kategori_pelayanans,id',
             'roles'           => 'nullable|array',
             'roles.*'         => 'nullable|string|max:100',
         ]);
@@ -115,34 +118,29 @@ class PelayananController extends Controller
         DB::beginTransaction();
         try {
             $pelayanan = Pelayanan::create([
-                'kategori_id'     => $validated['kategori_id'],
-                'branch_id' => Auth::user()?->roles->first()?->branch_id,
+                'branch_id' => Auth::user()->branch_id,
+                'kategori_id'     => collect($validated['kategori_id'])->first(),
                 'nama_pelayanan'  => $validated['nama_pelayanan'],
                 'tanggal'         => $validated['tanggal'],
-                'waktu'           => $validated['waktu'],
+                'waktu'           => \Carbon\Carbon::createFromFormat('H:i', $validated['waktu']),
                 'lokasi'          => $validated['lokasi'],
                 'keterangan'      => $validated['keterangan'] ?? null,
                 'status'          => $validated['status'] ?? 'active',
                 'created_by'      => Auth::id(),
+                'nomor_jadwal'    => Pelayanan::generateNomorJadwalForDate($validated['tanggal']),
             ]);
 
-            // Bulk insert details
-            $details = [];
+            // Create details individually
             foreach ($validated['jemaat_ids'] as $jemaatId) {
-                $details[] = [
-                    'id'           => Str::uuid(),
-                    'branch_id' => Auth::user()?->roles->first()?->branch_id,
+                PelayananDetail::create([
+                    'branch_id' => Auth::user()->branch_id,
                     'pelayanan_id' => $pelayanan->id,
                     'jemaat_id'    => $jemaatId,
                     'kategori_id'  => $validated['kategori_id'][$jemaatId],
                     'role'         => $validated['roles'][$jemaatId] ?? null,
                     'status'       => 'active',
-                    'created_at'   => now(),
-                    'updated_at'   => now(),
-                ];
+                ]);
             }
-
-            PelayananDetail::insert($details);
 
             DB::commit();
 
@@ -195,7 +193,7 @@ class PelayananController extends Controller
                 // 'kategori_id'    => $pelayanan->kategori_id,
                 'nama_pelayanan' => $pelayanan->nama_pelayanan,
                 'tanggal'        => $pelayanan->tanggal->format('Y-m-d'),
-                'waktu'          => \Carbon\Carbon::parse($pelayanan->waktu)->format('H:i'), // FIX: hanya H:i
+                'waktu'          => $pelayanan->waktu ? \Carbon\Carbon::parse($pelayanan->waktu)->format('H:i') : '08:00', // FIX: hanya H:i
                 'lokasi'         => $pelayanan->lokasi,
                 'keterangan'     => $pelayanan->keterangan ?? '',
                 'status'         => $pelayanan->status,
@@ -226,7 +224,6 @@ class PelayananController extends Controller
         }
 
         $validated = $request->validate([
-            'kategori_id'     => 'required|exists:kategori_pelayanans,id',
             'nama_pelayanan'  => 'required|string|max:255',
             'tanggal'         => 'required|date',
             'waktu'           => 'required',
@@ -235,6 +232,8 @@ class PelayananController extends Controller
             'status'          => 'required|in:draft,active,completed,cancelled',
             'jemaat_ids'      => 'required|array|min:1',
             'jemaat_ids.*'    => 'exists:jemaats,id',
+            'kategori_id'     => 'required|array',
+            'kategori_id.*'   => 'required|exists:kategori_pelayanans,id',
             'roles'           => 'nullable|array',
             'roles.*'         => 'nullable|string|max:100',
         ]);
@@ -242,10 +241,10 @@ class PelayananController extends Controller
         DB::beginTransaction();
         try {
             $pelayanan->update([
-                'kategori_id'     => $validated['kategori_id'],
+                'kategori_id'     => collect($validated['kategori_id'])->first(),
                 'nama_pelayanan'  => $validated['nama_pelayanan'],
                 'tanggal'         => $validated['tanggal'],
-                'waktu'           => $validated['waktu'],
+                'waktu'           => \Carbon\Carbon::createFromFormat('H:i', $validated['waktu']),
                 'lokasi'          => $validated['lokasi'],
                 'keterangan'      => $validated['keterangan'] ?? null,
                 'status'          => $validated['status'],

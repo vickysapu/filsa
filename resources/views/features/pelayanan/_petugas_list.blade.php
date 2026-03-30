@@ -40,7 +40,7 @@
 
             <div class="lux-form-group">
                 <label class="lux-label">Kategori Pelayanan *</label>
-                <select name="kategori_id[{{ $jemaat->id }}]" id="kategori_id[]" class="lux-select" required>
+                <select name="kategori_id[{{ $jemaat->id }}]" id="kategori_id[]" class="lux-select">
                     <option value="">Pilih Kategori...</option>
                     @foreach ($kategoris as $kategori)
                         <option value="{{ $kategori->id }}" {{ $kategori->id == $selectedKategori ? 'selected' : '' }}>{{ $kategori->nama_kategori }}</option>

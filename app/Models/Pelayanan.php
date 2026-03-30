@@ -18,6 +18,7 @@ class Pelayanan extends Model
 
     protected $fillable = [
         'branch_id',
+        'kategori_id',
         'nomor_jadwal',
         'nama_pelayanan',
         'tanggal',
@@ -57,6 +58,19 @@ class Pelayanan extends Model
     {
         $date = now()->format('Ymd');
         $last = self::whereDate('created_at', now())
+            ->orderBy('created_at', 'desc')
+            ->first();
+        
+        $lastNumber = $last ? intval(substr($last->nomor_jadwal, -4)) : 0;
+        $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+        
+        return 'JDL-' . $date . '-' . $newNumber;
+    }
+
+    public static function generateNomorJadwalForDate($tanggal)
+    {
+        $date = \Carbon\Carbon::parse($tanggal)->format('Ymd');
+        $last = self::whereDate('tanggal', $tanggal)
             ->orderBy('created_at', 'desc')
             ->first();
         
