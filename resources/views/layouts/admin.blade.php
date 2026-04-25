@@ -35,8 +35,8 @@
                 </a>
             @endif
             @if (auth()->user()->hasPermission('pelayanan.view'))
-                <a href="@routeToken('admin.jadwal.index')"
-                    class="lux-nav-item {{ request()->routeIs('admin.jadwal.*') ? 'active' : '' }}">
+                <a href="@routeToken('admin.latihan-pelayanan.index')"
+                    class="lux-nav-item {{ request()->routeIs('admin.latihan-pelayanan.*') ? 'active' : '' }}">
                     <i class="ri-calendar-line"></i> Latihan Pelayanan
                 </a>
             @endif
@@ -80,6 +80,16 @@
                 <a href="@routeToken('admin.dokumentasi.index')"
                     class="lux-nav-item {{ request()->routeIs('admin.dokumentasi.*') ? 'active' : '' }}">
                     <i class="ri-image-line"></i> Dokumentasi
+                </a>
+            @endif
+
+            @if (auth()->user()->hasPermission('inventaris.view') || auth()->user()->hasPermission('dokumentasi.view'))
+                <div class="lux-nav-label">Inventaris</div>
+            @endif
+            @if (auth()->user()->hasPermission('inventaris.view'))
+                <a href="@routeToken('admin.inventaris.index')"
+                    class="lux-nav-item {{ request()->routeIs('admin.inventaris.*') ? 'active' : '' }}">
+                    <i class="ri-calendar-event-line"></i> Data Inventaris
                 </a>
             @endif
 

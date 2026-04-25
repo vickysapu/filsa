@@ -14,47 +14,32 @@ use Illuminate\Support\Str;
 
 class PelayananController extends Controller
 {
-    /**
-     * Display a listing of the jadwal pelayanan
-     */
     public function index(Request $request)
     {
         $query = Pelayanan::with(['details.jemaat'])
             ->latest('tanggal');
 
-        // Filter Kategori
-        if ($request->filled('kategori_id')) {
-            $query->where('kategori_id', $request->kategori_id);
-        }
-
-        // Filter Status
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
-
-        // Filter Tanggal Range
         if ($request->filled('tanggal_start')) {
             $query->whereDate('tanggal', '>=', $request->tanggal_start);
         }
         if ($request->filled('tanggal_end')) {
             $query->whereDate('tanggal', '<=', $request->tanggal_end);
         }
-
-        // Search
         if ($request->filled('search')) {
             $search = trim($request->search);
             $query->where(function ($q) use ($search) {
                 $q->where('nama_pelayanan', 'LIKE', "%{$search}%")
-                    ->orWhere('lokasi', 'LIKE', "%{$search}%")
-                    ->orWhere('nomor_jadwal', 'LIKE', "%{$search}%");
+                  ->orWhere('lokasi', 'LIKE', "%{$search}%")
+                  ->orWhere('nomor_jadwal', 'LIKE', "%{$search}%");
             });
         }
 
         $pelayanans = $query->paginate(12)->appends($request->query());
-
         $kategoris = KategoriPelayanan::active()->ordered()->get();
 
-        // AJAX untuk reload list (filter & pagination)
         if ($request->ajax() || $request->input('ajax') == 1) {
             return view('features.pelayanan._list', compact('pelayanans', 'kategoris'))->render();
         }
@@ -62,25 +47,23 @@ class PelayananController extends Controller
         return view('features.pelayanan.index', compact('pelayanans', 'kategoris'));
     }
 
-    /**
-     * Show the form for creating a new jadwal (opsional, jika pakai halaman terpisah)
-     * Untuk modal, tidak perlu method ini karena create via modal
-     */
     public function create(Request $request)
     {
         $jemaats = Jemaat::where('status_jemaat', true)
             ->orderBy('nama_lengkap')
             ->get(['id', 'nama_lengkap', 'no_hp']);
+
         $kategoris = KategoriPelayanan::active()->ordered()->get();
 
         if ($request->ajax() || $request->input('ajax') == 1) {
-            $selected = $request->input('selected', []); // array ID yang sudah dipilih (kosong saat create)
+            $selected = $request->input('selected', []);
 
             $petugas_html = view('features.pelayanan._petugas_list', [
-                'jemaats'  => $jemaats,
-                'kategoris' => $kategoris,
-                'selected' => $selected,   // untuk pre-check checkbox
-                'roles'    => [],          // kosong saat create
+                'jemaats'      => $jemaats,
+                'kategoris'    => $kategoris,
+                'selected'     => $selected,
+                'roles'        => [],
+                'kategori_ids' => [],
             ])->render();
 
             return response()->json([
@@ -89,177 +72,168 @@ class PelayananController extends Controller
             ]);
         }
 
-        // Non-AJAX (jika dibutuhkan halaman create terpisah)
-        return view('features.pelayanan.create', compact('kategoris', 'jemaats'));
+        abort(404);
     }
 
-    /**
-     * Store a newly created jadwal pelayanan in storage
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'kategori_id'     => 'required|exists:kategori_pelayanans,id',
-            'nama_pelayanan'  => 'required|string|max:255',
-            'tanggal'         => 'required|date|after_or_equal:today',
-            'waktu'           => 'required',
-            'lokasi'          => 'required|string|max:255',
-            'keterangan'      => 'nullable|string|max:1000',
-            'status'          => 'required|in:draft,active',
-            'jemaat_ids'      => 'required|array|min:1',
-            'jemaat_ids.*'    => 'exists:jemaats,id',
-            'roles'           => 'nullable|array',
-            'roles.*'         => 'nullable|string|max:100',
+            'nama_pelayanan' => 'required|string|max:255',
+            'tanggal'        => 'required|date',
+            'waktu'          => 'required|date_format:H:i',
+            'lokasi'         => 'required|string|max:255',
+            'keterangan'     => 'nullable|string',
+            'status'         => 'required|in:draft,active,completed,cancelled',
+
+            'jemaat_ids'     => 'required|array|min:1',
+            'jemaat_ids.*'   => 'exists:jemaats,id',
+
+            'kategori_id'    => 'required|array',
+            'kategori_id.*'  => 'required|exists:kategori_pelayanans,id',
+
+            'roles'          => 'nullable|array',
+            'roles.*'        => 'nullable|string|max:100',
         ]);
 
         DB::beginTransaction();
         try {
             $pelayanan = Pelayanan::create([
-                'kategori_id'     => $validated['kategori_id'],
-                'branch_id' => Auth::user()?->roles->first()?->branch_id,
-                'nama_pelayanan'  => $validated['nama_pelayanan'],
-                'tanggal'         => $validated['tanggal'],
-                'waktu'           => $validated['waktu'],
-                'lokasi'          => $validated['lokasi'],
-                'keterangan'      => $validated['keterangan'] ?? null,
-                'status'          => $validated['status'] ?? 'active',
-                'created_by'      => Auth::id(),
+                'branch_id'      => Auth::user()->branch_id,
+                'nama_pelayanan' => $validated['nama_pelayanan'],
+                'tanggal'        => $validated['tanggal'],
+                'waktu'          => $validated['waktu'],
+                'lokasi'         => $validated['lokasi'],
+                'keterangan'     => $validated['keterangan'],
+                'status'         => $validated['status'],
+                'created_by'     => Auth::id(),
+                'nomor_jadwal'   => Pelayanan::generateNomorJadwalForDate($validated['tanggal']),
             ]);
 
-            // Bulk insert details
-            $details = [];
             foreach ($validated['jemaat_ids'] as $jemaatId) {
-                $details[] = [
-                    'id'           => Str::uuid(),
-                    'branch_id' => Auth::user()?->roles->first()?->branch_id,
+                $kategoriId = $validated['kategori_id'][$jemaatId] ?? null;
+
+                if (!$kategoriId) {
+                    throw new \Exception("Kategori untuk jemaat ID {$jemaatId} wajib diisi.");
+                }
+
+                PelayananDetail::create([
+                    'branch_id'    => Auth::user()->branch_id,
                     'pelayanan_id' => $pelayanan->id,
                     'jemaat_id'    => $jemaatId,
-                    'kategori_id'  => $validated['kategori_id'][$jemaatId],
+                    'kategori_id'  => $kategoriId,
                     'role'         => $validated['roles'][$jemaatId] ?? null,
                     'status'       => 'active',
-                    'created_at'   => now(),
-                    'updated_at'   => now(),
-                ];
-            }
-
-            PelayananDetail::insert($details);
-
-            DB::commit();
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => "Jadwal pelayanan berhasil dibuat dengan {$pelayanan->details->count()} petugas!"
                 ]);
             }
 
-            return redirect()->route('admin.jadwal.index')
-                ->with('success', 'Jadwal pelayanan berhasil dibuat!');
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Terjadi kesalahan: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Show the form for editing the specified jadwal (untuk modal AJAX)
-     */
-    public function edit(Pelayanan $pelayanan, Request $request)
-    {
-        if ($request->ajax() || $request->input('ajax') == 1) {
-            $jemaats = Jemaat::where('status_jemaat', true)
-                ->orderBy('nama_lengkap')
-                ->get();
-            $kategoris = KategoriPelayanan::active()->ordered()->get();
-
-            $petugas_html = view('features.pelayanan._petugas_list', [
-                'jemaats'  => $jemaats,
-                'kategoris' => $kategoris,
-                'selected' => $pelayanan->details->pluck('jemaat_id')->toArray(),
-                'roles'    => $pelayanan->details->pluck('role', 'jemaat_id')->toArray(),
-                'kategori_ids' => $pelayanan->details->pluck('kategori_id', 'jemaat_id')->toArray(),
-            ])->render();
+            DB::commit();
 
             return response()->json([
-                'success'        => true,
-                // 'kategori_id'    => $pelayanan->kategori_id,
-                'nama_pelayanan' => $pelayanan->nama_pelayanan,
-                'tanggal'        => $pelayanan->tanggal->format('Y-m-d'),
-                'waktu'          => \Carbon\Carbon::parse($pelayanan->waktu)->format('H:i'), // FIX: hanya H:i
-                'lokasi'         => $pelayanan->lokasi,
-                'keterangan'     => $pelayanan->keterangan ?? '',
-                'status'         => $pelayanan->status,
-                'selected_jemaat_ids' => $pelayanan->details->pluck('jemaat_id')->toArray(),
-                'roles'          => $pelayanan->details->pluck('role', 'jemaat_id')->toArray(),
-                'petugas_html'   => $petugas_html,
+                'success' => true,
+                'message' => "Jadwal berhasil dibuat dengan {$pelayanan->details()->count()} petugas."
             ]);
-        }
 
-        // Non-AJAX fallback
-        abort(404);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
+        }
     }
 
-    /**
-     * Update the specified jadwal pelayanan
-     */
+    public function edit(Pelayanan $pelayanan, Request $request)
+    {
+        if (!$request->ajax()) abort(404);
+
+        $jemaats = Jemaat::where('status_jemaat', true)
+            ->orderBy('nama_lengkap')
+            ->get();
+
+        $kategoris = KategoriPelayanan::active()->ordered()->get();
+
+        $selectedJemaatIds = $pelayanan->details->pluck('jemaat_id')->toArray();
+        $roles         = $pelayanan->details->pluck('role', 'jemaat_id')->toArray();
+        $kategoriIds   = $pelayanan->details->pluck('kategori_id', 'jemaat_id')->toArray();
+
+        $petugas_html = view('features.pelayanan._petugas_list', [
+            'jemaats'      => $jemaats,
+            'kategoris'    => $kategoris,
+            'selected'     => $selectedJemaatIds,
+            'roles'        => $roles,
+            'kategori_ids' => $kategoriIds,
+        ])->render();
+
+        return response()->json([
+            'success'             => true,
+            'nama_pelayanan'      => $pelayanan->nama_pelayanan,
+            'tanggal'             => $pelayanan->tanggal?->format('Y-m-d'),
+            'waktu'               => $pelayanan->waktu?->format('H:i'),
+            'lokasi'              => $pelayanan->lokasi,
+            'keterangan'          => $pelayanan->keterangan,
+            'status'              => $pelayanan->status,
+            'kategori_ids'        => $kategoriIds,
+            'selected_jemaat_ids' => $selectedJemaatIds,
+            'roles'               => $roles,
+        ]);
+    }
+
     public function update(Request $request, Pelayanan $pelayanan)
     {
         if (in_array($pelayanan->status, ['completed', 'cancelled'])) {
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Pelayanan yang sudah selesai/dibatalkan tidak dapat diedit!'
-                ], 403);
-            }
-            return redirect()->route('admin.jadwal.index')
-                ->with('error', 'Pelayanan yang sudah selesai/dibatalkan tidak dapat diedit!');
+            return response()->json([
+                'success' => false,
+                'message' => 'Pelayanan yang sudah selesai/dibatalkan tidak dapat diedit!'
+            ], 403);
         }
 
         $validated = $request->validate([
-            'kategori_id'     => 'required|exists:kategori_pelayanans,id',
-            'nama_pelayanan'  => 'required|string|max:255',
-            'tanggal'         => 'required|date',
-            'waktu'           => 'required',
-            'lokasi'          => 'required|string|max:255',
-            'keterangan'      => 'nullable|string|max:1000',
-            'status'          => 'required|in:draft,active,completed,cancelled',
-            'jemaat_ids'      => 'required|array|min:1',
-            'jemaat_ids.*'    => 'exists:jemaats,id',
-            'roles'           => 'nullable|array',
-            'roles.*'         => 'nullable|string|max:100',
+            'nama_pelayanan' => 'required|string|max:255',
+            'tanggal'        => 'required|date',
+            'waktu'          => 'required|date_format:H:i',
+            'lokasi'         => 'required|string|max:255',
+            'keterangan'     => 'nullable|string|max:1000',
+            'status'         => 'required|in:draft,active,completed,cancelled',
+
+            'jemaat_ids'     => 'required|array|min:1',
+            'jemaat_ids.*'   => 'exists:jemaats,id',
+
+            // VALIDASI YANG BENAR
+            'kategori_id'    => 'required|array',
+            'kategori_id.*'  => 'required|exists:kategori_pelayanans,id',
+
+            'roles'          => 'nullable|array',
+            'roles.*'        => 'nullable|string|max:100',
         ]);
 
         DB::beginTransaction();
         try {
             $pelayanan->update([
-                'kategori_id'     => $validated['kategori_id'],
-                'nama_pelayanan'  => $validated['nama_pelayanan'],
-                'tanggal'         => $validated['tanggal'],
-                'waktu'           => $validated['waktu'],
-                'lokasi'          => $validated['lokasi'],
-                'keterangan'      => $validated['keterangan'] ?? null,
-                'status'          => $validated['status'],
+                'nama_pelayanan' => $validated['nama_pelayanan'],
+                'tanggal'        => $validated['tanggal'],
+                'waktu'          => $validated['waktu'],
+                'lokasi'         => $validated['lokasi'],
+                'keterangan'     => $validated['keterangan'] ?? null,
+                'status'         => $validated['status'],
             ]);
 
-            // Hapus detail lama, insert baru
+            // Hapus detail lama
             $pelayanan->details()->delete();
 
             $details = [];
             foreach ($validated['jemaat_ids'] as $jemaatId) {
+                $kategoriId = $validated['kategori_id'][$jemaatId] ?? null;
+
+                if (!$kategoriId) {
+                    throw new \Exception("Kategori pelayanan wajib dipilih untuk setiap petugas.");
+                }
+
                 $details[] = [
                     'id'           => Str::uuid(),
+                    'branch_id'    => Auth::user()->branch_id,
                     'pelayanan_id' => $pelayanan->id,
                     'jemaat_id'    => $jemaatId,
+                    'kategori_id'  => $kategoriId,
                     'role'         => $validated['roles'][$jemaatId] ?? null,
                     'status'       => 'active',
                     'created_at'   => now(),
@@ -271,34 +245,20 @@ class PelayananController extends Controller
 
             DB::commit();
 
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Jadwal pelayanan berhasil diperbarui!'
-                ]);
-            }
+            return response()->json([
+                'success' => true,
+                'message' => 'Jadwal pelayanan berhasil diperbarui!'
+            ]);
 
-            return redirect()->route('admin.jadwal.index')
-                ->with('success', 'Jadwal pelayanan berhasil diperbarui!');
         } catch (\Exception $e) {
             DB::rollBack();
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Terjadi kesalahan: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
         }
     }
 
-    /**
-     * Remove the specified jadwal pelayanan
-     */
     public function destroy(Pelayanan $pelayanan, Request $request)
     {
         $pelayanan->delete();
@@ -314,44 +274,47 @@ class PelayananController extends Controller
             ->with('success', 'Jadwal pelayanan berhasil dihapus!');
     }
 
-    // Method lain tetap dipertahankan
-    public function setOff(Request $request, PelayananDetail $detail)
+    public function show(Pelayanan $pelayanan, Request $request)
     {
-        $validated = $request->validate([
-            'alasan_off' => 'required|string|max:500',
+        // Load semua relasi yang dibutuhkan oleh view
+        $pelayanan->load([
+            'details.jemaat',
+            'details.kategori',
+            'creator',
         ]);
-
-        $detail->update([
-            'status'      => 'off',
-            'tanggal_off' => now(),
-            'alasan_off'  => $validated['alasan_off'],
-            'updated_by'  => Auth::id(),
-        ]);
-
-        return redirect()->back()->with('success', 'Petugas berhasil ditandai sebagai OFF!');
-    }
-
-    public function setActive(PelayananDetail $detail)
-    {
-        $detail->update([
-            'status'      => 'active',
-            'tanggal_off' => null,
-            'alasan_off'  => null,
-            'updated_by'  => Auth::id(),
-        ]);
-
-        return redirect()->back()->with('success', 'Petugas berhasil diaktifkan kembali!');
-    }
-
-    public function searchJemaat(Request $request)
-    {
-        $search = $request->get('q', '');
-
-        $jemaats = Jemaat::where('status_jemaat', true)
-            ->where('nama_lengkap', 'LIKE', "%{$search}%")
-            ->limit(10)
-            ->get(['id', 'nama_lengkap', 'no_hp']);
-
-        return response()->json($jemaats);
+    
+        if ($request->ajax() || $request->input('ajax') == 1) {
+            return response()->json([
+                'success'        => true,
+                'id'             => $pelayanan->id,
+                'nama_pelayanan' => $pelayanan->nama_pelayanan,
+                'nomor_jadwal'   => $pelayanan->nomor_jadwal,
+                'tanggal'        => $pelayanan->tanggal?->format('Y-m-d'),
+                'tanggal_label'  => $pelayanan->tanggal?->translatedFormat('l, d F Y'),
+                'waktu'          => $pelayanan->waktu?->format('H:i'),
+                'lokasi'         => $pelayanan->lokasi,
+                'keterangan'     => $pelayanan->keterangan,
+                'status'         => $pelayanan->status,
+                'status_label'   => $pelayanan->status_label,
+                'creator'        => $pelayanan->creator?->name,
+                'created_at'     => $pelayanan->created_at?->format('d M Y, H:i'),
+                'updated_at'     => $pelayanan->updated_at?->format('d M Y, H:i'),
+                'total_petugas'  => $pelayanan->details->count(),
+                'total_aktif'    => $pelayanan->details->where('status', 'active')->count(),
+                'total_off'      => $pelayanan->details->where('status', 'off')->count(),
+                'details'        => $pelayanan->details->map(fn($d) => [
+                    'id'         => $d->id,
+                    'jemaat_id'  => $d->jemaat_id,
+                    'nama'       => $d->jemaat?->nama_lengkap,
+                    'no_hp'      => $d->jemaat?->no_hp,
+                    'kategori'   => $d->kategori?->nama_kategori,
+                    'role'       => $d->role,
+                    'status'     => $d->status,
+                    'alasan_off' => $d->alasan_off,
+                ]),
+            ]);
+        }
+    
+        return view('features.pelayanan.show', compact('pelayanan'));
     }
 }

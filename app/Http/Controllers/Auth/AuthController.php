@@ -89,7 +89,7 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('admin.api.dashboard'))
+        return redirect()->intended(route('dashboard'))
             ->with('success', 'Selamat datang, ' . $user->name . '!');
     }
 

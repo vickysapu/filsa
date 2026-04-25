@@ -24,7 +24,6 @@ return new class extends Migration {
             $table->enum('status_pernikahan', ['belum menikah', 'menikah', 'janda', 'duda']);
             $table->string('pekerjaan');
             $table->string('pendidikan');
-            $table->date('tanggal_bergabung');
             $table->boolean('status_jemaat');
             $table->string('foto')->nullable();
             $table->timestamps();

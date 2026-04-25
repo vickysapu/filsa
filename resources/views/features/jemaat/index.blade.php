@@ -70,12 +70,9 @@
                     <label class="lux-label">Status Pernikahan</label>
                     <select id="status_pernikahan" name="status_pernikahan" class="lux-select">
                         <option value="">Semua</option>
-                        <option value="belum menikah"
-                            {{ request('status_pernikahan') == 'belum menikah' ? 'selected' : '' }}>Belum Menikah</option>
-                        <option value="menikah" {{ request('status_pernikahan') == 'menikah' ? 'selected' : '' }}>Menikah
-                        </option>
-                        <option value="janda" {{ request('status_pernikahan') == 'janda' ? 'selected' : '' }}>Janda
-                        </option>
+                        <option value="belum menikah" {{ request('status_pernikahan') == 'belum menikah' ? 'selected' : '' }}>Belum Menikah</option>
+                        <option value="menikah" {{ request('status_pernikahan') == 'menikah' ? 'selected' : '' }}>Menikah</option>
+                        <option value="janda" {{ request('status_pernikahan') == 'janda' ? 'selected' : '' }}>Janda</option>
                         <option value="duda" {{ request('status_pernikahan') == 'duda' ? 'selected' : '' }}>Duda</option>
                     </select>
                 </div>
@@ -98,21 +95,18 @@
                 <table style="width: 100%; border-collapse: collapse;" id="tabel-jemaat">
                     <thead>
                         <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
-                            <th
-                                style="padding: 15px; text-align: left; color: var(--text-muted); font-size: 0.85rem; font-weight: 700;">
-                                Jemaat</th>
-                            <th
-                                style="padding: 15px; text-align: left; color: var(--text-muted); font-size: 0.85rem; font-weight: 700;">
-                                Kontak</th>
-                            <th
-                                style="padding: 15px; text-align: left; color: var(--text-muted); font-size: 0.85rem; font-weight: 700;">
-                                Status</th>
-                            <th
-                                style="padding: 15px; text-align: left; color: var(--text-muted); font-size: 0.85rem; font-weight: 700;">
-                                Bergabung</th>
-                            <th
-                                style="padding: 15px; text-align: center; color: var(--text-muted); font-size: 0.85rem; font-weight: 700;">
-                                Aksi</th>
+                            <th style="padding: 15px; text-align: left; color: var(--text-muted); font-size: 0.85rem; font-weight: 700;">
+                                Jemaat
+                            </th>
+                            <th style="padding: 15px; text-align: left; color: var(--text-muted); font-size: 0.85rem; font-weight: 700;">
+                                Kontak
+                            </th>
+                            <th style="padding: 15px; text-align: left; color: var(--text-muted); font-size: 0.85rem; font-weight: 700;">
+                                Status
+                            </th>
+                            <th style="padding: 15px; text-align: center; color: var(--text-muted); font-size: 0.85rem; font-weight: 700;">
+                                Aksi
+                            </th>
                         </tr>
                     </thead>
                     <tbody id="tabel-body">
@@ -126,8 +120,7 @@
                                                 alt="{{ $jemaat->nama_lengkap }}"
                                                 style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid white; box-shadow: var(--shadow-sm);">
                                         @else
-                                            <div
-                                                style="width: 45px; height: 45px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--accent)); 
+                                            <div style="width: 45px; height: 45px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--accent)); 
                                                  display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.2rem;">
                                                 {{ substr($jemaat->nama_lengkap, 0, 1) }}
                                             </div>
@@ -144,8 +137,7 @@
                                 </td>
                                 <td style="padding: 15px;">
                                     <div style="font-size: 0.9rem; font-weight: 500;">{{ $jemaat->no_hp }}</div>
-                                    <div style="font-size: 0.8rem; color: var(--text-muted);">{{ $jemaat->email ?? '-' }}
-                                    </div>
+                                    <div style="font-size: 0.8rem; color: var(--text-muted);">{{ $jemaat->email ?? '-' }}</div>
                                 </td>
                                 <td style="padding: 15px;">
                                     <div style="margin-bottom: 5px;">
@@ -158,15 +150,8 @@
                                     <div>
                                         <span class="lux-badge"
                                             style="background: #f1f5f9; color: var(--text-muted); font-size: 0.7rem;">
-                                            {{ ucfirst($jemaat->status_pernikahan) }}
+                                            {{ ucfirst($jemaat->status_pernikahan ?? '-') }}
                                         </span>
-                                    </div>
-                                </td>
-                                <td style="padding: 15px;">
-                                    <div style="font-size: 0.9rem;">
-                                        {{ \Carbon\Carbon::parse($jemaat->tanggal_bergabung)->format('d M Y') }}</div>
-                                    <div style="font-size: 0.8rem; color: var(--text-muted);">
-                                        {{ \Carbon\Carbon::parse($jemaat->tanggal_bergabung)->diffForHumans() }}
                                     </div>
                                 </td>
                                 <td style="padding: 15px; text-align: center;">
@@ -190,7 +175,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" style="padding: 3rem; text-align: center; color: var(--text-muted);">
+                                <td colspan="4" style="padding: 3rem; text-align: center; color: var(--text-muted);">
                                     <i class="ri-inbox-line" style="font-size: 3rem; opacity: 0.3;"></i>
                                     <p style="margin-top: 1rem;">Belum ada data jemaat</p>
                                     <button type="button" class="lux-btn lux-btn-primary btn-tambah-jemaat"
@@ -205,10 +190,10 @@
             </div>
 
             @if ($jemaats->hasPages())
-                <div
-                    style="padding: 15px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
-                    <span class="text-muted" style="font-size: 0.85rem;">Menampilkan {{ $jemaats->firstItem() }} -
-                        {{ $jemaats->lastItem() }} dari {{ $jemaats->total() }} data</span>
+                <div style="padding: 15px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+                    <span class="text-muted" style="font-size: 0.85rem;">
+                        Menampilkan {{ $jemaats->firstItem() }} - {{ $jemaats->lastItem() }} dari {{ $jemaats->total() }} data
+                    </span>
                     <div>
                         {{ $jemaats->links('pagination::simple-bootstrap-4') }}
                     </div>
@@ -218,10 +203,10 @@
 
     </div>
 
+    <!-- ====================== MODAL FORM ====================== -->
     <div class="modal fade" id="modalJemaatForm" tabindex="-1" aria-labelledby="modalJemaatLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered">
-            <div class="modal-content"
-                style="border-radius: var(--radius-lg); border: none; box-shadow: 0 20px 40px rgba(0,0,0,0.15);">
+            <div class="modal-content" style="border-radius: var(--radius-lg); border: none; box-shadow: 0 20px 40px rgba(0,0,0,0.15);">
 
                 <div class="modal-header lux-card-header" style="border-bottom: 1px solid #e2e8f0;">
                     <h5 class="modal-title" id="modalJemaatLabel">Tambah Jemaat Baru</h5>
@@ -240,6 +225,7 @@
                         </div>
 
                         <div class="lux-grid lux-grid-2">
+                            <!-- IDENTITAS DIRI -->
                             <div class="lux-card">
                                 <div class="lux-card-header">
                                     <h3 class="lux-card-title">Identitas Diri</h3>
@@ -260,25 +246,21 @@
                                 <div class="lux-grid lux-grid-2" style="gap: 1rem;">
                                     <div class="lux-form-group">
                                         <label class="lux-label">Tempat Lahir *</label>
-                                        <input type="text" name="tempat_lahir" id="tempat_lahir" class="lux-input"
-                                            required>
+                                        <input type="text" name="tempat_lahir" id="tempat_lahir" class="lux-input" required>
                                     </div>
                                     <div class="lux-form-group">
                                         <label class="lux-label">Tanggal Lahir *</label>
-                                        <input type="date" name="tanggal_lahir" id="tanggal_lahir" class="lux-input"
-                                            required>
+                                        <input type="date" name="tanggal_lahir" id="tanggal_lahir" class="lux-input" required>
                                     </div>
                                 </div>
 
                                 <div class="lux-form-group">
                                     <label class="lux-label">Jenis Kelamin *</label>
                                     <div style="display: flex; gap: 1.5rem; margin-top: 8px;">
-                                        <label
-                                            style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 500;">
+                                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 500;">
                                             <input type="radio" name="jenis_kelamin" value="1" required> Laki-laki
                                         </label>
-                                        <label
-                                            style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 500;">
+                                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 500;">
                                             <input type="radio" name="jenis_kelamin" value="0" required> Perempuan
                                         </label>
                                     </div>
@@ -286,17 +268,15 @@
 
                                 <div class="lux-form-group">
                                     <label class="lux-label">Foto Profil</label>
-                                    <input type="file" name="foto" id="foto" class="lux-input"
-                                        accept="image/*">
+                                    <input type="file" name="foto" id="foto" class="lux-input" accept="image/*">
                                     <div id="fotoPreview" class="mt-2" style="max-width: 180px; display: none;">
-                                        <img id="imgPreview"
-                                            style="width: 100%; border-radius: 8px; border: 1px solid #e2e8f0;">
+                                        <img id="imgPreview" style="width: 100%; border-radius: 8px; border: 1px solid #e2e8f0;">
                                     </div>
-                                    <p class="lux-form-help"><i class="ri-information-line"></i> Format: JPG, PNG. Max:
-                                        2MB</p>
+                                    <p class="lux-form-help"><i class="ri-information-line"></i> Format: JPG, PNG. Max: 2MB</p>
                                 </div>
                             </div>
 
+                            <!-- KONTAK & DATA -->
                             <div class="lux-card">
                                 <div class="lux-card-header">
                                     <h3 class="lux-card-title">Kontak & Data</h3>
@@ -305,13 +285,11 @@
                                 <div class="lux-grid lux-grid-2" style="gap: 1rem;">
                                     <div class="lux-form-group">
                                         <label class="lux-label">Email</label>
-                                        <input type="email" name="email" id="email" class="lux-input"
-                                            placeholder="email@contoh.com">
+                                        <input type="email" name="email" id="email" class="lux-input" placeholder="email@contoh.com">
                                     </div>
                                     <div class="lux-form-group">
                                         <label class="lux-label">No. HP *</label>
-                                        <input type="tel" name="no_hp" id="no_hp" class="lux-input" required
-                                            placeholder="08123456789">
+                                        <input type="tel" name="no_hp" id="no_hp" class="lux-input" required placeholder="08123456789">
                                     </div>
                                 </div>
 
@@ -339,8 +317,7 @@
                                     </div>
                                     <div class="lux-form-group">
                                         <label class="lux-label">Pekerjaan</label>
-                                        <input type="text" name="pekerjaan" id="pekerjaan" class="lux-input"
-                                            placeholder="Contoh: Wiraswasta">
+                                        <input type="text" name="pekerjaan" id="pekerjaan" class="lux-input" placeholder="Contoh: Wiraswasta">
                                     </div>
                                 </div>
 
@@ -355,18 +332,10 @@
                                     </select>
                                 </div>
 
-                                <div class="lux-form-group">
-                                    <label class="lux-label">Tanggal Bergabung *</label>
-                                    <input type="date" name="tanggal_bergabung" id="tanggal_bergabung"
-                                        class="lux-input" required value="{{ date('Y-m-d') }}">
-                                </div>
-
                                 <div class="lux-form-group mt-4 p-3 bg-light rounded">
-                                    <label
-                                        style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600;">
+                                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600;">
                                         <input type="hidden" name="status_jemaat" value="0">
-                                        <input type="checkbox" name="status_jemaat" id="status_jemaat" value="1"
-                                            checked>
+                                        <input type="checkbox" name="status_jemaat" id="status_jemaat" value="1" checked>
                                         <span>Status Jemaat Aktif</span>
                                     </label>
                                 </div>
@@ -469,8 +438,6 @@
             $('.btn-tambah-jemaat').on('click', function() {
                 resetForm('create');
                 $('#modalJemaatLabel').text('Tambah Jemaat Baru');
-                $('#btnEditFromShow').hide();
-                $('#btnDeleteFromShow').hide();
                 modalForm.show();
             });
 
@@ -701,36 +668,26 @@
                     success: function(data) {
                         resetForm('edit');
 
-                        $form.attr('action', '{{ route('admin.jemaat.update', ':id') }}'.replace(':id',
-                            id));
+                        $form.attr('action', '{{ route('admin.jemaat.update', ':id') }}'.replace(':id', id));
                         $('#formMethod').val('PUT');
                         $('#jemaatId').val(id);
-                        $('#btnEditFromShow').hide();
-                        $('#btnDeleteFromShow').hide();
 
                         $('#nama_lengkap').val(data.nama_lengkap || '');
-                        $('#NIK').val(data.NIK || '').prop('readonly', true);
+                        $('#NIK').val(data.NIK || '').prop('readonly', false);   // ← Tidak readonly
                         $('#tempat_lahir').val(data.tempat_lahir || '');
-                        $('#tanggal_lahir').val(data.tanggal_lahir ? data.tanggal_lahir.split('T')[0] :
-                            '');
+                        $('#tanggal_lahir').val(data.tanggal_lahir ? data.tanggal_lahir.split('T')[0] : '');
                         $('#alamat').val(data.alamat || '');
                         $('#no_hp').val(data.no_hp || '');
                         $('#email').val(data.email || '');
-                        $('#status_pernikahan').val(data.status_pernikahan || '');
                         $('#pekerjaan').val(data.pekerjaan || '');
                         $('#pendidikan').val(data.pendidikan || '');
-                        $('#tanggal_bergabung').val(data.tanggal_bergabung ? data.tanggal_bergabung
-                            .split('T')[0] : '');
+                        $('#status_pernikahan').val(data.status_pernikahan || '');   // ← Fix status pernikahan
 
-                        if (data.jenis_kelamin !== null && data.jenis_kelamin !== undefined) {
-                            $('input[name="jenis_kelamin"][value="' + data.jenis_kelamin + '"]').prop(
-                                'checked', true);
-                        } else {
-                            $('input[name="jenis_kelamin"]').prop('checked', false);
+                        if (data.jenis_kelamin !== null) {
+                            $('input[name="jenis_kelamin"][value="' + data.jenis_kelamin + '"]').prop('checked', true);
                         }
 
-                        const isActive = data.status_jemaat == 1 || data.status_jemaat === true || data
-                            .status_jemaat === '1';
+                        const isActive = data.status_jemaat == 1 || data.status_jemaat === true;
                         $('#status_jemaat').prop('checked', isActive);
 
                         if (data.foto && data.foto.trim() !== '') {
@@ -738,15 +695,13 @@
                             $('#fotoPreview').show();
                         } else {
                             $('#fotoPreview').hide();
-                            $('#imgPreview').attr('src', '');
                         }
 
                         $('#modalJemaatLabel').text('Edit Data Jemaat');
                         modalForm.show();
                     },
-                    error: function(xhr) {
-                        console.error('Error load edit:', xhr);
-                        alert('Gagal memuat data jemaat untuk diedit');
+                    error: function() {
+                        alert('Gagal memuat data untuk diedit');
                     }
                 });
             }
@@ -763,11 +718,7 @@
                 $errorList.empty();
                 $('input[name="jenis_kelamin"]').prop('checked', false);
                 $('#status_jemaat').prop('checked', true);
-
-                if (mode === 'create') {
-                    $('#modalJemaatLabel').text('Tambah Jemaat Baru');
-                    $('#tanggal_bergabung').val('{{ date('Y-m-d') }}');
-                }
+                $('#status_pernikahan').val('');
             }
 
             $form.on('submit', function(e) {
@@ -840,10 +791,7 @@
                     ajax: 1
                 };
                 @if (!Auth::user()?->roles->first()?->branch_id)
-                    const branchVal = $('#branch_id').val();
-                    if (branchVal) {
-                        params.branch_id = branchVal;
-                    }
+                    if ($('#branch_id').val()) params.branch_id = $('#branch_id').val();
                 @endif
                 return params;
             }
@@ -854,7 +802,6 @@
 
                 $.get('{{ route('admin.jemaat.index') }}?' + queryString, function(html) {
                     $('#tabel-body').html(html);
-                }).fail(function() {
                 });
             }
 

@@ -63,7 +63,13 @@ class PermissionSeeder extends Seeder
             ['name' => 'pelayanan.create', 'display_name' => 'Buat Pelayanan', 'group' => 'Pelayanan'],
             ['name' => 'pelayanan.edit', 'display_name' => 'Edit Pelayanan', 'group' => 'Pelayanan'],
             ['name' => 'pelayanan.delete', 'display_name' => 'Hapus Pelayanan', 'group' => 'Pelayanan'],
-
+            
+            // Inventaris
+            ['name' => 'inventaris.view', 'display_name' => 'Lihat Inventaris', 'group' => 'Inventaris'],
+            ['name' => 'inventaris.create', 'display_name' => 'Buat Inventaris', 'group' => 'Inventaris'],
+            ['name' => 'inventaris.edit', 'display_name' => 'Edit Inventaris', 'group' => 'Inventaris'],
+            ['name' => 'inventaris.delete', 'display_name' => 'Hapus Inventaris', 'group' => 'Inventaris'],
+            
             // EVENT
             ['name' => 'event.view', 'display_name' => 'Lihat Event', 'group' => 'Event'],
             ['name' => 'event.create', 'display_name' => 'Buat Event', 'group' => 'Event'],

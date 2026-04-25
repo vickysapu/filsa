@@ -22,8 +22,7 @@
 
         <!-- Alert Success -->
         @if (session('success'))
-            <div class="lux-card mb-4"
-                style="border-left: 4px solid var(--success); background: #f0fdf4; display: flex; align-items: center; gap: 10px;">
+            <div class="lux-card mb-4" style="border-left: 4px solid var(--success); background: #f0fdf4; display: flex; align-items: center; gap: 10px;">
                 <i class="ri-checkbox-circle-line" style="color: var(--success); font-size: 1.5rem;"></i>
                 <span style="color: #166534; font-weight: 600;">{{ session('success') }}</span>
             </div>
@@ -31,29 +30,24 @@
 
         <!-- Toast Notification -->
         <div class="position-fixed top-0 end-0 p-3" style="z-index: 2000">
-            <div id="successToast" class="toast align-items-center text-bg-success border-0" role="alert"
-                aria-live="assertive" aria-atomic="true">
+            <div id="successToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
                 <div class="d-flex">
                     <div class="toast-body fw-bold" id="toastMessage">Operasi berhasil!</div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
-                        aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                 </div>
             </div>
         </div>
 
         <!-- Filter Card -->
         <div class="lux-card mb-4">
-            <form id="formFilter"
-                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
+            <form id="formFilter" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
                 <div>
                     <label class="lux-label">Dari Tanggal</label>
-                    <input type="date" id="tanggal_start" name="tanggal_start" class="lux-input"
-                        value="{{ request('tanggal_start') }}">
+                    <input type="date" id="tanggal_start" name="tanggal_start" class="lux-input" value="{{ request('tanggal_start') }}">
                 </div>
                 <div>
                     <label class="lux-label">Sampai Tanggal</label>
-                    <input type="date" id="tanggal_end" name="tanggal_end" class="lux-input"
-                        value="{{ request('tanggal_end') }}">
+                    <input type="date" id="tanggal_end" name="tanggal_end" class="lux-input" value="{{ request('tanggal_end') }}">
                 </div>
                 <div>
                     <label class="lux-label">Status</label>
@@ -62,14 +56,12 @@
                         <option value="draft" {{ request('status') == 'draft' ? 'selected' : '' }}>Draft</option>
                         <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Aktif</option>
                         <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Selesai</option>
-                        <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>Dibatalkan
-                        </option>
+                        <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>Dibatalkan</option>
                     </select>
                 </div>
                 <div>
                     <label class="lux-label">Cari</label>
-                    <input type="text" id="search" name="search" class="lux-input" value="{{ request('search') }}"
-                        placeholder="Nama pelayanan, lokasi...">
+                    <input type="text" id="search" name="search" class="lux-input" value="{{ request('search') }}" placeholder="Nama pelayanan, lokasi...">
                 </div>
                 <div style="align-self: end;">
                     <button type="button" id="btnFilter" class="lux-btn lux-btn-primary">
@@ -160,6 +152,12 @@
                                         <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
                                             <input type="radio" name="status" value="active"> Aktif
                                         </label>
+                                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                            <input type="radio" name="status" value="completed"> Selesai
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                            <input type="radio" name="status" value="cancelled"> Dibatalkan
+                                        </label>
                                     </div>
                                 </div>
                             </div>
@@ -168,12 +166,6 @@
                             <div class="lux-card">
                                 <div class="lux-card-header">
                                     <h3 class="lux-card-title">Petugas Pelayanan</h3>
-                                </div>
-
-                                <div class="lux-form-group">
-                                    <label class="lux-label">Cari Jemaat</label>
-                                    <input type="text" id="searchPetugas" class="lux-input"
-                                        placeholder="Ketik nama jemaat...">
                                 </div>
 
                                 <div style="max-height: 380px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px;"
@@ -501,16 +493,16 @@
          * Isi form dengan data untuk edit
          */
         function populateForm(data) {
-            // document.getElementById('kategori_id').value = data.kategori_id || '';
             document.getElementById('nama_pelayanan').value = data.nama_pelayanan || '';
-            document.getElementById('tanggal').value = data.tanggal || '{{ date("Y-m-d") }}';
-            document.getElementById('waktu').value = data.waktu || '08:00';
+            document.getElementById('tanggal').value = data.tanggal || '';        // ← sekarang format Y-m-d
+            document.getElementById('waktu').value = data.waktu || '';            // ← sekarang format H:i
             document.getElementById('lokasi').value = data.lokasi || '';
             document.getElementById('keterangan').value = data.keterangan || '';
 
-            // Set status radio button
-            const statusRadio = document.querySelector(`input[name="status"][value="${data.status || 'draft'}"]`);
+            const statusRadio = document.querySelector(`input[name="status"][value="${data.status}"]`);
             if (statusRadio) statusRadio.checked = true;
+
+            window.kategoriPerJemaat = data.kategori_ids || {};
         }
 
         /**
@@ -537,13 +529,33 @@
                 if (data.success) {
                     petugasList.innerHTML = data.petugas_html;
 
+                    // Jalankan toggle awal setelah render
+                    setTimeout(() => {
+                        const checkboxes = petugasList.querySelectorAll('.jemaat-checkbox');
+                        checkboxes.forEach(cb => {
+                            toggleKategori(cb);        // ← penting
+                        });
+                    }, 100);
+
                     // Pre-check checkbox & pre-fill role
                     const checkboxes = petugasList.querySelectorAll('.jemaat-checkbox');
                     checkboxes.forEach(checkbox => {
                         const jemaatId = checkbox.value;
+
                         if (selectedIds.includes(jemaatId)) {
                             checkbox.checked = true;
-                            checkbox.closest('.petugas-item').style.background = '#f0f9ff';
+
+                            const item = checkbox.closest('.petugas-item');
+                            item.style.background = '#f0f9ff';
+
+                            // ✅ SET KATEGORI PER JEMAAT
+                            const select = item.querySelector('.kategori_list select');
+                            if (select && window.kategoriPerJemaat[jemaatId]) {
+                                select.value = window.kategoriPerJemaat[jemaatId];
+                            }
+
+                            // tampilkan dropdown
+                            toggleKategori(checkbox);
                         }
                     });
 
@@ -574,6 +586,31 @@
                 countElement.textContent = count + ' Terpilih';
             }
         }
+
+        // ==================== TOGGLE KATEGORI + NAMA FIELD ====================
+        function toggleKategori(checkbox) {
+            const item = checkbox.closest('.petugas-item');
+            const kategoriDiv = item.querySelector('.kategori_list');
+            const select = item.querySelector('.kategori-select');
+
+            if (!kategoriDiv) return;
+
+            if (checkbox.checked) {
+                kategoriDiv.style.display = 'block';
+                if (select) select.name = `kategori_id[${checkbox.value}]`;   // aktifkan name
+            } else {
+                kategoriDiv.style.display = 'none';
+                if (select) select.name = '';   // HAPUS name agar tidak dikirim ke server
+            }
+        }
+
+        // Panggil saat halaman load dan saat checkbox berubah
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('jemaat-checkbox')) {
+                toggleKategori(e.target);
+                updateSelectedCount();
+            }
+        });
 
         // ==================== MAIN APPLICATION CODE ====================
         // Kode utama aplikasi
@@ -654,37 +691,118 @@
                 }
             });
 
-            // Search petugas live
-            document.getElementById('searchPetugas').addEventListener('input', function(e) {
-                const val = e.target.value.toLowerCase();
-                const labels = document.querySelectorAll('#petugasList label');
-                labels.forEach(label => {
-                    const text = label.textContent.toLowerCase();
-                    label.style.display = text.includes(val) ? 'block' : 'none';
+            // ==================== SEARCH PETUGAS (FIXED) ====================
+            let searchTimeout;
+
+            function setupPetugasSearch() {
+                const searchInput = document.getElementById('searchPetugas');
+                if (!searchInput) return;
+
+                searchInput.addEventListener('input', function(e) {
+                    clearTimeout(searchTimeout);
+
+                    searchTimeout = setTimeout(() => {
+                        const keyword = e.target.value.toLowerCase().trim();
+
+                        const items = document.querySelectorAll('#petugasList .petugas-item');
+
+                        if (items.length === 0) return;
+
+                        let visibleCount = 0;
+
+                        items.forEach(item => {
+                            const text = item.textContent.toLowerCase();
+                            const shouldShow = text.includes(keyword);
+
+                            item.style.display = shouldShow ? 'flex' : 'none';
+
+                            if (shouldShow) visibleCount++;
+                        });
+
+                        // Optional: tampilkan info jika tidak ada hasil
+                        if (keyword !== '' && visibleCount === 0) {
+                            const noResult = document.createElement('div');
+                            noResult.id = 'noResultSearch';
+                            noResult.style.cssText = 'padding: 2rem; text-align: center; color: #6b7280;';
+                            noResult.innerHTML = `<p>Tidak ditemukan jemaat dengan kata "<strong>${keyword}</strong>"</p>`;
+                            
+                            // Hapus pesan sebelumnya jika ada
+                            document.getElementById('noResultSearch')?.remove();
+                            
+                            document.getElementById('petugasList').appendChild(noResult);
+                        } else {
+                            document.getElementById('noResultSearch')?.remove();
+                        }
+                    }, 200); // debounce 200ms
                 });
-            });
+            }
 
             // ==================== FORM SUBMIT ====================
-
             document.getElementById('formJadwal').addEventListener('submit', function(e) {
                 e.preventDefault();
 
                 const form = this;
                 const button = document.getElementById('btnSubmitJadwal');
 
-                // Validasi form
+                // Validasi HTML5 biasa
                 if (!form.checkValidity()) {
                     form.classList.add('was-validated');
+                    return;
+                }
+
+                // ==================== VALIDASI KHUSUS KATEGORI ====================
+                let isValid = true;
+                const checkedCheckboxes = document.querySelectorAll('#petugasList .jemaat-checkbox:checked');
+
+                checkedCheckboxes.forEach(checkbox => {
+                    const item = checkbox.closest('.petugas-item');
+                    const select = item.querySelector('.kategori-select');
+
+                    if (select && !select.value) {
+                        select.style.borderColor = '#dc3545';
+                        isValid = false;
+
+                        // Scroll ke elemen pertama yang error
+                        if (isValid === false) {
+                            item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    } else if (select) {
+                        select.style.borderColor = '';
+                    }
+                });
+
+                if (!isValid) {
+                    showError('Kategori pelayanan wajib dipilih untuk setiap petugas yang dicentang!');
                     return;
                 }
 
                 // Tampilkan loading
                 showLoading(button);
 
-                // Buat FormData untuk upload file
+                // Validasi kategori untuk setiap jemaat yang dicentang
+                const checkedBoxes = document.querySelectorAll('#petugasList .jemaat-checkbox:checked');
+                let kategoriValid = true;
+
+                checkedBoxes.forEach(checkbox => {
+                    const item = checkbox.closest('.petugas-item');
+                    const select = item.querySelector('.kategori-select');
+                    
+                    if (select && !select.value) {
+                        select.style.border = '2px solid #dc3545';
+                        kategoriValid = false;
+                    } else if (select) {
+                        select.style.border = '';
+                    }
+                });
+
+                if (!kategoriValid) {
+                    showError('Kategori pelayanan harus dipilih untuk setiap petugas yang dicentang!');
+                    return;
+                }
+
+                // Submit dengan FormData
                 const formData = new FormData(form);
 
-                // Kirim data
                 ajaxPost(form.action, formData, function(response) {
                     hideLoading(button);
 
@@ -722,6 +840,7 @@
 
                         // Isi form dengan data
                         populateForm(data);
+                        window.kategoriPerJemaat = data.kategori_ids || {};
 
                         // Load petugas
                         loadPetugasList(data.selected_jemaat_ids || [], data.roles || {});
@@ -754,43 +873,84 @@
             }
 
             /**
-             * Reload daftar jadwal
+             * Reload daftar jadwal (FIXED VERSION)
              */
             function reloadList() {
                 const params = {
                     tanggal_start: document.getElementById('tanggal_start').value,
                     tanggal_end: document.getElementById('tanggal_end').value,
-                    // kategori_id: document.getElementById('kategori_id').value,
                     status: document.getElementById('status').value,
                     search: document.getElementById('search').value.trim(),
                     ajax: 1
                 };
 
-                // Buat query string
                 const queryString = new URLSearchParams(params).toString();
                 const url = '{{ route("admin.jadwal.index") }}?' + queryString;
 
+                // Tampilkan loading di grid
+                const jadwalList = document.getElementById('jadwalList');
+                jadwalList.innerHTML = `
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary mb-3" role="status"></div>
+                        <p class="text-muted">Memuat jadwal pelayanan...</p>
+                    </div>
+                `;
+
                 ajaxGetHTML(url, function(html) {
                     try {
-                        // Parse HTML response
                         const parser = new DOMParser();
                         const doc = parser.parseFromString(html, 'text/html');
 
-                        // Update jadwal list
-                        const newJadwalList = doc.querySelector('#jadwalList');
-                        if (newJadwalList) {
-                            document.getElementById('jadwalList').innerHTML = newJadwalList.innerHTML;
+                        // Ambil hanya bagian yang dibutuhkan
+                        const newList = doc.querySelector('#jadwalList');
+                        const newPagination = doc.querySelector('#paginationContainer');
+
+                        if (newList) {
+                            document.getElementById('jadwalList').innerHTML = newList.innerHTML;
+                        } else {
+                            // Fallback: jika tidak menemukan #jadwalList (kemungkinan full page)
+                            document.getElementById('jadwalList').innerHTML = html;
                         }
 
-                        // Update pagination
-                        const newPagination = doc.querySelector('#paginationContainer');
                         if (newPagination) {
                             document.getElementById('paginationContainer').innerHTML = newPagination.innerHTML;
                         }
+
+                        // Re-attach event listeners jika perlu (misalnya tombol edit/hapus di list baru)
+                        attachDynamicEventListeners();
+
                     } catch (error) {
                         console.error('Error parsing HTML:', error);
-                        showError('Gagal memproses data');
+                        showError('Gagal memproses data jadwal');
+                        // Fallback: reload full page
+                        window.location.reload();
                     }
+                });
+            }
+
+            /**
+             * Re-attach event listeners ke elemen yang baru dimuat via AJAX
+             */
+            function attachDynamicEventListeners() {
+                // Tombol Edit
+                document.querySelectorAll('.btn-edit-jadwal').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const id = this.dataset.id;
+                        loadDataForEdit(id);
+                    });
+                });
+
+                // Tombol Hapus
+                document.querySelectorAll('.btn-delete-jadwal').forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const id = this.dataset.id;
+                        const nama = this.dataset.nama || 'Jadwal ini';
+
+                        document.getElementById('deleteNamaJadwal').textContent = nama;
+                        document.getElementById('btnConfirmDelete').dataset.id = id;
+                        modalDelete.show();
+                    });
                 });
             }
 

@@ -73,7 +73,6 @@ class JemaatController extends Controller
                 'status_pernikahan' => ['required', Rule::in(['belum menikah', 'menikah', 'janda', 'duda'])],
                 'pekerjaan' => 'nullable|string|max:100',
                 'pendidikan' => 'nullable|string|max:50',
-                'tanggal_bergabung' => 'required|date',
                 'status_jemaat' => 'boolean',
                 'foto' => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
             ],
@@ -103,7 +102,6 @@ class JemaatController extends Controller
             'status_pernikahan' => $validated['status_pernikahan'],
             'pekerjaan' => $validated['pekerjaan'] ?? null,
             'pendidikan' => $validated['pendidikan'] ?? null,
-            'tanggal_bergabung' => $validated['tanggal_bergabung'],
             'status_jemaat' => $validated['status_jemaat'] ?? true,
             'foto' => $fotoPath,
         ]);
@@ -166,7 +164,6 @@ class JemaatController extends Controller
                 'status_pernikahan' => ['required', Rule::in(['belum menikah', 'menikah', 'janda', 'duda'])],
                 'pekerjaan' => 'nullable|string|max:100',
                 'pendidikan' => 'nullable|string|max:50',
-                'tanggal_bergabung' => 'required|date',
                 'status_jemaat' => 'boolean',
                 'foto' => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
             ],
@@ -198,7 +195,6 @@ class JemaatController extends Controller
             'status_pernikahan' => $validated['status_pernikahan'],
             'pekerjaan' => $validated['pekerjaan'] ?? null,
             'pendidikan' => $validated['pendidikan'] ?? null,
-            'tanggal_bergabung' => $validated['tanggal_bergabung'],
             'status_jemaat' => $validated['status_jemaat'] ?? true,
             'foto' => $fotoPath,
         ]);
