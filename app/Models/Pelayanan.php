@@ -18,7 +18,6 @@ class Pelayanan extends Model
 
     protected $fillable = [
         'branch_id',
-        'kategori_id',
         'nomor_jadwal',
         'nama_pelayanan',
         'tanggal',
@@ -31,7 +30,7 @@ class Pelayanan extends Model
 
     protected $casts = [
         'tanggal' => 'date',
-        'waktu' => 'datetime:H:i',
+        'waktu'   => 'datetime:H:i',
     ];
 
     protected static function boot()
@@ -42,10 +41,6 @@ class Pelayanan extends Model
             if (empty($model->{$model->getKeyName()})) {
                 $model->{$model->getKeyName()} = Str::uuid();
             }
-            
-            if (empty($model->nomor_jadwal)) {
-                $model->nomor_jadwal = self::generateNomorJadwal();
-            }
         });
     }
 
@@ -54,30 +49,25 @@ class Pelayanan extends Model
         static::addGlobalScope(new \App\Models\Scopes\BranchScope);
     }
 
-    public static function generateNomorJadwal()
-    {
-        $date = now()->format('Ymd');
-        $last = self::whereDate('created_at', now())
-            ->orderBy('created_at', 'desc')
-            ->first();
-        
-        $lastNumber = $last ? intval(substr($last->nomor_jadwal, -4)) : 0;
-        $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
-        
-        return 'JDL-' . $date . '-' . $newNumber;
-    }
-
+    /**
+     * Generate nomor jadwal yang aman terhadap soft delete
+     */
     public static function generateNomorJadwalForDate($tanggal)
     {
-        $date = \Carbon\Carbon::parse($tanggal)->format('Ymd');
-        $last = self::whereDate('tanggal', $tanggal)
+        $prefix = date('Ymd', strtotime($tanggal));
+
+        $last = self::withTrashed()
+            ->whereDate('tanggal', $tanggal)
             ->orderBy('created_at', 'desc')
             ->first();
-        
-        $lastNumber = $last ? intval(substr($last->nomor_jadwal, -4)) : 0;
-        $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
-        
-        return 'JDL-' . $date . '-' . $newNumber;
+
+        $lastNumber = $last 
+            ? intval(substr($last->nomor_jadwal, -3)) 
+            : 0;
+
+        $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+
+        return "JDW-{$prefix}-{$newNumber}";
     }
 
     public function branch(): BelongsTo
@@ -93,39 +83,5 @@ class Pelayanan extends Model
     public function details(): HasMany
     {
         return $this->hasMany(PelayananDetail::class);
-    }
-
-    public function jemaats()
-    {
-        return $this->belongsToMany(Jemaat::class, 'pelayanan_details')
-            ->withPivot('status', 'role', 'tanggal_off', 'alasan_off')
-            ->withTimestamps();
-    }
-
-    public function scopeActive($query)
-    {
-        return $query->where('status', 'active');
-    }
-
-    public function scopeUpcoming($query)
-    {
-        return $query->where('tanggal', '>=', now()->startOfDay())
-            ->whereIn('status', ['draft', 'active']);
-    }
-
-    public function getJemaatCountAttribute()
-    {
-        return $this->details()->where('status', 'active')->count();
-    }
-
-    public function getStatusLabelAttribute()
-    {
-        $labels = [
-            'draft' => ['label' => 'Draft', 'color' => 'lux-badge-warning'],
-            'active' => ['label' => 'Aktif', 'color' => 'lux-badge-success'],
-            'completed' => ['label' => 'Selesai', 'color' => 'lux-badge-info'],
-            'cancelled' => ['label' => 'Dibatalkan', 'color' => 'lux-badge-danger'],
-        ];
-        return $labels[$this->status] ?? ['label' => $this->status, 'color' => ''];
     }
 }

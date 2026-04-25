@@ -29,7 +29,6 @@ class Jemaat extends Model
         'status_pernikahan',
         'pekerjaan',
         'pendidikan',
-        'tanggal_bergabung',
         'status_jemaat',
         'foto',
     ];

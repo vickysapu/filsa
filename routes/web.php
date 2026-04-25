@@ -14,9 +14,11 @@ use App\Http\Controllers\DokumentasiController;
 use App\Http\Controllers\DokumentasiKategoriController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventKategoriController;
+use App\Http\Controllers\InventarisController;
 use App\Http\Controllers\JemaatController;
 use App\Http\Controllers\KategoriPelayananController;
 use App\Http\Controllers\KeuanganController;
+use App\Http\Controllers\LatihanPelayananController;
 use App\Http\Controllers\PelayananController;
 use App\Http\Controllers\PemasukanController;
 use App\Http\Controllers\PengeluaranController;
@@ -154,6 +156,27 @@ Route::prefix('admin')
                     ->name('edit');
             });
 
+        // === CRUD JADWAL LATIHAN PELAYANAN (Controller di luar folder Admin) ===
+        Route::prefix('latihan-pelayanan')
+            ->name('latihan-pelayanan.')
+            ->group(function () {
+
+                // Resource Route (index, create, store, show, edit, update)
+                Route::resource('/', LatihanPelayananController::class)
+                    ->parameters(['' => 'latihan'])
+                    ->except(['destroy']);
+
+                // Kelola Peserta
+                Route::get('/{latihan}/peserta', [LatihanPelayananController::class, 'peserta'])
+                    ->name('peserta.index');
+
+                Route::post('/{latihan}/peserta', [LatihanPelayananController::class, 'storePeserta'])
+                    ->name('peserta.store');
+
+                Route::delete('/{latihan}', [LatihanPelayananController::class, 'destroy'])
+                    ->name('destroy');
+            });
+
         Route::prefix('pelayan')
             ->name('pelayan.')
             ->group(function () {
@@ -185,6 +208,37 @@ Route::prefix('admin')
                 Route::middleware(['permission:event.edit'])
                     ->get('/{event}/edit', [EventController::class, 'edit'])
                     ->name('edit');
+            });
+            
+            
+        Route::middleware(['permission:inventaris.kategori.view'])
+            ->prefix('inventaris-kategori')
+            ->name('inventaris-kategori.')
+            ->group(function () {
+                Route::get('/', [InventarisController::class, 'index'])->name('index');
+            });
+
+        Route::prefix('inventaris')
+            ->name('inventaris.')
+            ->group(function () {
+                Route::middleware(['permission:inventaris.view'])
+                    ->get('/', [InventarisController::class, 'index'])
+                    ->name('index');
+                Route::middleware(['permission:inventaris.create'])
+                    ->post('/', [InventarisController::class, 'store'])
+                    ->name('store');
+                Route::middleware(['permission:inventaris.view'])
+                    ->get('/{inventaris}', [InventarisController::class, 'show'])
+                    ->name('show');
+                Route::middleware(['permission:inventaris.edit'])
+                    ->get('/{inventaris}/edit', [InventarisController::class, 'edit'])
+                    ->name('edit');
+                Route::middleware(['permission:inventaris.edit'])
+                    ->put('/{inventaris}', [InventarisController::class, 'update'])
+                    ->name('update');
+                Route::middleware(['permission:inventaris.delete'])
+                    ->post('/delete/{id}', [InventarisController::class, 'destroy'])
+                    ->name('delete');
             });
 
         Route::middleware(['permission:dokumentasi.kategori.view'])

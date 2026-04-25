@@ -4,28 +4,35 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class LatihanPelayanan extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'latihan_pelayanan';
 
     protected $fillable = [
-        'kategori_id', 'nama_latihan', 'tanggal', 'waktu', 
-        'lokasi', 'keterangan', 'status', 'created_by'
+        'pelayanan_id',
+        'nama_latihan',
+        'tanggal',
+        'waktu',
+        'lokasi',
+        'keterangan',
+        'status',
+        'created_by'
     ];
 
-    protected $dates = ['tanggal'];
+    // Penting: Cast kolom tanggal dan waktu
+    protected $casts = [
+        'tanggal' => 'datetime:H:i',        // atau 'datetime:Y-m-d'
+        'waktu'   => 'string', 
+        'status'  => 'string',
+    ];
 
-    public function kategori()
+    public function pelayanan()
     {
-        return $this->belongsTo(KategoriPelayanan::class);
-    }
-
-    public function details()
-    {
-        return $this->hasMany(LatihanPelayananDetail::class);
+        return $this->belongsTo(Pelayanan::class);
     }
 
     public function creator()
