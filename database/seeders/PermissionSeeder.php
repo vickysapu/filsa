@@ -33,24 +33,29 @@ class PermissionSeeder extends Seeder
             ['name' => 'jemaat.edit', 'display_name' => 'Edit Jemaat', 'group' => 'Jemaat'],
             ['name' => 'jemaat.delete', 'display_name' => 'Hapus Jemaat', 'group' => 'Jemaat'],
 
-            // PEMASUKAN
-            ['name' => 'pemasukan.view', 'display_name' => 'Lihat Pemasukan', 'group' => 'Pemasukan'],
-            ['name' => 'pemasukan.create', 'display_name' => 'Buat Pemasukan', 'group' => 'Pemasukan'],
-            ['name' => 'pemasukan.delete', 'display_name' => 'Hapus Pemasukan', 'group' => 'Pemasukan'],
-            ['name' => 'pemasukan.verify', 'display_name' => 'Verifikasi Pemasukan', 'group' => 'Pemasukan'],
-            ['name' => 'pemasukan.export', 'display_name' => 'Export Pemasukan', 'group' => 'Pemasukan'],
+            // FINANCE MODULE - KEUANGAN GEREJA FILADELFIA MDF IV JABAR
+            // === TRANSAKSI ===
+            ['name' => 'finance.transaction.view', 'display_name' => 'Lihat Transaksi', 'group' => 'Finance.Transaksi'],
+            ['name' => 'finance.transaction.create', 'display_name' => 'Tambah Transaksi', 'group' => 'Finance.Transaksi'],
+            ['name' => 'finance.transaction.edit', 'display_name' => 'Edit Transaksi', 'group' => 'Finance.Transaksi'],
+            ['name' => 'finance.transaction.delete', 'display_name' => 'Hapus Transaksi', 'group' => 'Finance.Transaksi'],
+            ['name' => 'finance.transaction.approve', 'display_name' => 'Setujui Transaksi', 'group' => 'Finance.Transaksi'],
 
-            // PENGELUARAN
-            ['name' => 'pengeluaran.view', 'display_name' => 'Lihat Pengeluaran', 'group' => 'Pengeluaran'],
-            ['name' => 'pengeluaran.create', 'display_name' => 'Buat Pengeluaran', 'group' => 'Pengeluaran'],
-            ['name' => 'pengeluaran.edit', 'display_name' => 'Edit Pengeluaran', 'group' => 'Pengeluaran'],
-            ['name' => 'pengeluaran.verify', 'display_name' => 'Verifikasi Pengeluaran', 'group' => 'Pengeluaran'],
-            ['name' => 'pengeluaran.delete', 'display_name' => 'Hapus Pengeluaran', 'group' => 'Pengeluaran'],
+            // FINANCE LAPORAN
+            ['name' => 'finance.report.view', 'display_name' => 'Lihat Laporan', 'group' => 'Finance.Laporan'],
+            ['name' => 'finance.report.create', 'display_name' => 'Buat Laporan', 'group' => 'Finance.Laporan'],
+            ['name' => 'finance.report.edit', 'display_name' => 'Edit Laporan', 'group' => 'Finance.Laporan'],
+            ['name' => 'finance.report.delete', 'display_name' => 'Hapus Laporan', 'group' => 'Finance.Laporan'],
+            ['name' => 'finance.report.submit', 'display_name' => 'Kirim Laporan ke Pusat', 'group' => 'Finance.Laporan'],
+            ['name' => 'finance.report.forward', 'display_name' => 'Teruskan Laporan ke Atasan', 'group' => 'Finance.Laporan'], // ✅ BARU
+            ['name' => 'finance.report.approve', 'display_name' => 'Setujui Laporan', 'group' => 'Finance.Laporan'],
+            ['name' => 'finance.report.consolidate', 'display_name' => 'Konsolidasi Laporan', 'group' => 'Finance.Laporan'],
+            ['name' => 'finance.report.export', 'display_name' => 'Export Laporan Excel', 'group' => 'Finance.Laporan'],
 
-            // LAPORAN
-            ['name' => 'laporan.view', 'display_name' => 'Lihat Laporan', 'group' => 'Laporan'],
-            ['name' => 'laporan.export', 'display_name' => 'Export Laporan', 'group' => 'Laporan'],
-            ['name' => 'laporan.dashboard', 'display_name' => 'Dashboard Laporan', 'group' => 'Laporan'],
+            // === AKSES PUSAT CABANG & PUSAT ===
+            ['name' => 'finance.center.view', 'display_name' => 'Lihat Laporan Diterima (Pusat Cabang)', 'group' => 'Finance.Admin'],
+            ['name' => 'finance.center.approve', 'display_name' => 'Setujui/Tolak Laporan Cabang (Pusat Cabang)', 'group' => 'Finance.Admin'],
+            ['name' => 'finance.manage.all', 'display_name' => 'Akses Penuh Keuangan (Super Admin)', 'group' => 'Finance.Admin'],
 
             // PELAYANAN KATEGORI
             ['name' => 'pelayanan.kategori.view', 'display_name' => 'Lihat Kategori Pelayanan', 'group' => 'Pelayanan'],

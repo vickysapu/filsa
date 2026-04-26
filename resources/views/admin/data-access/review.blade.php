@@ -1,85 +1,80 @@
 @extends('layouts.admin')
+
 @section('title', 'Review Data Access Request')
 
 @section('content')
-    <div class="lux-container" style="padding: 2rem;">
-        <div class="lux-card mb-4" style="border-left: 4px solid var(--brand-primary, #4f46e5);">
-            <div style="padding: 1rem 1.5rem; display: flex; gap: 0.75rem; align-items: flex-start;">
-                <i class="ri-shield-warning-line" style="font-size: 1.5rem; color: var(--brand-primary, #4f46e5);"></i>
-                <div>
-                    <strong style="display: block; margin-bottom: 0.25rem;">Penting</strong>
-                    <span style="opacity: 0.8;">Token akses hanya akan ditampilkan SEKALI setelah approval. Pastikan
-                        requester menyimpan token dengan aman.</span>
-                </div>
+    <div class="page-wrapper">
+
+        <!-- Warning Banner -->
+        <div class="alert-custom warning mb-4" role="alert">
+            <i class="ri-shield-warning-line"></i>
+            <div>
+                <strong class="d-block mb-1">Penting</strong>
+                <span>Token akses hanya akan ditampilkan <strong>SEKALI</strong> setelah approval. Pastikan requester
+                    menyimpan token dengan aman.</span>
             </div>
         </div>
 
+        <!-- Alert Container -->
         <div id="alertContainer" class="mb-4"></div>
 
-        <div class="row">
-            <div class="col-lg-4 mb-4">
-                {{-- Requester Info --}}
-                <div class="lux-card mb-4">
-                    <div class="lux-card-header"
-                        style="background: var(--brand-primary, #4f46e5); color: white; padding: 1rem 1.5rem;">
-                        <h5 class="mb-0" style="display: flex; align-items: center; gap: 0.5rem;">
-                            <i class="ri-user-line"></i> Requester Information
-                        </h5>
+        <div class="row g-4">
+
+            <!-- Left Column: Requester & Project Info -->
+            <div class="col-lg-4">
+
+                <!-- Requester Info Card -->
+                <div class="card-custom mb-4">
+                    <div class="card-header-custom bg-primary text-white py-3 px-4">
+                        <h6 class="mb-0 fw-semibold">
+                            <i class="ri-user-line me-2"></i>Requester Information
+                        </h6>
                     </div>
-                    <div class="lux-card-body" style="padding: 1.5rem;">
-                        <div style="margin-bottom: 1rem;">
-                            <label
-                                style="display: block; font-size: 0.85rem; opacity: 0.7; margin-bottom: 0.25rem;">Name</label>
-                            <div style="font-weight: 600;">{{ $request->requester_name }}</div>
+                    <div class="card-body p-4">
+                        <div class="info-item mb-3">
+                            <span class="info-label">Name</span>
+                            <span class="info-value fw-semibold">{{ $request->requester_name }}</span>
                         </div>
-                        <div style="margin-bottom: 1rem;">
-                            <label
-                                style="display: block; font-size: 0.85rem; opacity: 0.7; margin-bottom: 0.25rem;">Email</label>
-                            <div style="font-weight: 600;">{{ $request->requester_email }}</div>
+                        <div class="info-item mb-3">
+                            <span class="info-label">Email</span>
+                            <span class="info-value fw-semibold">{{ $request->requester_email }}</span>
                             @if ($request->isVerified())
-                                <span class="lux-badge lux-badge-success"
-                                    style="margin-top: 0.5rem; display: inline-flex; align-items: center; gap: 0.25rem;">
-                                    <i class="ri-check-line"></i> Verified
+                                <span class="badge badge-status-verified mt-2">
+                                    <i class="ri-check-line me-1"></i>Verified
                                 </span>
                             @else
-                                <span class="lux-badge lux-badge-warning"
-                                    style="margin-top: 0.5rem; display: inline-flex; align-items: center; gap: 0.25rem;">
-                                    <i class="ri-error-warning-line"></i> Not Verified
+                                <span class="badge badge-status-pending mt-2">
+                                    <i class="ri-error-warning-line me-1"></i>Not Verified
                                 </span>
                             @endif
                         </div>
-                        <div style="margin-bottom: 1rem;">
-                            <label style="display: block; font-size: 0.85rem; opacity: 0.7; margin-bottom: 0.25rem;">IP
-                                Address</label>
-                            <div style="font-family: monospace; font-size: 0.9rem;">{{ $request->ip_address }}</div>
+                        <div class="info-item mb-3">
+                            <span class="info-label">IP Address</span>
+                            <code class="info-value d-block mt-1">{{ $request->ip_address }}</code>
                         </div>
-                        <div>
-                            <label
-                                style="display: block; font-size: 0.85rem; opacity: 0.7; margin-bottom: 0.25rem;">Submitted</label>
-                            <div>{{ $request->created_at->format('d M Y, H:i') }}</div>
-                            <small style="opacity: 0.7;">{{ $request->created_at->diffForHumans() }}</small>
+                        <div class="info-item">
+                            <span class="info-label">Submitted</span>
+                            <span class="info-value d-block mt-1">{{ $request->created_at->format('d M Y, H:i') }}</span>
+                            <small class="text-muted-custom">{{ $request->created_at->diffForHumans() }}</small>
                         </div>
                     </div>
                 </div>
 
-                {{-- Project Details --}}
-                <div class="lux-card mb-4">
-                    <div class="lux-card-header"
-                        style="background: var(--success, #22c55e); color: white; padding: 1rem 1.5rem;">
-                        <h5 class="mb-0" style="display: flex; align-items: center; gap: 0.5rem;">
-                            <i class="ri-projector-line"></i> Project Details
-                        </h5>
+                <!-- Project Details Card -->
+                <div class="card-custom">
+                    <div class="card-header-custom bg-success text-white py-3 px-4">
+                        <h6 class="mb-0 fw-semibold">
+                            <i class="ri-projector-line me-2"></i>Project Details
+                        </h6>
                     </div>
-                    <div class="lux-card-body" style="padding: 1.5rem;">
-                        <div style="margin-bottom: 1rem;">
-                            <label style="display: block; font-size: 0.85rem; opacity: 0.7; margin-bottom: 0.25rem;">Project
-                                Name</label>
-                            <div style="font-weight: 600;">{{ $request->project_name ?: 'Not specified' }}</div>
+                    <div class="card-body p-4">
+                        <div class="info-item mb-3">
+                            <span class="info-label">Project Name</span>
+                            <span class="info-value fw-semibold">{{ $request->project_name ?: 'Not specified' }}</span>
                         </div>
                         <div>
-                            <label
-                                style="display: block; font-size: 0.85rem; opacity: 0.7; margin-bottom: 0.25rem;">Purpose</label>
-                            <div style="background: var(--brand-light, #f8fafc); padding: 1rem; border-radius: 8px;">
+                            <span class="info-label">Purpose</span>
+                            <div class="purpose-box mt-2 p-3 rounded border bg-body">
                                 {{ $request->purpose }}
                             </div>
                         </div>
@@ -87,26 +82,23 @@
                 </div>
             </div>
 
+            <!-- Right Column: Access Configuration Form -->
             <div class="col-lg-8">
-                {{-- Form Container --}}
-                <div class="lux-card">
-                    <div class="lux-card-header"
-                        style="background: var(--warning, #f59e0b); color: white; padding: 1rem 1.5rem;">
-                        <h5 class="mb-0" style="display: flex; align-items: center; gap: 0.5rem;">
-                            <i class="ri-building-line"></i> Konfigurasi Akses
-                        </h5>
+                <div class="card-custom">
+                    <div class="card-header-custom bg-warning text-white py-3 px-4">
+                        <h6 class="mb-0 fw-semibold">
+                            <i class="ri-building-line me-2"></i>Konfigurasi Akses
+                        </h6>
                     </div>
-                    <div class="lux-card-body" style="padding: 1.5rem;">
+                    <div class="card-body p-4">
 
-                        {{-- Branch Selection --}}
-                        <div style="margin-bottom: 2rem;">
-                            <label class="lux-label"
-                                style="font-weight: 600; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
-                                <i class="ri-map-pin-line" style="color: var(--danger, #ef4444);"></i>
-                                Branch untuk Filter Data <span style="color: var(--danger, #ef4444);">*</span>
+                        <!-- Branch Selection -->
+                        <div class="mb-4">
+                            <label class="form-label small fw-semibold text-muted-custom">
+                                <i class="ri-map-pin-line me-1 text-danger"></i>
+                                Branch untuk Filter Data <span class="text-danger">*</span>
                             </label>
-                            <select id="branchSelect" class="lux-select"
-                                style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 2px solid #e2e8f0;">
+                            <select id="branchSelect" class="form-select form-select-custom" required>
                                 <option value="">-- Pilih Branch --</option>
                                 @foreach ($branches as $branch)
                                     <option value="{{ $branch->id }}"
@@ -115,77 +107,76 @@
                                     </option>
                                 @endforeach
                             </select>
-                            <small style="display: block; margin-top: 0.5rem; opacity: 0.7;">
-                                <i class="ri-information-line"></i> Semua data yang diakses akan difilter berdasarkan branch
-                                ini (row-level security)
+                            <small class="text-muted-custom d-block mt-2">
+                                <i class="ri-information-line me-1"></i>Semua data yang diakses akan difilter berdasarkan
+                                branch ini (row-level security)
                             </small>
                         </div>
 
-                        {{-- Tables & Columns Selection --}}
-                        <div style="margin-bottom: 2rem;">
-                            <label class="lux-label"
-                                style="font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                                <i class="ri-database-line"></i> Pilih Tabel & Kolom
+                        <!-- Tables & Columns Selection -->
+                        <div class="mb-4">
+                            <label class="form-label small fw-semibold text-muted-custom mb-3">
+                                <i class="ri-database-line me-1"></i>Pilih Tabel & Kolom
                             </label>
 
-                            <input type="text" id="tableSearch" class="lux-input" placeholder="🔍 Cari tabel..."
-                                style="max-width: 400px; margin-bottom: 1rem;">
+                            <div class="position-relative mb-3" style="max-width: 400px;">
+                                <i
+                                    class="ri-search-line position-absolute top-50 start-0 translate-middle-y ms-3 text-muted-custom"></i>
+                                <input type="text" id="tableSearch" class="form-control form-control-custom ps-5"
+                                    placeholder="Cari tabel...">
+                            </div>
 
                             <div id="tablesContainer">
                                 @php $tableIndex = 0; @endphp
-                                @php $tableIndex = 0; @endphp
                                 @foreach ($allTables as $tableName => $tableData)
                                     @if (in_array($tableName, $request->requested_tables))
-                                        <div class="lux-card mb-3" data-table-name="{{ $tableName }}"
-                                            style="border: 1px solid #e2e8f0; border-radius: 12px;">
+                                        <div class="card card-custom mb-3 table-card"
+                                            data-table-name="{{ $tableName }}">
                                             <div
-                                                style="padding: 1rem 1.5rem; background: var(--brand-light, #f8fafc); border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
+                                                class="card-header-custom bg-body py-3 px-4 d-flex align-items-center justify-content-between">
                                                 <label
-                                                    style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer; font-weight: 600;">
-                                                    <input type="checkbox" class="table-selector"
-                                                        data-index="{{ $tableIndex }}"
-                                                        style="width: 18px; height: 18px; accent-color: var(--brand-primary, #4f46e5);">
-                                                    <i class="ri-table-line"
-                                                        style="color: var(--brand-primary, #4f46e5);"></i>
+                                                    class="d-flex align-items-center gap-2 mb-0 cursor-pointer fw-semibold">
+                                                    <input type="checkbox" class="form-check-input-custom table-selector"
+                                                        data-index="{{ $tableIndex }}">
+                                                    <i class="ri-table-line text-primary"></i>
                                                     {{ $tableName }}
-                                                    <span class="lux-badge lux-badge-secondary"
-                                                        style="margin-left: 0.5rem;">{{ count($tableData['columns']) }}
+                                                    <span
+                                                        class="badge badge-secondary-custom ms-2">{{ count($tableData['columns']) }}
                                                         kolom</span>
                                                 </label>
                                             </div>
 
-                                            <div id="columns_{{ $tableIndex }}"
-                                                style="padding: 1rem 1.5rem; display: none;">
+                                            <div id="columns_{{ $tableIndex }}" class="card-body p-4"
+                                                style="display: none;">
                                                 <input type="hidden" name="grants[{{ $tableIndex }}][table_name]"
                                                     class="grant-table-name" value="{{ $tableName }}">
 
-                                                <div
-                                                    style="margin-bottom: 1rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
-                                                    <i class="ri-checkbox-circle-line"
-                                                        style="color: var(--success, #22c55e);"></i>
-                                                    Centang kolom yang boleh diakses:
-                                                </div>
+                                                <p class="small fw-semibold text-success mb-3">
+                                                    <i class="ri-checkbox-circle-line me-1"></i>Centang kolom yang boleh
+                                                    diakses:
+                                                </p>
 
-                                                <div
-                                                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.5rem;">
+                                                <div class="row g-2">
                                                     @foreach ($tableData['columns'] as $column)
-                                                        <label
-                                                            style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; cursor: pointer;">
-                                                            <input type="checkbox" class="column-checkbox"
-                                                                name="grants[{{ $tableIndex }}][allowed_columns][]"
-                                                                value="{{ $column }}"
-                                                                data-index="{{ $tableIndex }}"
-                                                                style="width: 16px; height: 16px; accent-color: var(--brand-primary, #4f46e5);">
-                                                            <code style="font-size: 0.9rem;">{{ $column }}</code>
-                                                        </label>
+                                                        <div class="col-md-6">
+                                                            <label
+                                                                class="form-check d-flex align-items-center gap-2 p-2 rounded hover-bg cursor-pointer">
+                                                                <input type="checkbox"
+                                                                    class="form-check-input-custom column-checkbox"
+                                                                    name="grants[{{ $tableIndex }}][allowed_columns][]"
+                                                                    value="{{ $column }}"
+                                                                    data-index="{{ $tableIndex }}">
+                                                                <code class="small">{{ $column }}</code>
+                                                            </label>
+                                                        </div>
                                                     @endforeach
                                                 </div>
 
-                                                <div style="margin-top: 1rem; font-size: 0.85rem; opacity: 0.7;">
-                                                    <i class="ri-information-line"></i>
-                                                    <span class="selected-count"
-                                                        data-index="{{ $tableIndex }}">0</span> kolom dipilih
-                                                </div>
+                                                <p class="small text-muted-custom mt-3 mb-0">
+                                                    <i class="ri-information-line me-1"></i>
+                                                    <span class="selected-count" data-index="{{ $tableIndex }}">0</span>
+                                                    kolom dipilih
+                                                </p>
                                             </div>
                                         </div>
                                         @php $tableIndex++; @endphp
@@ -193,60 +184,51 @@
                                 @endforeach
                             </div>
 
-                            <small style="display: block; margin-top: 1rem; opacity: 0.7;">
-                                <i class="ri-shield-line"></i> Kolom sensitif (password, token, secret, key) sudah otomatis
-                                disembunyikan.
+                            <small class="text-muted-custom d-block mt-3">
+                                <i class="ri-shield-line me-1"></i>Kolom sensitif (password, token, secret, key) sudah
+                                otomatis disembunyikan.
                             </small>
                         </div>
 
-                        {{-- Token Configuration --}}
-                        <div style="margin-bottom: 2rem;">
-                            <label class="lux-label"
-                                style="font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                                <i class="ri-key-line"></i> Konfigurasi Token
+                        <!-- Token Configuration -->
+                        <div class="mb-4">
+                            <label class="form-label small fw-semibold text-muted-custom mb-3">
+                                <i class="ri-key-line me-1"></i>Konfigurasi Token
                             </label>
 
-                            <div
-                                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
-                                <div>
-                                    <label class="lux-label"
-                                        style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                                        <i class="ri-time-line"></i> Token Expired
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold text-muted-custom mb-2">
+                                        <i class="ri-time-line me-1"></i>Token Expired
                                     </label>
-                                    <input type="datetime-local" id="expiresAt" class="lux-input"
-                                        value="{{ now()->addDays(30)->format('Y-m-d\TH:i') }}"
-                                        style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 2px solid #e2e8f0;">
-                                    <small style="display: block; margin-top: 0.25rem; opacity: 0.7;">Kosongkan jika tidak
-                                        ada batas waktu</small>
+                                    <input type="datetime-local" id="expiresAt" class="form-control form-control-custom"
+                                        value="{{ now()->addDays(30)->format('Y-m-d\TH:i') }}">
+                                    <small class="text-muted-custom d-block mt-1">Kosongkan jika tidak ada batas
+                                        waktu</small>
                                 </div>
-                                <div>
-                                    <label class="lux-label"
-                                        style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                                        <i class="ri-global-line"></i> IP Whitelist (Opsional)
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold text-muted-custom mb-2">
+                                        <i class="ri-global-line me-1"></i>IP Whitelist (Opsional)
                                     </label>
-                                    <input type="text" id="allowedIps" class="lux-input"
-                                        placeholder="192.168.1.1, 10.0.0.0/24"
-                                        style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 2px solid #e2e8f0;">
-                                    <small style="display: block; margin-top: 0.25rem; opacity: 0.7;">Pisahkan dengan koma
-                                        atau kosongkan untuk semua IP</small>
+                                    <input type="text" id="allowedIps" class="form-control form-control-custom"
+                                        placeholder="192.168.1.1, 10.0.0.0/24">
+                                    <small class="text-muted-custom d-block mt-1">Pisahkan dengan koma atau kosongkan untuk
+                                        semua IP</small>
                                 </div>
                             </div>
                         </div>
 
-                        {{-- Action Buttons --}}
-                        <div style="display: flex; gap: 1rem; justify-content: flex-end; flex-wrap: wrap;">
-                            <button type="button" class="lux-btn lux-btn-outline" id="btnReject"
-                                style="padding: 0.75rem 1.5rem; border-radius: 50px; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem;">
-                                <i class="ri-close-line"></i> Reject Request
-                            </button>
-                            <button type="button" class="lux-btn lux-btn-primary" id="btnApprove"
-                                style="padding: 0.75rem 1.5rem; border-radius: 50px; font-weight: 600; background: linear-gradient(135deg, var(--brand-primary, #4f46e5), var(--brand-secondary, #06b6d4)); color: white; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem;">
-                                <i class="ri-check-line"></i> Approve & Generate Tokens
-                            </button>
-                            <a href="{{ route('admin.data-access.requests') }}" class="lux-btn lux-btn-outline"
-                                style="padding: 0.75rem 1.5rem; border-radius: 50px; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem;">
-                                <i class="ri-arrow-left-line"></i> Back
+                        <!-- Action Buttons -->
+                        <div class="d-flex flex-wrap justify-content-end gap-3 pt-4 border-top border-custom">
+                            <a href="{{ route('admin.data-access.requests') }}" class="btn btn-outline-custom">
+                                <i class="ri-arrow-left-line me-1"></i> Back
                             </a>
+                            <button type="button" class="btn btn-outline-danger" id="btnReject">
+                                <i class="ri-close-line me-1"></i> Reject Request
+                            </button>
+                            <button type="button" class="btn btn-custom btn-gradient" id="btnApprove">
+                                <i class="ri-check-line me-1"></i> Approve & Generate Tokens
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -254,34 +236,37 @@
         </div>
     </div>
 
-    {{-- Reject Modal --}}
-    <div class="modal fade" id="rejectModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content lux-card">
+    <!-- Reject Modal -->
+    <div class="modal fade" id="rejectModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-content-custom">
                 <form id="rejectForm">
                     @csrf
                     <input type="hidden" name="_method" value="POST">
-                    <div class="modal-header lux-modal-header" style="background: var(--danger, #ef4444); color: white;">
-                        <h5 class="modal-title lux-modal-title" style="display: flex; align-items: center; gap: 0.5rem;">
-                            <i class="ri-error-warning-line"></i> Reject Request
+
+                    <div class="modal-header border-bottom border-custom bg-danger text-white">
+                        <h5 class="modal-title fw-semibold">
+                            <i class="ri-error-warning-line me-2"></i>Reject Request
                         </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
                     </div>
-                    <div class="modal-body lux-modal-body">
-                        <div style="margin-bottom: 1rem;">
-                            <label class="lux-label" style="font-weight: 600; margin-bottom: 0.5rem;">Alasan Penolakan
-                                (Wajib)</label>
-                            <textarea id="rejectionReason" class="lux-input" rows="4"
-                                placeholder="Jelaskan mengapa permintaan ini ditolak..." required
-                                style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 2px solid #e2e8f0; resize: vertical;"></textarea>
-                            <small style="display: block; margin-top: 0.25rem; opacity: 0.7;">Minimal 10 karakter</small>
+
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-muted-custom">
+                                Alasan Penolakan <span class="text-danger">*</span>
+                            </label>
+                            <textarea id="rejectionReason" class="form-control form-control-custom textarea-custom" rows="4" required
+                                minlength="10" placeholder="Jelaskan mengapa permintaan ini ditolak..."></textarea>
+                            <small class="text-muted-custom d-block mt-1">Minimal 10 karakter</small>
                         </div>
                     </div>
-                    <div class="modal-footer lux-modal-footer">
-                        <button type="button" class="lux-btn lux-btn-outline" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="lux-btn lux-btn-danger" id="btnConfirmReject" disabled
-                            style="padding: 0.75rem 1.5rem; border-radius: 50px; font-weight: 600;">
-                            <i class="ri-close-line"></i> Reject Request
+
+                    <div class="modal-footer border-top border-custom py-3 px-4">
+                        <button type="button" class="btn btn-outline-custom" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger" id="btnConfirmReject" disabled>
+                            <i class="ri-close-line me-1"></i> Reject Request
                         </button>
                     </div>
                 </form>
@@ -289,33 +274,331 @@
         </div>
     </div>
 
-    {{-- Hidden Inputs for URLs --}}
+    <!-- Hidden Inputs for URLs -->
     <input type="hidden" id="baseUrlApprove"
         value="{{ route('admin.data-access.requests.approve', ['dataRequest' => '__ID__']) }}">
     <input type="hidden" id="baseUrlReject"
         value="{{ route('admin.data-access.requests.reject', ['dataRequest' => '__ID__']) }}">
     <input type="hidden" id="requestId" value="{{ $request->id }}">
-@endsection
 
-@push('scripts')
+    <style>
+        /* ===== PAGE SPECIFIC STYLES ===== */
+        .page-wrapper {
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== ALERT CUSTOM ===== */
+        .alert-custom {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 1rem 1.25rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            animation: slideIn 0.3s ease;
+        }
+
+        .alert-custom.warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 4px solid #f59e0b;
+            color: #92400e;
+        }
+
+        .alert-custom.success {
+            background: rgba(34, 197, 94, 0.1);
+            border-left: 4px solid #22c55e;
+            color: #166534;
+        }
+
+        .alert-custom.error {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid #ef4444;
+            color: #991b1b;
+        }
+
+        .alert-custom i {
+            font-size: 1.25rem;
+            margin-top: 2px;
+        }
+
+        /* ===== INFO ITEMS ===== */
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .info-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .info-value {
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            word-break: break-word;
+        }
+
+        .info-value code {
+            background: var(--bg-body);
+            padding: 0.2em 0.4em;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+        }
+
+        /* ===== PURPOSE BOX ===== */
+        .purpose-box {
+            background: var(--bg-body);
+            border-color: var(--border-color);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: var(--text-primary);
+        }
+
+        /* ===== FORM ELEMENTS ===== */
+        .form-control-custom,
+        .form-select-custom {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.625rem 0.875rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+
+        .form-control-custom:focus,
+        .form-select-custom:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+            outline: none;
+        }
+
+        .form-control-custom::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .textarea-custom {
+            resize: vertical;
+            min-height: 80px;
+            line-height: 1.5;
+        }
+
+        .form-check-input-custom {
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: var(--transition);
+            accent-color: var(--accent-blue);
+        }
+
+        .form-check-input-custom:checked {
+            background-color: var(--accent-blue);
+            border-color: var(--accent-blue);
+        }
+
+        .form-check-input-custom[type="checkbox"] {
+            border-radius: 4px;
+        }
+
+        /* ===== TABLE CARD ===== */
+        .table-card {
+            transition: var(--transition);
+        }
+
+        .table-card:hover {
+            border-color: var(--accent-blue);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .cursor-pointer {
+            cursor: pointer;
+        }
+
+        .hover-bg:hover {
+            background: var(--bg-body);
+        }
+
+        /* ===== BADGES ===== */
+        .badge-status-verified {
+            background: rgba(34, 197, 94, 0.15);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            padding: 0.25em 0.5em;
+            font-weight: 500;
+            font-size: 0.75rem;
+        }
+
+        .badge-status-pending {
+            background: rgba(245, 158, 11, 0.15);
+            color: #b45309;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            padding: 0.25em 0.5em;
+            font-weight: 500;
+            font-size: 0.75rem;
+        }
+
+        .badge-secondary-custom {
+            background: var(--bg-body);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            padding: 0.2em 0.4em;
+            font-size: 0.7rem;
+        }
+
+        /* ===== BUTTON GRADIENT ===== */
+        .btn-gradient {
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-blue-hover) 100%);
+            color: white;
+            border: none;
+        }
+
+        .btn-gradient:hover {
+            opacity: 0.95;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* ===== MODAL CUSTOM ===== */
+        .modal-content-custom {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modal-header {
+            background: var(--bg-surface);
+            padding: 1rem 1.5rem;
+        }
+
+        .modal-body {
+            background: var(--bg-body);
+        }
+
+        .modal-footer {
+            background: var(--bg-surface);
+        }
+
+        /* ===== ANIMATIONS ===== */
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        /* ===== DARK MODE ===== */
+        [data-theme="dark"] .alert-custom.warning {
+            background: rgba(245, 158, 11, 0.15);
+        }
+
+        [data-theme="dark"] .purpose-box {
+            background: var(--bg-sidebar);
+            border-color: var(--border-color);
+        }
+
+        [data-theme="dark"] .table-card {
+            background: var(--bg-surface);
+        }
+
+        [data-theme="dark"] .modal-content-custom {
+            background: var(--bg-surface);
+            border-color: var(--border-color);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 991px) {
+            .row.g-4 {
+                --bs-gutter-y: 1.5rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .d-flex.flex-wrap.gap-3 {
+                flex-direction: column;
+            }
+
+            .d-flex.flex-wrap.gap-3 .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .table-card .card-header-custom {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // ✅ Config
+            // ===== CONSTANTS =====
             const requestId = document.getElementById('requestId')?.value;
             const currentToken =
-                '{{ request()->attributes->get('page_token') ?? request()->query('_token_nav') }}';
+            '{{ request()->attributes->get('page_token') ?? request()->query('_token_nav') }}';
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
             const baseUrlApprove = document.getElementById('baseUrlApprove')?.value.replace('__ID__', requestId);
             const baseUrlReject = document.getElementById('baseUrlReject')?.value.replace('__ID__', requestId);
 
-            const modalReject = document.getElementById('rejectModal') ? new bootstrap.Modal(document
-                .getElementById('rejectModal')) : null;
-            const rejectForm = document.getElementById('rejectForm');
-            const rejectionReason = document.getElementById('rejectionReason');
-            const btnConfirmReject = document.getElementById('btnConfirmReject');
+            // ===== MODAL INSTANCE =====
+            let modalReject;
+            const modalRejectEl = document.getElementById('rejectModal');
+            if (modalRejectEl && bootstrap.Modal) {
+                modalReject = new bootstrap.Modal(modalRejectEl);
+            }
 
-            // ✅ Toggle columns visibility - PERBAIKAN SELECTOR: .lux-card bukan .table-card
+            // ===== TOOLTIP INIT =====
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+            tooltipTriggerList.map(function(tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl, {
+                    trigger: 'hover'
+                });
+            });
+
+            // ===== TABLE SELECTOR TOGGLE =====
             document.querySelectorAll('.table-selector').forEach(checkbox => {
                 checkbox.addEventListener('change', function() {
                     const index = this.dataset.index;
@@ -323,7 +606,6 @@
                     if (!columnsDiv) return;
 
                     const columnCheckboxes = columnsDiv.querySelectorAll('.column-checkbox');
-
                     columnsDiv.style.display = this.checked ? 'block' : 'none';
 
                     columnCheckboxes.forEach(cb => {
@@ -335,7 +617,7 @@
                 });
             });
 
-            // ✅ Column checkbox counter
+            // ===== COLUMN CHECKBOX COUNTER =====
             document.querySelectorAll('.column-checkbox').forEach(cb => {
                 cb.addEventListener('change', function() {
                     const index = this.dataset.index;
@@ -349,29 +631,32 @@
                 if (counter) counter.textContent = checked;
             }
 
-            // ✅ Table search filter - PERBAIKAN SELECTOR
+            // ===== TABLE SEARCH FILTER =====
             document.getElementById('tableSearch')?.addEventListener('input', function(e) {
-                const search = e.target.value.toLowerCase();
-                // ✅ Ganti .table-card menjadi [data-table-name]
+                const search = e.target.value.toLowerCase().trim();
                 document.querySelectorAll('[data-table-name]').forEach(card => {
                     const name = card.dataset.tableName.toLowerCase();
                     card.style.display = name.includes(search) ? 'block' : 'none';
                 });
             });
 
-            // ✅ Reject modal: enable button when reason filled
+            // ===== REJECT MODAL: Enable button when reason filled =====
+            const rejectionReason = document.getElementById('rejectionReason');
+            const btnConfirmReject = document.getElementById('btnConfirmReject');
+
             rejectionReason?.addEventListener('input', function() {
                 if (btnConfirmReject) {
                     btnConfirmReject.disabled = this.value.trim().length < 10;
                 }
             });
 
-            // ✅ Reject button click
+            // ===== REJECT BUTTON CLICK =====
             document.getElementById('btnReject')?.addEventListener('click', function() {
                 if (modalReject) modalReject.show();
             });
 
-            // ✅ Reject form submit via AJAX
+            // ===== REJECT FORM SUBMIT =====
+            const rejectForm = document.getElementById('rejectForm');
             rejectForm?.addEventListener('submit', async function(e) {
                 e.preventDefault();
 
@@ -383,7 +668,7 @@
                 if (btnConfirmReject) {
                     btnConfirmReject.disabled = true;
                     btnConfirmReject.innerHTML =
-                        '<span style="width:16px;height:16px;border:2px solid white;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;"></span> Memproses...';
+                        '<span class="spinner-border spinner-border-sm me-2"></span> Memproses...';
                 }
 
                 const url = baseUrlReject + (baseUrlReject.includes('?') ? '&' : '?') + '_token_nav=' +
@@ -418,7 +703,8 @@
                         showAlert('error', data.message || 'Gagal menolak permintaan');
                         if (btnConfirmReject) {
                             btnConfirmReject.disabled = false;
-                            btnConfirmReject.innerHTML = '<i class="ri-close-line"></i> Reject Request';
+                            btnConfirmReject.innerHTML =
+                                '<i class="ri-close-line me-1"></i> Reject Request';
                         }
                     }
                 } catch (error) {
@@ -426,12 +712,13 @@
                     showAlert('error', 'Terjadi kesalahan koneksi');
                     if (btnConfirmReject) {
                         btnConfirmReject.disabled = false;
-                        btnConfirmReject.innerHTML = '<i class="ri-close-line"></i> Reject Request';
+                        btnConfirmReject.innerHTML =
+                        '<i class="ri-close-line me-1"></i> Reject Request';
                     }
                 }
             });
 
-            // ✅ Approve button click - PERBAIKAN UTAMA DI SINI
+            // ===== APPROVE BUTTON CLICK =====
             document.getElementById('btnApprove')?.addEventListener('click', async function() {
                 // Validate branch
                 const branchSelect = document.getElementById('branchSelect');
@@ -443,14 +730,14 @@
                     return;
                 }
 
-                // Validate at least 1 table selected - PERBAIKAN SELECTOR
+                // Validate at least 1 table selected
                 const selectedTables = document.querySelectorAll('.table-selector:checked');
                 if (selectedTables.length === 0) {
                     showAlert('error', 'Pilih minimal 1 tabel!');
                     return;
                 }
 
-                // Validate at least 1 column per selected table - PERBAIKAN SELECTOR
+                // Validate at least 1 column per selected table
                 let valid = true;
                 selectedTables.forEach(checkbox => {
                     const index = checkbox.dataset.index;
@@ -460,7 +747,6 @@
                     const columns = columnsDiv.querySelectorAll('.column-checkbox:checked');
                     if (columns.length === 0) {
                         valid = false;
-                        // ✅ PERBAIKAN: Gunakan [data-table-name] bukan .table-card
                         const tableName = checkbox.closest('[data-table-name]')?.dataset
                             .tableName || 'unknown';
                         showAlert('error', `Pilih minimal 1 kolom untuk tabel: ${tableName}`);
@@ -478,20 +764,18 @@
                 if (btnApprove) {
                     btnApprove.disabled = true;
                     btnApprove.innerHTML =
-                        '<span style="width:16px;height:16px;border:2px solid white;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;"></span> Memproses...';
+                        '<span class="spinner-border spinner-border-sm me-2"></span> Memproses...';
                 }
 
                 const url = baseUrlApprove + (baseUrlApprove.includes('?') ? '&' : '?') +
                     '_token_nav=' + currentToken;
-
                 const formData = new FormData();
                 formData.append('_token', csrfToken);
                 formData.append('branch_id', branchId);
 
-                // Build grants array - PERBAIKAN SELECTOR
+                // Build grants array
                 selectedTables.forEach(checkbox => {
                     const index = checkbox.dataset.index;
-                    // ✅ PERBAIKAN: Cari hidden input dengan selector yang benar
                     const tableCard = checkbox.closest('[data-table-name]');
                     if (!tableCard) return;
 
@@ -504,10 +788,10 @@
                     const columnsDiv = document.getElementById('columns_' + index);
                     if (columnsDiv) {
                         columnsDiv.querySelectorAll('.column-checkbox:checked').forEach(
-                            colCb => {
-                                formData.append(`grants[${index}][allowed_columns][]`, colCb
-                                    .value);
-                            });
+                        colCb => {
+                            formData.append(`grants[${index}][allowed_columns][]`, colCb
+                                .value);
+                        });
                     }
 
                     // Rate limit
@@ -550,7 +834,7 @@
                         if (btnApprove) {
                             btnApprove.disabled = false;
                             btnApprove.innerHTML =
-                                '<i class="ri-check-line"></i> Approve & Generate Tokens';
+                                '<i class="ri-check-line me-1"></i> Approve & Generate Tokens';
                         }
                     }
                 } catch (error) {
@@ -559,12 +843,12 @@
                     if (btnApprove) {
                         btnApprove.disabled = false;
                         btnApprove.innerHTML =
-                            '<i class="ri-check-line"></i> Approve & Generate Tokens';
+                            '<i class="ri-check-line me-1"></i> Approve & Generate Tokens';
                     }
                 }
             });
 
-            // ✅ Alert helper
+            // ===== ALERT HELPER =====
             function showAlert(type, message) {
                 const container = document.getElementById('alertContainer');
                 if (!container) {
@@ -574,52 +858,64 @@
 
                 const colors = {
                     success: {
-                        bg: '#f0fdf4',
+                        bg: 'rgba(34,197,94,0.1)',
                         border: '#22c55e',
                         color: '#166534',
-                        icon: 'ri-checkbox-circle-line'
+                        icon: 'ri-checkbox-circle-fill'
                     },
                     error: {
-                        bg: '#fef2f2',
+                        bg: 'rgba(239,68,68,0.1)',
                         border: '#ef4444',
                         color: '#991b1b',
-                        icon: 'ri-error-warning-line'
+                        icon: 'ri-error-warning-fill'
                     },
                     warning: {
-                        bg: '#fffbeb',
+                        bg: 'rgba(245,158,11,0.1)',
                         border: '#f59e0b',
                         color: '#92400e',
-                        icon: 'ri-alert-line'
+                        icon: 'ri-alert-fill'
                     }
                 };
                 const c = colors[type] || colors.error;
 
                 container.innerHTML = `
-            <div class="lux-card" style="border-left:4px solid ${c.border}; background:${c.bg}; display:flex; align-items:center; gap:10px; padding:12px; animation: slideIn 0.3s ease;">
-                <i class="${c.icon}" style="color:${c.border}; font-size:1.5rem;"></i>
-                <span style="color:${c.color}; font-weight:600;">${message}</span>
-            </div>
-        `;
+            <div class="alert-custom ${type}" data-auto-close>
+                <i class="${c.icon}"></i>
+                <span>${message}</span>
+                <button class="alert-close">&times;</button>
+            </div>`;
 
+                // Auto close after 5 seconds
+                const alert = container.firstElementChild;
                 setTimeout(() => {
-                    if (container.firstElementChild) {
-                        container.firstElementChild.style.animation = 'slideOut 0.3s ease';
-                        setTimeout(() => container.firstElementChild?.remove(), 300);
+                    if (alert) {
+                        alert.style.opacity = '0';
+                        alert.style.transform = 'translateX(-20px)';
+                        setTimeout(() => alert.remove(), 300);
                     }
                 }, 5000);
+
+                // Close button handler
+                alert?.querySelector('.alert-close')?.addEventListener('click', () => alert.remove());
             }
 
-            // ✅ Add animations if not exist
-            if (!document.getElementById('lux-approve-animations')) {
-                const style = document.createElement('style');
-                style.id = 'lux-approve-animations';
-                style.textContent = `
-            @keyframes spin { to { transform: rotate(360deg); } }
-            @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-            @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
-        `;
-                document.head.appendChild(style);
-            }
+            // ===== AUTO-CLOSE ALERTS =====
+            document.querySelectorAll('[data-auto-close]').forEach(alert => {
+                const closeBtn = alert.querySelector('.alert-close');
+                closeBtn?.addEventListener('click', () => alert.remove());
+                setTimeout(() => {
+                    alert.style.opacity = '0';
+                    alert.style.transform = 'translateX(-20px)';
+                    setTimeout(() => alert.remove(), 300);
+                }, 5000);
+            });
+
+            // ===== ESC KEY TO CLOSE MODAL =====
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && modalReject?._isShown) {
+                    modalReject.hide();
+                }
+            });
         });
     </script>
-@endpush
+@endsection
