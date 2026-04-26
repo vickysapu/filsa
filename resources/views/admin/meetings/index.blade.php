@@ -1,236 +1,255 @@
 @extends('layouts.admin')
+
 @section('title', 'Jadwal Meeting')
 
 @section('content')
-    <div class="lux-container">
-        <div class="flex-between mb-5">
+    <div class="page-wrapper">
+
+        <!-- Page Header -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
             <div>
-                <h1 class="text-gradient" style="font-size: 2rem; font-weight: 800;">Jadwal Meeting</h1>
-                <p class="text-muted">Kelola jadwal meeting online untuk jemaat</p>
+                <h1 class="h3 mb-1 fw-bold">Jadwal Meeting</h1>
+                <p class="text-muted-custom mb-0">Kelola jadwal meeting online untuk jemaat</p>
             </div>
             @if (auth()->user()->hasPermission('meetings.create'))
-                <button type="button" class="lux-btn lux-btn-primary" id="btnAddMeeting">
-                    <i class="ri-video-add-line"></i> Buat Meeting
+                <button type="button" class="btn btn-custom" id="btnAddMeeting">
+                    <i class="ri-video-add-line me-1"></i> Buat Meeting
                 </button>
             @endif
         </div>
 
+        <!-- Alert Container -->
         <div id="alertContainer" class="mb-4"></div>
 
-        <!-- Filter -->
-        <div class="lux-card mb-5">
-            <form id="formFilter">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-                    <div>
-                        <label class="lux-label">Status</label>
-                        <select id="filter_status" class="lux-select">
-                            <option value="">Semua Status</option>
-                            <option value="upcoming" {{ request('status') === 'upcoming' ? 'selected' : '' }}>Akan Datang
-                            </option>
-                            <option value="ongoing" {{ request('status') === 'ongoing' ? 'selected' : '' }}>Sedang
-                                Berlangsung</option>
-                            <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Selesai
-                            </option>
-                        </select>
+        <!-- Filter Card -->
+        <div class="card-custom mb-4">
+            <div class="card-body p-4">
+                <form id="formFilter">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-6 col-md-4">
+                            <label class="form-label small fw-semibold text-muted-custom mb-2">Status</label>
+                            <select id="filter_status" class="form-select form-select-custom">
+                                <option value="">Semua Status</option>
+                                <option value="upcoming" {{ request('status') === 'upcoming' ? 'selected' : '' }}>Akan
+                                    Datang</option>
+                                <option value="ongoing" {{ request('status') === 'ongoing' ? 'selected' : '' }}>Sedang
+                                    Berlangsung</option>
+                                <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Selesai
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-6">
+                            <label class="form-label small fw-semibold text-muted-custom mb-2">Cari</label>
+                            <div class="position-relative">
+                                <i
+                                    class="ri-search-line position-absolute top-50 start-0 translate-middle-y ms-3 text-muted-custom"></i>
+                                <input type="text" id="filter_search" class="form-control form-control-custom ps-5"
+                                    value="{{ request('search') }}" placeholder="Nama meeting...">
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-2 d-flex gap-2">
+                            <button type="button" id="btnFilter" class="btn btn-custom flex-fill">
+                                <i class="ri-filter-line me-1"></i> Filter
+                            </button>
+                            <button type="button" id="btnReset" class="btn btn-outline-custom" title="Reset">
+                                <i class="ri-refresh-line"></i>
+                            </button>
+                        </div>
                     </div>
-                    <div>
-                        <label class="lux-label">Cari</label>
-                        <input type="text" id="filter_search" class="lux-input" value="{{ request('search') }}"
-                            placeholder="Nama meeting...">
-                    </div>
-                    <div style="display: flex; gap: 0.5rem; align-self: end;">
-                        <button type="button" id="btnFilter" class="lux-btn lux-btn-primary" style="flex: 1;">
-                            <i class="ri-filter-line"></i> Filter
-                        </button>
-                        <button type="button" id="btnReset" class="lux-btn lux-btn-outline">
-                            <i class="ri-refresh-line"></i>
-                        </button>
-                    </div>
-                </div>
-            </form>
-        </div>
-
-        <!-- Table -->
-        <div class="lux-card">
-            <div class="lux-card-body">
-                <div class="table-responsive">
-                    <table class="lux-table">
-                        <thead>
-                            <tr>
-                                <th>Meeting</th>
-                                <th>Platform</th>
-                                <th>Jadwal</th>
-                                <th>Status</th>
-                                <th style="width: 150px;">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="meetingsTableBody">
-                            @forelse($meetings as $meeting)
-                                <tr>
-                                    <td>
-                                        <strong>{{ $meeting->nama_meeting }}</strong>
-                                        <br><small class="text-muted">{{ Str::limit($meeting->deskripsi, 50) }}</small>
-                                    </td>
-                                    <td>
-                                        @if ($meeting->platform === 'jitsi')
-                                            <span class="lux-badge" style="background: #1d84ff20; color: #1d84ff;">
-                                                <i class="ri-video-line"></i> Jitsi Meet
-                                            </span>
-                                        @elseif($meeting->platform === 'zoom')
-                                            <span class="lux-badge" style="background: #2d8cff20; color: #2d8cff;">
-                                                <i class="ri-camera-line"></i> Zoom
-                                            </span>
-                                        @else
-                                            <span class="lux-badge" style="background: #00877920; color: #008779;">
-                                                <i class="ri-camera-lens-line"></i> Google Meet
-                                            </span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <div><i class="ri-calendar-line"></i> {{ $meeting->tanggal_mulai->format('d M Y') }}
-                                        </div>
-                                        <small class="text-muted">{{ $meeting->tanggal_mulai->format('H:i') }} WIB</small>
-                                    </td>
-                                    <td>
-                                        @if ($meeting->tanggal_mulai > now())
-                                            <span class="lux-badge lux-badge-info">Akan Datang</span>
-                                        @elseif($meeting->tanggal_selesai && $meeting->tanggal_selesai < now())
-                                            <span class="lux-badge lux-badge-secondary">Selesai</span>
-                                        @else
-                                            <span class="lux-badge lux-badge-success">Berlangsung</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <div class="d-flex gap-1">
-                                            <button class="lux-btn lux-btn-outline lux-btn-sm btn-view-meeting"
-                                                data-id="{{ $meeting->id }}">
-                                                <i class="ri-eye-line"></i>
-                                            </button>
-                                            @if (auth()->user()->hasPermission('meetings.edit'))
-                                                <button class="lux-btn lux-btn-outline lux-btn-sm btn-edit-meeting"
-                                                    data-id="{{ $meeting->id }}">
-                                                    <i class="ri-edit-line"></i>
-                                                </button>
-                                            @endif
-                                            @if (auth()->user()->hasPermission('meetings.delete'))
-                                                <button class="lux-btn lux-btn-danger lux-btn-sm btn-delete-meeting"
-                                                    data-id="{{ $meeting->id }}">
-                                                    <i class="ri-delete-bin-line"></i>
-                                                </button>
-                                            @endif
-                                        </div>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="5" class="text-center text-muted py-5">
-                                        <i class="ri-calendar-off-line" style="font-size: 3rem; opacity: 0.3;"></i>
-                                        <p class="mt-3">Belum ada meeting dijadwalkan</p>
-                                        @if (auth()->user()->hasPermission('meetings.create'))
-                                            <button class="lux-btn lux-btn-primary mt-2" id="btnAddMeeting2">
-                                                <i class="ri-add-line"></i> Buat Meeting Pertama
-                                            </button>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-                <div id="paginationContainer" class="mt-4">
-                    {{ $meetings->links('pagination::simple-bootstrap-4') }}
-                </div>
+                </form>
             </div>
         </div>
+
+        <!-- Data Table -->
+        <div class="card-custom">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="bg-body-tertiary">
+                        <tr>
+                            <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold">Meeting</th>
+                            <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold">Platform</th>
+                            <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold">Jadwal</th>
+                            <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold">Status</th>
+                            <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold text-center">
+                                Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="meetingsTableBody">
+                        @forelse($meetings as $meeting)
+                            <tr class="border-bottom border-custom">
+                                <td class="py-3 px-4">
+                                    <div class="fw-semibold">{{ $meeting->nama_meeting }}</div>
+                                    <small class="text-muted-custom">{{ Str::limit($meeting->deskripsi, 50) }}</small>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <span class="badge badge-platform-{{ $meeting->platform }}">
+                                        <i class="ri-{{ getPlatformIcon($meeting->platform) }} me-1"></i>
+                                        {{ getPlatformName($meeting->platform) }}
+                                    </span>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <div class="fw-medium">
+                                        <i class="ri-calendar-line me-1"></i> {{ $meeting->tanggal_mulai->format('d M Y') }}
+                                    </div>
+                                    <small class="text-muted-custom">{{ $meeting->tanggal_mulai->format('H:i') }}
+                                        WIB</small>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <span class="badge {{ getStatusBadgeClass($meeting) }}">
+                                        {{ getStatusText($meeting) }}
+                                    </span>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <div class="d-flex gap-1 justify-content-center">
+                                        <button type="button" class="btn-action btn-action-info btn-view-meeting"
+                                            data-id="{{ $meeting->id }}" title="Detail">
+                                            <i class="ri-eye-line"></i>
+                                        </button>
+                                        @if (auth()->user()->hasPermission('meetings.edit'))
+                                            <button type="button" class="btn-action btn-action-primary btn-edit-meeting"
+                                                data-id="{{ $meeting->id }}" title="Edit">
+                                                <i class="ri-pencil-line"></i>
+                                            </button>
+                                        @endif
+                                        @if (auth()->user()->hasPermission('meetings.delete'))
+                                            <button type="button" class="btn-action btn-action-danger btn-delete-meeting"
+                                                data-id="{{ $meeting->id }}" title="Hapus">
+                                                <i class="ri-delete-bin-line"></i>
+                                            </button>
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="py-5">
+                                    <div class="text-center">
+                                        <div class="empty-state-icon mb-3">
+                                            <i class="ri-calendar-off-line"></i>
+                                        </div>
+                                        <h6 class="fw-semibold mb-2">Belum ada meeting dijadwalkan</h6>
+                                        <p class="text-muted-custom small mb-4">Mulai jadwalkan meeting pertama untuk jemaat
+                                        </p>
+                                        @if (auth()->user()->hasPermission('meetings.create'))
+                                            <button type="button" class="btn btn-custom" id="btnAddMeeting2">
+                                                <i class="ri-add-line me-1"></i> Buat Meeting Pertama
+                                            </button>
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            @if ($meetings->hasPages())
+                <div class="d-flex justify-content-center p-4 border-top border-custom" id="paginationContainer">
+                    {{ $meetings->links('pagination::simple-bootstrap-4') }}
+                </div>
+            @endif
+        </div>
+
     </div>
 
     <!-- Modal Form Meeting -->
-    <div class="modal fade" id="modalMeetingForm" tabindex="-1">
+    <div class="modal fade" id="modalMeetingForm" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content lux-card">
+            <div class="modal-content modal-content-custom">
                 <form id="formMeeting">
                     @csrf
                     <input type="hidden" name="id" id="meetingId">
-                    <div class="modal-header lux-modal-header">
-                        <h3 class="modal-title lux-modal-title" id="modalMeetingLabel">Buat Meeting Baru</h3>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+
+                    <div class="modal-header border-bottom border-custom">
+                        <h5 class="modal-title fw-semibold" id="modalMeetingLabel">Buat Meeting Baru</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div class="modal-body lux-modal-body">
-                        <div id="formErrors" class="alert alert-danger d-none">
-                            <ul class="mb-0" id="errorList"></ul>
+
+                    <div class="modal-body p-4">
+                        <div class="alert alert-danger d-none" id="formErrors">
+                            <i class="ri-error-warning-line me-2"></i>
+                            <ul class="mb-0 small" id="errorList"></ul>
                         </div>
 
-                        <div class="lux-form-group mb-3">
-                            <label class="lux-label">Nama Meeting *</label>
-                            <input type="text" name="nama_meeting" id="nama_meeting" class="lux-input form-control"
-                                required maxlength="255">
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-muted-custom">Nama Meeting <span
+                                    class="text-danger">*</span></label>
+                            <input type="text" name="nama_meeting" id="nama_meeting"
+                                class="form-control form-control-custom" required maxlength="255">
                         </div>
 
-                        <div class="lux-form-group mb-3">
-                            <label class="lux-label">Deskripsi</label>
-                            <textarea name="deskripsi" id="deskripsi" class="lux-textarea form-control" rows="3" maxlength="1000"></textarea>
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-muted-custom">Deskripsi</label>
+                            <textarea name="deskripsi" id="deskripsi" class="form-control form-control-custom textarea-custom" rows="3"
+                                maxlength="1000"></textarea>
                         </div>
 
-                        <div class="lux-form-group mb-3">
-                            <label class="lux-label">Platform *</label>
-                            <select name="platform" id="platform" class="lux-select form-select" required
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-muted-custom">Platform <span
+                                    class="text-danger">*</span></label>
+                            <select name="platform" id="platform" class="form-select form-select-custom" required
                                 onchange="togglePlatformFields()">
                                 <option value="jitsi">Jitsi Meet (Gratis)</option>
                                 <option value="zoom">Zoom Meeting</option>
                                 <option value="google_meet">Google Meet</option>
                             </select>
-                            <small class="text-muted">Jitsi Meet direkomendasikan - gratis tanpa batas waktu</small>
+                            <small class="text-muted-custom"><i class="ri-information-line me-1"></i>Jitsi Meet
+                                direkomendasikan - gratis tanpa batas waktu</small>
                         </div>
 
-                        <div id="jitsiFields" class="lux-form-group mb-3">
-                            <label class="lux-label">Room ID (Opsional)</label>
-                            <input type="text" name="meeting_id" id="meeting_id" class="lux-input form-control"
-                                placeholder="Kosongkan untuk auto-generate">
-                            <small class="text-muted">Akan di-generate otomatis jika kosong</small>
+                        <!-- Jitsi Fields -->
+                        <div id="jitsiFields" class="mb-3">
+                            <label class="form-label small fw-semibold text-muted-custom">Room ID (Opsional)</label>
+                            <input type="text" name="meeting_id" id="meeting_id"
+                                class="form-control form-control-custom" placeholder="Kosongkan untuk auto-generate">
+                            <small class="text-muted-custom">Akan di-generate otomatis jika kosong</small>
                         </div>
 
-                        <div id="manualUrlFields" class="lux-form-group mb-3" style="display: none;">
-                            <label class="lux-label">URL Meeting *</label>
-                            <input type="url" name="meeting_url" id="meeting_url" class="lux-input form-control"
+                        <!-- Manual URL Fields (Zoom/Google Meet) -->
+                        <div id="manualUrlFields" class="mb-3" style="display: none;">
+                            <label class="form-label small fw-semibold text-muted-custom">URL Meeting <span
+                                    class="text-danger">*</span></label>
+                            <input type="url" name="meeting_url" id="meeting_url"
+                                class="form-control form-control-custom"
                                 placeholder="https://zoom.us/j/... atau https://meet.google.com/...">
                         </div>
 
-                        <div class="row">
+                        <div class="row g-3">
                             <div class="col-md-6">
-                                <div class="lux-form-group mb-3">
-                                    <label class="lux-label">Tanggal Mulai *</label>
-                                    <input type="datetime-local" name="tanggal_mulai" id="tanggal_mulai"
-                                        class="lux-input form-control" required>
-                                </div>
+                                <label class="form-label small fw-semibold text-muted-custom">Tanggal Mulai <span
+                                        class="text-danger">*</span></label>
+                                <input type="datetime-local" name="tanggal_mulai" id="tanggal_mulai"
+                                    class="form-control form-control-custom" required>
                             </div>
                             <div class="col-md-6">
-                                <div class="lux-form-group mb-3">
-                                    <label class="lux-label">Tanggal Selesai</label>
-                                    <input type="datetime-local" name="tanggal_selesai" id="tanggal_selesai"
-                                        class="lux-input form-control">
-                                </div>
+                                <label class="form-label small fw-semibold text-muted-custom">Tanggal Selesai</label>
+                                <input type="datetime-local" name="tanggal_selesai" id="tanggal_selesai"
+                                    class="form-control form-control-custom">
                             </div>
                         </div>
 
-                        <div class="lux-form-group mb-3">
-                            <label class="form-check">
-                                <input type="checkbox" name="is_active" id="is_active" class="form-check-input"
+                        <hr class="border-custom my-4">
+
+                        <div class="d-flex flex-column gap-3">
+                            <label class="form-check form-switch-custom">
+                                <input type="checkbox" name="is_active" id="is_active" class="form-check-input-custom"
                                     value="1" checked>
-                                <span class="form-check-label">Meeting Aktif</span>
+                                <span class="form-check-label-custom">Meeting Aktif</span>
                             </label>
-                        </div>
-
-                        <div class="lux-form-group mb-3">
-                            <label class="form-check">
+                            <label class="form-check form-switch-custom">
                                 <input type="checkbox" name="show_in_website" id="show_in_website"
-                                    class="form-check-input" value="1" checked>
-                                <span class="form-check-label">Tampilkan di Website Public</span>
+                                    class="form-check-input-custom" value="1" checked>
+                                <span class="form-check-label-custom">Tampilkan di Website Public</span>
                             </label>
                         </div>
                     </div>
-                    <div class="modal-footer lux-modal-footer">
-                        <button type="button" class="lux-btn lux-btn-outline" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="lux-btn lux-btn-primary" id="btnSubmitMeeting">Simpan</button>
+
+                    <div class="modal-footer border-top border-custom py-3 px-4">
+                        <button type="button" class="btn btn-outline-custom" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-custom" id="btnSubmitMeeting">
+                            <i class="ri-save-line me-1"></i> Simpan
+                        </button>
                     </div>
                 </form>
             </div>
@@ -238,70 +257,414 @@
     </div>
 
     <!-- Modal Detail Meeting -->
-    <div class="modal fade" id="modalDetailMeeting" tabindex="-1">
+    <div class="modal fade" id="modalDetailMeeting" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content lux-card">
-                <div class="modal-header lux-modal-header">
-                    <h3 class="modal-title lux-modal-title" id="detailNamaMeeting">Detail Meeting</h3>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-content modal-content-custom">
+                <div class="modal-header border-bottom border-custom">
+                    <h5 class="modal-title fw-semibold" id="detailNamaMeeting">Detail Meeting</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body lux-modal-body" id="detailContent">
+                <div class="modal-body p-4" id="detailContent">
                     <div class="text-center py-5">
-                        <div class="spinner-border text-primary" role="status"></div>
+                        <div class="spinner-border text-primary mb-3" role="status"></div>
+                        <p class="text-muted-custom mb-0">Memuat detail meeting...</p>
                     </div>
                 </div>
-                <div class="modal-footer lux-modal-footer">
-                    <button type="button" class="lux-btn lux-btn-outline" data-bs-dismiss="modal">Tutup</button>
-                    <a href="#" id="btnJoinMeeting" class="lux-btn lux-btn-primary" target="_blank">
-                        <i class="ri-video-add-line"></i> Join Meeting
+                <div class="modal-footer border-top border-custom py-3 px-4">
+                    <button type="button" class="btn btn-outline-custom" data-bs-dismiss="modal">Tutup</button>
+                    <a href="#" id="btnJoinMeeting" class="btn btn-custom" target="_blank">
+                        <i class="ri-video-add-line me-1"></i> Join Meeting
                     </a>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Hidden Base URLs -->
     <input type="hidden" id="baseUrlStore" value="{{ route('admin.meetings.store') }}">
     <input type="hidden" id="baseUrlUpdate" value="{{ route('admin.meetings.update', ['meeting' => '__ID__']) }}">
     <input type="hidden" id="baseUrlDelete" value="{{ route('admin.meetings.destroy', ['meeting' => '__ID__']) }}">
     <input type="hidden" id="baseUrlEdit" value="{{ route('admin.meetings.edit', ['meeting' => '__ID__']) }}">
-@endsection
 
-@push('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        /* ===== PAGE SPECIFIC STYLES ===== */
+        .page-wrapper {
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== PLATFORM BADGES ===== */
+        .badge-platform-jitsi {
+            background: rgba(29, 132, 255, 0.15);
+            color: #1d84ff;
+            border: 1px solid rgba(29, 132, 255, 0.3);
+            padding: 0.35em 0.65em;
+            font-weight: 500;
+            font-size: 0.75rem;
+        }
+
+        .badge-platform-zoom {
+            background: rgba(45, 140, 255, 0.15);
+            color: #2d8cff;
+            border: 1px solid rgba(45, 140, 255, 0.3);
+            padding: 0.35em 0.65em;
+            font-weight: 500;
+            font-size: 0.75rem;
+        }
+
+        .badge-platform-google_meet {
+            background: rgba(0, 135, 121, 0.15);
+            color: #008779;
+            border: 1px solid rgba(0, 135, 121, 0.3);
+            padding: 0.35em 0.65em;
+            font-weight: 500;
+            font-size: 0.75rem;
+        }
+
+        /* ===== STATUS BADGES ===== */
+        .badge-status-upcoming {
+            background: rgba(59, 130, 246, 0.15);
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            padding: 0.35em 0.65em;
+            font-weight: 500;
+            font-size: 0.75rem;
+        }
+
+        .badge-status-ongoing {
+            background: rgba(34, 197, 94, 0.15);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            padding: 0.35em 0.65em;
+            font-weight: 500;
+            font-size: 0.75rem;
+        }
+
+        .badge-status-completed {
+            background: rgba(100, 116, 139, 0.15);
+            color: #64748b;
+            border: 1px solid rgba(100, 116, 139, 0.3);
+            padding: 0.35em 0.65em;
+            font-weight: 500;
+            font-size: 0.75rem;
+        }
+
+        /* ===== ACTION BUTTONS ===== */
+        .btn-action {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-sm);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border-color);
+            background: var(--bg-surface);
+            color: var(--text-primary);
+            transition: var(--transition);
+            font-size: 1rem;
+            padding: 0;
+        }
+
+        .btn-action:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-action-info {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+        .btn-action-info:hover {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .btn-action-primary {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+        .btn-action-primary:hover {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .btn-action-danger {
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+
+        .btn-action-danger:hover {
+            background: #ef4444;
+            color: white;
+        }
+
+        /* ===== FORM ELEMENTS ===== */
+        .form-control-custom,
+        .form-select-custom {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.625rem 0.875rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+
+        .form-control-custom:focus,
+        .form-select-custom:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+            outline: none;
+        }
+
+        .form-control-custom::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .textarea-custom {
+            resize: vertical;
+            min-height: 80px;
+            line-height: 1.5;
+        }
+
+        .form-check-input-custom {
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: var(--transition);
+            accent-color: var(--accent-blue);
+        }
+
+        .form-check-input-custom:checked {
+            background-color: var(--accent-blue);
+            border-color: var(--accent-blue);
+        }
+
+        .form-check-input-custom[type="checkbox"] {
+            border-radius: 4px;
+        }
+
+        .form-check-label-custom {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            cursor: pointer;
+            margin-left: 0.35rem;
+        }
+
+        .form-switch-custom .form-check-input-custom {
+            width: 40px;
+            height: 22px;
+            border-radius: 11px;
+            background-image: none;
+            background-color: var(--border-color);
+        }
+
+        .form-switch-custom .form-check-input-custom:checked {
+            background-color: var(--accent-blue);
+        }
+
+        /* ===== ALERT CUSTOM ===== */
+        .alert-custom {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.875rem 1.25rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            animation: slideIn 0.3s ease;
+        }
+
+        .alert-custom.success {
+            background: rgba(34, 197, 94, 0.1);
+            border-left: 4px solid #22c55e;
+            color: #166534;
+        }
+
+        .alert-custom.error {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid #ef4444;
+            color: #991b1b;
+        }
+
+        .alert-custom i {
+            font-size: 1.25rem;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(-20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* ===== EMPTY STATE ===== */
+        .empty-state-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--bg-body);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            font-size: 2.5rem;
+            opacity: 0.6;
+        }
+
+        /* ===== MODAL CUSTOM ===== */
+        .modal-content-custom {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modal-header {
+            background: var(--bg-surface);
+            padding: 1rem 1.5rem;
+        }
+
+        .modal-body {
+            background: var(--bg-body);
+        }
+
+        .modal-footer {
+            background: var(--bg-surface);
+        }
+
+        .modal-dialog-scrollable .modal-content {
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-dialog-scrollable .modal-body {
+            overflow-y: auto;
+            flex: 1 1 auto;
+        }
+
+        .modal-dialog-scrollable .modal-header,
+        .modal-dialog-scrollable .modal-footer {
+            flex-shrink: 0;
+        }
+
+        /* ===== PAGINATION ===== */
+        .pagination .page-link {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.5rem 0.875rem;
+            margin: 0 2px;
+            border-radius: var(--radius-sm);
+            transition: var(--transition);
+        }
+
+        .pagination .page-link:hover,
+        .pagination .page-item.active .page-link {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
+        }
+
+        .pagination .page-item.disabled .page-link {
+            background: var(--bg-body);
+            color: var(--text-secondary);
+        }
+
+        /* ===== DARK MODE ===== */
+        [data-theme="dark"] .bg-body-tertiary {
+            background: var(--bg-sidebar) !important;
+        }
+
+        [data-theme="dark"] .empty-state-icon {
+            background: var(--bg-sidebar);
+        }
+
+        [data-theme="dark"] .modal-content-custom {
+            background: var(--bg-surface);
+            border-color: var(--border-color);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .table-responsive table {
+                min-width: 800px;
+            }
+
+            .d-flex.flex-wrap.gap-2 {
+                flex-direction: column;
+            }
+
+            .d-flex.flex-wrap.gap-2 .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const modalForm = new bootstrap.Modal(document.getElementById('modalMeetingForm'));
-            const modalDetail = new bootstrap.Modal(document.getElementById('modalDetailMeeting'));
-            const formMeeting = document.getElementById('formMeeting');
-            const btnSave = document.getElementById('btnSubmitMeeting');
+            // ===== MODAL INSTANCES =====
+            let modalForm, modalDetail;
+            const modalFormEl = document.getElementById('modalMeetingForm');
+            const modalDetailEl = document.getElementById('modalDetailMeeting');
+
+            if (modalFormEl && bootstrap.Modal) modalForm = new bootstrap.Modal(modalFormEl);
+            if (modalDetailEl && bootstrap.Modal) modalDetail = new bootstrap.Modal(modalDetailEl);
+
+            // ===== TOOLTIP INIT =====
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+            tooltipTriggerList.map(function(tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl, {
+                    trigger: 'hover'
+                });
+            });
+
+            // ===== CONSTANTS =====
             const currentToken = '{{ request()->attributes->get('page_token') ?? '' }}';
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
             let isEditMode = false;
 
-            // Toggle Platform Fields
+            // ===== PLATFORM FIELD TOGGLE =====
             window.togglePlatformFields = function() {
-                const platform = document.getElementById('platform').value;
+                const platform = document.getElementById('platform')?.value;
                 const jitsiFields = document.getElementById('jitsiFields');
                 const manualUrlFields = document.getElementById('manualUrlFields');
-                const urlInput = manualUrlFields.querySelector('input');
+                const urlInput = manualUrlFields?.querySelector('input');
 
                 if (platform === 'jitsi') {
-                    jitsiFields.style.display = 'block';
-                    manualUrlFields.style.display = 'none';
-                    urlInput.required = false;
+                    if (jitsiFields) jitsiFields.style.display = 'block';
+                    if (manualUrlFields) manualUrlFields.style.display = 'none';
+                    if (urlInput) urlInput.required = false;
                 } else {
-                    jitsiFields.style.display = 'none';
-                    manualUrlFields.style.display = 'block';
-                    urlInput.required = true;
+                    if (jitsiFields) jitsiFields.style.display = 'none';
+                    if (manualUrlFields) manualUrlFields.style.display = 'block';
+                    if (urlInput) urlInput.required = true;
                 }
-            };
+            }
 
-            // Open Modal Add
-            document.getElementById('btnAddMeeting')?.addEventListener('click', () => openModal('create'));
-            document.getElementById('btnAddMeeting2')?.addEventListener('click', () => openModal('create'));
-
+            // ===== OPEN MODAL (CREATE) =====
             function openModal(mode = 'create', data = null) {
                 resetForm();
                 isEditMode = mode === 'edit';
@@ -323,46 +686,58 @@
                     document.getElementById('show_in_website').checked = data.show_in_website !== false;
                     togglePlatformFields();
                 }
-                modalForm.show();
+
+                if (modalForm) modalForm.show();
             }
 
-            // Edit Meeting
+            // ===== EVENT: Add Meeting Buttons =====
+            document.getElementById('btnAddMeeting')?.addEventListener('click', () => openModal('create'));
+            document.getElementById('btnAddMeeting2')?.addEventListener('click', () => openModal('create'));
+
+            // ===== EVENT: Edit Meeting (delegation) =====
             document.addEventListener('click', function(e) {
-                if (e.target.closest('.btn-edit-meeting')) {
-                    const btn = e.target.closest('.btn-edit-meeting');
-                    const id = btn.dataset.id;
-                    loadMeetingForEdit(id);
+                const editBtn = e.target.closest('.btn-edit-meeting');
+                if (editBtn) {
+                    e.preventDefault();
+                    loadMeetingForEdit(editBtn.dataset.id);
                 }
             });
 
-            // Delete Meeting
+            // ===== EVENT: Delete Meeting (delegation) =====
             document.addEventListener('click', function(e) {
-                if (e.target.closest('.btn-delete-meeting')) {
-                    const btn = e.target.closest('.btn-delete-meeting');
-                    const id = btn.dataset.id;
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Konfirmasi Hapus',
-                        text: 'Yakin ingin menghapus meeting ini?',
-                        showCancelButton: true,
-                        confirmButtonText: 'Ya, Hapus',
-                        cancelButtonText: 'Batal'
-                    }).then(result => {
-                        if (result.isConfirmed) deleteMeeting(id);
-                    });
+                const deleteBtn = e.target.closest('.btn-delete-meeting');
+                if (deleteBtn) {
+                    e.preventDefault();
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Konfirmasi Hapus',
+                            text: 'Yakin ingin menghapus meeting ini?',
+                            showCancelButton: true,
+                            confirmButtonColor: '#ef4444',
+                            confirmButtonText: 'Ya, Hapus',
+                            cancelButtonText: 'Batal'
+                        }).then(result => {
+                            if (result.isConfirmed) deleteMeeting(deleteBtn.dataset.id);
+                        });
+                    } else {
+                        if (confirm('Yakin ingin menghapus meeting ini?')) {
+                            deleteMeeting(deleteBtn.dataset.id);
+                        }
+                    }
                 }
             });
 
-            // View/Detail Meeting
+            // ===== EVENT: View Meeting (delegation) =====
             document.addEventListener('click', function(e) {
-                if (e.target.closest('.btn-view-meeting')) {
-                    const btn = e.target.closest('.btn-view-meeting');
-                    const id = btn.dataset.id;
-                    showDetailMeeting(id);
+                const viewBtn = e.target.closest('.btn-view-meeting');
+                if (viewBtn) {
+                    e.preventDefault();
+                    showDetailMeeting(viewBtn.dataset.id);
                 }
             });
 
-            // Filter
+            // ===== EVENT: Filter =====
             document.getElementById('btnFilter')?.addEventListener('click', () => loadMeetings(1));
             document.getElementById('btnReset')?.addEventListener('click', function() {
                 document.getElementById('filter_status').value = '';
@@ -376,24 +751,33 @@
                 }
             });
 
-            // Form Submit
+            // ===== EVENT: Form Submit =====
+            const formMeeting = document.getElementById('formMeeting');
+            const btnSave = document.getElementById('btnSubmitMeeting');
+
             formMeeting?.addEventListener('submit', async function(e) {
                 e.preventDefault();
+
                 if (!formMeeting.checkValidity()) {
                     formMeeting.classList.add('was-validated');
                     return;
                 }
 
                 const meetingId = document.getElementById('meetingId').value;
-                let baseUrl = isEditMode ? document.getElementById('baseUrlUpdate').value.replace(
-                    '__ID__', meetingId) : document.getElementById('baseUrlStore').value;
+                let baseUrl = isEditMode ?
+                    document.getElementById('baseUrlUpdate').value.replace('__ID__', meetingId) :
+                    document.getElementById('baseUrlStore').value;
+
                 const separator = baseUrl.includes('?') ? '&' : '?';
                 const url =
                     `${baseUrl}${separator}_token_nav=${currentToken}${isEditMode ? '&_method=PUT' : ''}`;
 
-                btnSave.disabled = true;
-                btnSave.innerHTML =
-                    '<span class="spinner-border spinner-border-sm"></span> Menyimpan...';
+                if (btnSave) {
+                    btnSave.disabled = true;
+                    btnSave.innerHTML =
+                        '<span class="spinner-border spinner-border-sm me-2"></span> Menyimpan...';
+                }
+
                 const formData = new FormData(formMeeting);
 
                 try {
@@ -406,31 +790,40 @@
                         },
                         body: formData
                     });
+
                     if (response.redirected) {
                         window.location.href = response.url;
                         return;
                     }
+
                     const data = await response.json();
+
                     if (data.success) {
                         showAlert('success', data.message);
-                        modalForm.hide();
+                        if (modalForm) modalForm.hide();
                         loadMeetings(1);
                     } else {
-                        if (data.errors) showErrors(data.errors);
-                        else showAlert('error', data.message || 'Gagal menyimpan meeting');
+                        if (data.errors) {
+                            showErrors(data.errors);
+                        } else {
+                            showAlert('error', data.message || 'Gagal menyimpan meeting');
+                        }
                     }
                 } catch (err) {
+                    console.error(err);
                     showAlert('error', 'Terjadi kesalahan koneksi');
                 } finally {
-                    btnSave.disabled = false;
-                    btnSave.textContent = 'Simpan';
+                    if (btnSave) {
+                        btnSave.disabled = false;
+                        btnSave.innerHTML = '<i class="ri-save-line me-1"></i> Simpan';
+                    }
                 }
             });
 
-            // Load Meetings with Pagination
+            // ===== FUNCTION: Load Meetings =====
             function loadMeetings(page = 1) {
-                const status = document.getElementById('filter_status').value;
-                const search = document.getElementById('filter_search').value.trim();
+                const status = document.getElementById('filter_status')?.value || '';
+                const search = document.getElementById('filter_search')?.value?.trim() || '';
                 const params = new URLSearchParams({
                     page,
                     status,
@@ -438,6 +831,17 @@
                     ajax: 1,
                     _token_nav: currentToken
                 });
+
+                const tableBody = document.getElementById('meetingsTableBody');
+                if (tableBody) {
+                    tableBody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="py-5 text-center">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="text-muted-custom mt-3 mb-0">Memuat data meeting...</p>
+                    </td>
+                </tr>`;
+                }
 
                 fetch(`{{ route('admin.meetings.index') }}?${params}`, {
                         headers: {
@@ -450,26 +854,36 @@
                     .then(html => {
                         const parser = new DOMParser();
                         const doc = parser.parseFromString(html, 'text/html');
+
                         const newBody = doc.querySelector('#meetingsTableBody');
                         const newPagination = doc.querySelector('#paginationContainer');
-                        if (newBody) document.getElementById('meetingsTableBody').innerHTML = newBody.innerHTML;
-                        if (newPagination) {
-                            document.getElementById('paginationContainer').innerHTML = newPagination.innerHTML;
-                            // Rebind pagination clicks
-                            document.querySelectorAll('#paginationContainer a').forEach(link => {
-                                link.addEventListener('click', function(e) {
-                                    e.preventDefault();
-                                    const url = new URL(this.href);
-                                    loadMeetings(url.searchParams.get('page') || 1);
-                                });
-                            });
+
+                        if (newBody && tableBody) {
+                            tableBody.innerHTML = newBody.innerHTML;
                         }
-                        bindEvents();
+                        if (newPagination) {
+                            const paginationEl = document.getElementById('paginationContainer');
+                            if (paginationEl) {
+                                paginationEl.innerHTML = newPagination.innerHTML;
+                                bindPaginationEvents();
+                            }
+                        }
                     })
                     .catch(() => showAlert('error', 'Gagal memuat data meeting'));
             }
 
-            // Load Meeting for Edit
+            // ===== FUNCTION: Bind Pagination Events =====
+            function bindPaginationEvents() {
+                document.querySelectorAll('#paginationContainer a').forEach(link => {
+                    link.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const url = new URL(this.href);
+                        loadMeetings(url.searchParams.get('page') || 1);
+                    });
+                });
+            }
+
+            // ===== FUNCTION: Load Meeting for Edit =====
             function loadMeetingForEdit(id) {
                 let baseUrl = document.getElementById('baseUrlEdit').value.replace('__ID__', id);
                 const separator = baseUrl.includes('?') ? '&' : '?';
@@ -483,13 +897,16 @@
                     })
                     .then(r => r.json())
                     .then(data => {
-                        if (data.success) openModal('edit', data.data);
-                        else showAlert('error', data.message || 'Gagal memuat data meeting');
+                        if (data.success) {
+                            openModal('edit', data.data);
+                        } else {
+                            showAlert('error', data.message || 'Gagal memuat data meeting');
+                        }
                     })
                     .catch(() => showAlert('error', 'Terjadi kesalahan koneksi'));
             }
 
-            // Delete Meeting
+            // ===== FUNCTION: Delete Meeting =====
             function deleteMeeting(id) {
                 let baseUrl = document.getElementById('baseUrlDelete').value.replace('__ID__', id);
                 const separator = baseUrl.includes('?') ? '&' : '?';
@@ -508,16 +925,24 @@
                         if (data.success) {
                             showAlert('success', data.message);
                             loadMeetings(1);
-                        } else showAlert('error', data.message || 'Gagal menghapus meeting');
+                        } else {
+                            showAlert('error', data.message || 'Gagal menghapus meeting');
+                        }
                     })
                     .catch(() => showAlert('error', 'Terjadi kesalahan koneksi'));
             }
 
-            // Show Detail Meeting
+            // ===== FUNCTION: Show Detail Meeting =====
             function showDetailMeeting(id) {
-                document.getElementById('detailContent').innerHTML =
-                    '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
-                modalDetail.show();
+                const detailContent = document.getElementById('detailContent');
+                if (detailContent) {
+                    detailContent.innerHTML = `
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary mb-3" role="status"></div>
+                    <p class="text-muted-custom mb-0">Memuat detail meeting...</p>
+                </div>`;
+                }
+                if (modalDetail) modalDetail.show();
 
                 fetch(`{{ route('admin.meetings.show', '__ID__') }}?ajax=1&_token_nav=${currentToken}`.replace(
                         '__ID__', id), {
@@ -528,40 +953,52 @@
                     })
                     .then(r => r.json())
                     .then(data => {
-                        if (data.success) {
-                            const m = data.meeting;
-                            document.getElementById('detailNamaMeeting').textContent = m.nama_meeting;
-                            document.getElementById('btnJoinMeeting').href = m.meeting_url;
-
-                            let html = `
-                    <div class="mb-3">
-                        <span class="lux-badge" style="background: ${getPlatformColor(m.platform)}20; color: ${getPlatformColor(m.platform)};">
-                            <i class="ri-${getPlatformIcon(m.platform)}"></i> ${getPlatformName(m.platform)}
-                        </span>
-                    </div>
-                    ${m.deskripsi ? `<p class="mb-3">${m.deskripsi}</p>` : ''}
-                    <div class="row mb-3">
-                        <div class="col-6"><strong><i class="ri-calendar-line"></i> Mulai:</strong><br>${new Date(m.tanggal_mulai).toLocaleString('id-ID')}</div>
-                        ${m.tanggal_selesai ? `<div class="col-6"><strong><i class="ri-calendar-line"></i> Selesai:</strong><br>${new Date(m.tanggal_selesai).toLocaleString('id-ID')}</div>` : ''}
-                    </div>
-                    <div class="mb-3">
-                        <strong><i class="ri-status-line"></i> Status:</strong><br>
-                        <span class="lux-badge ${getStatusBadge(m)}">${getStatusText(m)}</span>
-                    </div>
-                    <div class="mb-3">
-                        <strong><i class="ri-user-line"></i> Dibuat oleh:</strong><br>
-                        ${m.creator?.name || '-'}
-                    </div>
-                `;
-                            document.getElementById('detailContent').innerHTML = html;
-                        } else {
+                        if (!data.success) {
                             showAlert('error', data.message || 'Gagal memuat detail');
+                            return;
                         }
+
+                        const m = data.meeting;
+                        document.getElementById('detailNamaMeeting').textContent = m.nama_meeting;
+                        document.getElementById('btnJoinMeeting').href = m.meeting_url;
+
+                        const platformBadge = `<span class="badge badge-platform-${m.platform}">
+                <i class="ri-${getPlatformIcon(m.platform)} me-1"></i>${getPlatformName(m.platform)}
+            </span>`;
+                        const statusBadge =
+                            `<span class="badge ${getStatusBadgeClass(m)}">${getStatusText(m)}</span>`;
+                        const endDate = m.tanggal_selesai ?
+                            `<div class="col-6"><p class="small text-muted-custom mb-1">Selesai</p><p class="fw-medium mb-0">${new Date(m.tanggal_selesai).toLocaleString('id-ID')}</p></div>` :
+                            '';
+
+                        detailContent.innerHTML = `
+                <div class="mb-4 text-center">${platformBadge}</div>
+                
+                ${m.deskripsi ? `<p class="mb-4 text-muted-custom">${m.deskripsi}</p>` : ''}
+                
+                <div class="row g-4 mb-4">
+                    <div class="col-6">
+                        <p class="small text-muted-custom mb-1"><i class="ri-calendar-line me-1"></i> Mulai</p>
+                        <p class="fw-medium mb-0">${new Date(m.tanggal_mulai).toLocaleString('id-ID')}</p>
+                    </div>
+                    ${endDate}
+                </div>
+                
+                <div class="mb-4">
+                    <p class="small text-muted-custom mb-1"><i class="ri-status-line me-1"></i> Status</p>
+                    ${statusBadge}
+                </div>
+                
+                <div>
+                    <p class="small text-muted-custom mb-1"><i class="ri-user-line me-1"></i> Dibuat oleh</p>
+                    <p class="fw-medium mb-0">${m.creator?.name || '-'}</p>
+                </div>
+            `;
                     })
                     .catch(() => showAlert('error', 'Terjadi kesalahan koneksi'));
             }
 
-            // Helpers
+            // ===== HELPER: Platform Name =====
             function getPlatformName(p) {
                 return {
                     jitsi: 'Jitsi Meet',
@@ -570,6 +1007,7 @@
                 } [p] || p;
             }
 
+            // ===== HELPER: Platform Icon =====
             function getPlatformIcon(p) {
                 return {
                     jitsi: 'video-line',
@@ -578,30 +1016,39 @@
                 } [p] || 'video-line';
             }
 
-            function getPlatformColor(p) {
-                return {
-                    jitsi: '#1d84ff',
-                    zoom: '#2d8cff',
-                    google_meet: '#008779'
-                } [p] || '#667eea';
-            }
-
+            // ===== HELPER: Status Text =====
             function getStatusText(m) {
-                if (new Date(m.tanggal_mulai) > new Date()) return 'Akan Datang';
-                if (m.tanggal_selesai && new Date(m.tanggal_selesai) < new Date()) return 'Selesai';
+                const now = new Date();
+                const start = new Date(m.tanggal_mulai);
+                const end = m.tanggal_selesai ? new Date(m.tanggal_selesai) : null;
+
+                if (start > now) return 'Akan Datang';
+                if (end && end < now) return 'Selesai';
                 return 'Berlangsung';
             }
 
-            function getStatusBadge(m) {
-                if (new Date(m.tanggal_mulai) > new Date()) return 'lux-badge-info';
-                if (m.tanggal_selesai && new Date(m.tanggal_selesai) < new Date()) return 'lux-badge-secondary';
-                return 'lux-badge-success';
+            // ===== HELPER: Status Badge Class =====
+            function getStatusBadgeClass(m) {
+                const now = new Date();
+                const start = new Date(m.tanggal_mulai);
+                const end = m.tanggal_selesai ? new Date(m.tanggal_selesai) : null;
+
+                if (start > now) return 'badge-status-upcoming';
+                if (end && end < now) return 'badge-status-completed';
+                return 'badge-status-ongoing';
             }
 
+            // ===== FUNCTION: Reset Form =====
             function resetForm() {
-                formMeeting?.reset();
-                formMeeting?.classList.remove('was-validated');
-                document.getElementById('formErrors')?.classList.add('d-none');
+                const form = document.getElementById('formMeeting');
+                if (form) {
+                    form.reset();
+                    form.classList.remove('was-validated');
+                }
+
+                const errorBox = document.getElementById('formErrors');
+                if (errorBox) errorBox.classList.add('d-none');
+
                 document.getElementById('meetingId').value = '';
                 document.getElementById('platform').value = 'jitsi';
                 document.getElementById('is_active').checked = true;
@@ -609,43 +1056,80 @@
                 togglePlatformFields();
             }
 
+            // ===== FUNCTION: Show Alert =====
             function showAlert(type, message) {
                 const container = document.getElementById('alertContainer');
                 if (!container) return;
-                const bg = type === 'success' ? '#f0fdf4' : '#fef2f2';
-                const border = type === 'success' ? 'var(--success)' : 'var(--danger)';
-                const color = type === 'success' ? '#166534' : '#991b1b';
-                const icon = type === 'success' ? 'ri-checkbox-circle-line' : 'ri-error-warning-line';
-                container.innerHTML =
-                    `<div class="lux-card" style="border-left:4px solid ${border};background:${bg};display:flex;align-items:center;gap:10px;padding:12px;"><i class="${icon}" style="color:${border};font-size:1.5rem;"></i><span style="color:${color};font-weight:600;">${message}</span></div>`;
+
+                const alertClass = type === 'success' ? 'success' : 'error';
+                const icon = type === 'success' ? 'ri-checkbox-circle-fill' : 'ri-error-warning-fill';
+                const borderColor = type === 'success' ? '#22c55e' : '#ef4444';
+                const textColor = type === 'success' ? '#166534' : '#991b1b';
+
+                container.innerHTML = `
+            <div class="alert-custom ${alertClass}" data-auto-close>
+                <i class="${icon}"></i>
+                <span>${message}</span>
+                <button class="alert-close">&times;</button>
+            </div>`;
+
+                // Auto close after 5 seconds
+                const alert = container.firstElementChild;
                 setTimeout(() => {
-                    if (container.firstElementChild) container.firstElementChild.style.display = 'none';
+                    if (alert) {
+                        alert.style.opacity = '0';
+                        alert.style.transform = 'translateX(-20px)';
+                        setTimeout(() => alert.remove(), 300);
+                    }
                 }, 5000);
+
+                // Close button handler
+                alert?.querySelector('.alert-close')?.addEventListener('click', () => alert.remove());
             }
 
+            // ===== FUNCTION: Show Validation Errors =====
             function showErrors(errors) {
                 const errorBox = document.getElementById('formErrors');
                 const errorList = document.getElementById('errorList');
                 if (!errorBox || !errorList) return;
-                let html = '<strong>Validasi gagal:</strong><ul class="mb-0">';
-                for (let f in errors) {
-                    (Array.isArray(errors[f]) ? errors[f] : [errors[f]]).forEach(m => {
-                        html += `<li>${f}: ${m}</li>`;
+
+                let html = '';
+                for (let field in errors) {
+                    const messages = Array.isArray(errors[field]) ? errors[field] : [errors[field]];
+                    messages.forEach(msg => {
+                        html += `<li><strong>${field}:</strong> ${msg}</li>`;
                     });
                 }
-                html += '</ul>';
                 errorList.innerHTML = html;
                 errorBox.classList.remove('d-none');
                 errorBox.scrollIntoView({
-                    behavior: 'smooth'
+                    behavior: 'smooth',
+                    block: 'center'
                 });
             }
 
-            function bindEvents() {
-            }
-
+            // ===== INIT =====
             togglePlatformFields();
-            bindEvents();
+            bindPaginationEvents();
+
+            // ===== AUTO-CLOSE ALERTS =====
+            document.querySelectorAll('[data-auto-close]').forEach(alert => {
+                const closeBtn = alert.querySelector('.alert-close');
+                closeBtn?.addEventListener('click', () => alert.remove());
+                setTimeout(() => {
+                    alert.style.opacity = '0';
+                    alert.style.transform = 'translateX(-20px)';
+                    setTimeout(() => alert.remove(), 300);
+                }, 5000);
+            });
+
+            // ===== ESC KEY TO CLOSE MODALS =====
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    if (modalForm?._isShown) modalForm.hide();
+                    if (modalDetail?._isShown) modalDetail.hide();
+                }
+            });
         });
     </script>
-@endpush
+@endsection

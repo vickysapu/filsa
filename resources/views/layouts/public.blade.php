@@ -7,6 +7,7 @@
     <meta name="description" content="Gereja Filadelfia - Welcome Home">
     <meta name="keywords" content="gereja, filadelfia, ibadah, kristen, worship">
     <title>@yield('title', 'Gereja Filadelfia')</title>
+    <link rel="icon" href="{{ asset('img/logo.jpeg') }}">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

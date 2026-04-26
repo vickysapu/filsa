@@ -23,8 +23,10 @@ class UserController extends Controller
             ->get();
 
         if ($request->ajax()) {
+            $html = view('admin.users.index', compact('users', 'roles'))->render();
+            preg_match('/<tbody>(.*?)<\/tbody>/s', $html, $matches);
             return response()->json([
-                'html' => view('admin.users.index', compact('users', 'roles'))->render(),
+                'html' => $matches[1] ?? '',
             ]);
         }
 

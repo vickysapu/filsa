@@ -15,6 +15,10 @@ use App\Http\Controllers\DokumentasiKategoriController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventKategoriController;
 use App\Http\Controllers\InventarisController;
+use App\Http\Controllers\FinancialController;
+use App\Http\Controllers\FinancialExportController;
+use App\Http\Controllers\FinancialReportController;
+use App\Http\Controllers\FinancialTransactionController;
 use App\Http\Controllers\JemaatController;
 use App\Http\Controllers\KategoriPelayananController;
 use App\Http\Controllers\KeuanganController;
@@ -26,6 +30,7 @@ use App\Http\Controllers\Public\DataAccessPortalController;
 use App\Http\Controllers\Public\DataAccessRequestController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\SecurityTokenController;
+use App\Http\Controllers\TransactionCategoryController;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
@@ -94,42 +99,77 @@ Route::prefix('admin')
             ->get('/jemaat/{jemaat}/edit', [JemaatController::class, 'edit'])
             ->name('jemaat.edit');
 
-        Route::middleware(['permission:pemasukan.view'])->group(function () {
-            Route::get('/pemasukan', [PemasukanController::class, 'index'])->name('pemasukan.index');
-            Route::get('/pemasukan/{pemasukan}', [PemasukanController::class, 'show'])->name('pemasukan.show');
-            Route::get('/pemasukan/export', [PemasukanController::class, 'export'])->name('pemasukan.export');
-            Route::get('/pemasukan/statistics', [PemasukanController::class, 'statistics'])->name('pemasukan.statistics');
-        });
-        Route::middleware(['permission:pemasukan.create'])
-            ->get('/pemasukan/create', [PemasukanController::class, 'create'])
-            ->name('pemasukan.create');
-        Route::middleware(['permission:pemasukan.edit'])
-            ->get('/pemasukan/{pemasukan}/edit', [PemasukanController::class, 'edit'])
-            ->name('pemasukan.edit');
+        Route::prefix('finance')->name('finance.')->middleware(['page.token'])->group(function () {
+            Route::prefix('transactions')->name('transactions.')->group(function () {
+                Route::middleware('permission:finance.transaction.view')->group(function () {
+                    Route::get('/', [FinancialTransactionController::class, 'index'])->name('index');
+                    Route::get('/create', [FinancialTransactionController::class, 'create'])->name('create');
+                    Route::get('/{transaction}', [FinancialTransactionController::class, 'show'])->name('show');
+                    Route::get('/{transaction}/edit', [FinancialTransactionController::class, 'edit'])->name('edit');
+                });
+                Route::middleware('permission:finance.transaction.create')->group(function () {
+                    Route::post('/', [FinancialTransactionController::class, 'store'])->name('store');
+                });
+                Route::middleware('permission:finance.transaction.edit')->group(function () {
+                    Route::put('/{transaction}', [FinancialTransactionController::class, 'update'])->name('update');
+                });
+                Route::middleware('permission:finance.transaction.delete')->group(function () {
+                    Route::delete('/{transaction}', [FinancialTransactionController::class, 'destroy'])->name('destroy');
+                });
+                Route::middleware('permission:finance.transaction.approve')->group(function () {
+                    Route::post('/{transaction}/approve', [FinancialTransactionController::class, 'approve'])->name('approve');
+                });
+            });
 
-        Route::middleware(['permission:pengeluaran.view'])->group(function () {
-            Route::get('/pengeluaran', [PengeluaranController::class, 'index'])->name('pengeluaran.index');
-            Route::get('/pengeluaran/{pengeluaran}', [PengeluaranController::class, 'show'])->name('pengeluaran.show');
-            Route::get('/pengeluaran/export', [PengeluaranController::class, 'export'])->name('pengeluaran.export');
-            Route::get('/pengeluaran/statistics', [PengeluaranController::class, 'statistics'])->name('pengeluaran.statistics');
-        });
-        Route::middleware(['permission:pengeluaran.create'])
-            ->get('/pengeluaran/create', [PengeluaranController::class, 'create'])
-            ->name('pengeluaran.create');
-        Route::middleware(['permission:pengeluaran.edit'])
-            ->get('/pengeluaran/{pengeluaran}/edit', [PengeluaranController::class, 'edit'])
-            ->name('pengeluaran.edit');
+            Route::prefix('reports')->name('reports.')->group(function () {
+                Route::middleware('permission:finance.report.view')->group(function () {
+                    Route::get('/create', [FinancialReportController::class, 'create'])->name('create');
+                    Route::get('/index', [FinancialReportController::class, 'index'])->name('index');
+                    Route::get('/received', [FinancialReportController::class, 'receivedReports'])->name('received');
+                    Route::get('/{report}', [FinancialReportController::class, 'show'])->name('show');
+                    Route::get('/{report}/edit', [FinancialReportController::class, 'edit'])->name('edit');
+                });
 
-        Route::middleware(['permission:laporan.dashboard'])
-            ->get('/keuangan/dashboard', [KeuanganController::class, 'dashboard'])
-            ->name('keuangan.dashboard');
-        Route::middleware(['permission:laporan.view'])->group(function () {
-            Route::get('/keuangan/laporan', [KeuanganController::class, 'laporan'])->name('keuangan.laporan');
-            Route::get('/keuangan/chart-data', [KeuanganController::class, 'chartData'])->name('keuangan.chart');
+                Route::middleware('permission:finance.report.create')->group(function () {
+                    Route::post('/store-report', [FinancialReportController::class, 'storeReport'])->name('storeReport');
+                    Route::post('/generate', [FinancialReportController::class, 'generateFromTransactions'])->name('generate');
+                });
+
+                Route::middleware('permission:finance.report.edit')->group(function () {
+                    Route::put('/{report}', [FinancialReportController::class, 'update'])->name('update');
+                });
+
+                Route::middleware('permission:finance.report.delete')->group(function () {
+                    Route::delete('/{report}', [FinancialReportController::class, 'destroy'])->name('destroy');
+                });
+
+                Route::middleware('permission:finance.report.submit')->group(function () {
+                    Route::post('/{report}/submit', [FinancialReportController::class, 'submit'])->name('submit');
+                });
+
+                Route::middleware('permission:finance.report.approve')->group(function () {
+                    Route::post('/{report}/approve', [FinancialReportController::class, 'approve'])->name('approve');
+                    Route::post('/{report}/reject', [FinancialReportController::class, 'reject'])->name('reject');
+                });
+
+                // ✅ HANYA SATU DEFINISI FORWARD DI SINI
+                Route::middleware('permission:finance.report.forward')->group(function () {
+                    Route::post('/{report}/forward', [FinancialReportController::class, 'forward'])->name('forward');
+                });
+
+                Route::middleware('permission:finance.report.consolidate')->group(function () {
+                    Route::post('/consolidate', [FinancialReportController::class, 'consolidateReports'])->name('consolidate');
+                });
+            });
+            
+            Route::prefix('export')->name('export.')->group(function () {
+                Route::middleware('permission:finance.report.export')->group(function () {
+                    Route::get('/transactions', [FinancialExportController::class, 'exportTransactions'])->name('transactions');
+                    Route::get('/monthly-income', [FinancialExportController::class, 'exportMonthlyIncome'])->name('monthly-income');
+                    Route::get('/annual-report/{report}', [FinancialExportController::class, 'exportAnnualReport'])->name('annual-report');
+                });
+            });
         });
-        Route::middleware(['permission:laporan.export'])
-            ->get('/keuangan/laporan/export', [KeuanganController::class, 'exportLaporan'])
-            ->name('keuangan.laporan.export');
 
         Route::middleware(['permission:pelayanan.kategori.view'])
             ->prefix('pelayanan/kategori')
@@ -308,6 +348,7 @@ Route::prefix('admin')
                     ->name('edit');
             });
     });
+    
 
 Route::prefix('admin')
     ->name('admin.')

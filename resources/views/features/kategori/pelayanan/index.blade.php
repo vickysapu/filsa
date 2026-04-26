@@ -3,309 +3,545 @@
 @section('title', 'Kategori Pelayanan')
 
 @section('content')
-    <div class="lux-container">
+    <div class="page-wrapper">
 
-        <!-- Header -->
-        <div class="flex-between mb-5">
+        <!-- Page Header -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
             <div>
-                <h1 class="text-gradient" style="font-size: 2rem; font-weight: 800;">Kategori Pelayanan</h1>
-                <p class="text-muted">Kelola jenis/kategori pelayanan gereja</p>
+                <h1 class="h3 mb-1 fw-bold">Kategori Pelayanan</h1>
+                <p class="text-muted-custom mb-0">Kelola jenis/kategori pelayanan gereja</p>
             </div>
-            <button class="lux-btn lux-btn-primary" onclick="openModal()">
-                <i class="ri-add-line"></i> Tambah Kategori
+            <button class="btn btn-custom" onclick="openModal()">
+                <i class="ri-add-line me-1"></i> Tambah Kategori
             </button>
         </div>
 
-        <!-- Alert Success -->
+        <!-- Alerts -->
         @if (session('success'))
-            <div class="lux-card mb-4" style="border-left: 4px solid var(--success); background: #f0fdf4;">
-                <span style="color: #166534; font-weight: 600;">{{ session('success') }}</span>
+            <div class="alert-custom success mb-4" data-auto-close>
+                <i class="ri-checkbox-circle-fill"></i>
+                <span>{{ session('success') }}</span>
+                <button class="alert-close">&times;</button>
             </div>
         @endif
-
-        <!-- Alert Error -->
         @if (session('error'))
-            <div class="lux-card mb-4" style="border-left: 4px solid var(--danger); background: #fef2f2;">
-                <span style="color: #991b1b; font-weight: 600;">{{ session('error') }}</span>
+            <div class="alert-custom error mb-4" data-auto-close>
+                <i class="ri-error-warning-fill"></i>
+                <span>{{ session('error') }}</span>
+                <button class="alert-close">&times;</button>
             </div>
         @endif
 
-        <!-- Kategori Cards -->
+        <!-- Kategori Cards Grid -->
         @if ($kategoris->count() > 0)
-            <div class="lux-grid lux-grid-3">
+            <div class="row g-4" id="kategoriGrid">
                 @foreach ($kategoris as $kategori)
-                    <div class="lux-card" style="border-top: 4px solid {{ $kategori->warna }}; position: relative;">
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card-custom h-100 kategori-card" style="border-top: 4px solid {{ $kategori->warna }};"
+                            data-id="{{ $kategori->id }}">
 
-                        <!-- Status Badge -->
-                        <div style="position: absolute; top: 1rem; right: 1rem;">
-                            <span class="lux-badge {{ $kategori->is_active ? 'lux-badge-success' : 'lux-badge-danger' }}">
-                                {{ $kategori->is_active ? 'Aktif' : 'Non-Aktif' }}
-                            </span>
-                        </div>
+                            <!-- Status Badge -->
+                            <div class="position-absolute top-0 end-0 p-3">
+                                @if ($kategori->is_active)
+                                    <span class="badge badge-status-success">
+                                        <i class="ri-check-line me-1"></i> Aktif
+                                    </span>
+                                @else
+                                    <span class="badge badge-status-danger">
+                                        <i class="ri-close-line me-1"></i> Non-Aktif
+                                    </span>
+                                @endif
+                            </div>
 
-                        <!-- Nama Kategori -->
-                        <h3 class="lux-card-title" style="margin: 0 0 0.75rem 0; font-size: 1.1rem;">
-                            {{ $kategori->nama_kategori }}
-                        </h3>
+                            <div class="card-body p-4 pt-5">
+                                <!-- Nama Kategori -->
+                                <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                                    <span class="color-dot" style="background: {{ $kategori->warna }};"></span>
+                                    {{ $kategori->nama_kategori }}
+                                </h5>
 
-                        <!-- Deskripsi -->
-                        @if ($kategori->deskripsi)
-                            <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 1rem; line-height: 1.5;">
-                                {{ $kategori->deskripsi }}
-                            </p>
-                        @endif
+                                <!-- Deskripsi -->
+                                @if ($kategori->deskripsi)
+                                    <p class="text-muted-custom small mb-3 line-clamp-3">
+                                        {{ $kategori->deskripsi }}
+                                    </p>
+                                @endif
 
-                        <!-- Stats -->
-                        <div class="text-muted"
-                            style="font-size: 0.85rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                            <i class="ri-calendar-line"></i>
-                            <span>{{ $kategori->pelayanans->count() }} Jadwal Pelayanan</span>
-                        </div>
+                                <!-- Stats -->
+                                <div class="d-flex align-items-center gap-2 text-muted-custom small mb-4">
+                                    <i class="ri-calendar-line"></i>
+                                    <span>{{ $kategori->pelayanans->count() }} Jadwal Pelayanan</span>
+                                </div>
 
-                        <!-- Actions -->
-                        <div style="display: flex; gap: 0.5rem;">
-                            <button class="lux-btn lux-btn-outline lux-btn-sm"
-                                onclick="openEditModal({{ json_encode($kategori) }})">
-                                <i class="ri-pencil-line"></i> Edit
-                            </button>
-                            @if ($kategori->pelayanans->count() == 0)
-                                <form action="{{ route('admin.kategori.pelayanan.destroy', $kategori) }}" method="POST"
-                                    onsubmit="return confirm('Yakin ingin menghapus kategori ini?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="lux-btn lux-btn-outline lux-btn-sm"
-                                        style="border-color: var(--danger); color: var(--danger);">
-                                        <i class="ri-delete-bin-line"></i>
+                                <!-- Actions -->
+                                <div class="d-flex gap-2">
+                                    <button class="btn-action btn-action-primary btn-sm w-100"
+                                        onclick="openEditModal({{ json_encode($kategori) }})">
+                                        <i class="ri-pencil-line me-1"></i> Edit
                                     </button>
-                                </form>
-                            @endif
+                                    @if ($kategori->pelayanans->count() == 0)
+                                        <form action="{{ route('admin.kategori.pelayanan.destroy', $kategori) }}"
+                                            method="POST" class="w-100"
+                                            onsubmit="return confirm('Yakin ingin menghapus kategori ini?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn-action btn-action-danger btn-sm w-100"
+                                                title="Hapus">
+                                                <i class="ri-delete-bin-line"></i>
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
+                            </div>
                         </div>
                     </div>
                 @endforeach
             </div>
         @else
             <!-- Empty State -->
-            <div
-                style="text-align: center; padding: 4rem; background: #f8fafc; border-radius: var(--radius); margin-top: 2rem;">
-                <i class="ri-folder-off-line"
-                    style="font-size: 4rem; color: var(--text-muted); opacity: 0.3; margin-bottom: 1rem;"></i>
-                <h3 style="color: var(--text-main); margin-bottom: 0.5rem;">Belum Ada Kategori</h3>
-                <p class="text-muted" style="margin-bottom: 1.5rem;">Mulai dengan menambahkan kategori pelayanan pertama
-                    Anda</p>
-                <button class="lux-btn lux-btn-primary" onclick="openModal()">
-                    <i class="ri-add-line"></i> Tambah Kategori Pertama
-                </button>
+            <div class="card-custom">
+                <div class="card-body p-5 text-center">
+                    <div class="empty-state-icon mb-4">
+                        <i class="ri-folder-off-line"></i>
+                    </div>
+                    <h5 class="fw-semibold mb-2">Belum Ada Kategori</h5>
+                    <p class="text-muted-custom small mb-4">Mulai dengan menambahkan kategori pelayanan pertama Anda</p>
+                    <button class="btn btn-custom" onclick="openModal()">
+                        <i class="ri-add-line me-1"></i> Tambah Kategori Pertama
+                    </button>
+                </div>
             </div>
         @endif
+
     </div>
 
     <!-- Modal Add/Edit Kategori -->
-    <div id="modalKategori"
-        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999;">
-        <!-- Overlay -->
-        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);"
-            onclick="closeModal()"></div>
+    <div class="modal fade" id="modalKategori" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-content-custom">
 
-        <!-- Modal Content -->
-        <div
-            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-                background: white; border-radius: var(--radius, 12px); 
-                width: 90%; max-width: 500px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-                z-index: 10000;">
+                <form id="formKategori" method="POST">
+                    @csrf
+                    <input type="hidden" id="kategoriId" name="_method" value="">
 
-            <form id="formKategori" method="POST">
-                @csrf
-                <input type="hidden" id="kategoriId" name="_method" value="">
-
-                <!-- Header -->
-                <div
-                    style="padding: 1.25rem 1.5rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
-                    <h3 id="modalTitle" style="font-weight: 700; margin: 0; font-size: 1.25rem;">Tambah Kategori</h3>
-                    <button type="button" onclick="closeModal()"
-                        style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">
-                        &times;
-                    </button>
-                </div>
-
-                <!-- Body -->
-                <div style="padding: 1.5rem;">
-                    <!-- Nama Kategori -->
-                    <div style="margin-bottom: 1rem;">
-                        <label
-                            style="display: block; margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 600; color: var(--text-muted);">
-                            Nama Kategori *
-                        </label>
-                        <input type="text" name="nama_kategori" id="namaKategori"
-                            style="width: 100%; padding: 0.625rem 0.875rem; border: 1px solid #e2e8f0; border-radius: var(--radius, 8px); font-size: 0.95rem;"
-                            required placeholder="Contoh: Praise & Worship, Usher, Multimedia">
+                    <!-- Header -->
+                    <div class="modal-header border-bottom border-custom">
+                        <h5 class="modal-title fw-semibold" id="modalTitle">Tambah Kategori</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
+                            onclick="closeModal()"></button>
                     </div>
 
-                    <!-- Deskripsi -->
-                    <div style="margin-bottom: 1rem;">
-                        <label
-                            style="display: block; margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 600; color: var(--text-muted);">
-                            Deskripsi
-                        </label>
-                        <textarea name="deskripsi" id="deskripsiKategori" rows="2"
-                            style="width: 100%; padding: 0.625rem 0.875rem; border: 1px solid #e2e8f0; border-radius: var(--radius, 8px); font-size: 0.95rem; resize: vertical;"
-                            placeholder="Deskripsi singkat tentang kategori ini..."></textarea>
-                    </div>
+                    <!-- Body -->
+                    <div class="modal-body p-4">
 
-                    <!-- Warna Badge (Auto Random) -->
-                    <div style="margin-bottom: 1rem;">
-                        <label
-                            style="display: block; margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 600; color: var(--text-muted);">
-                            Warna Badge
-                        </label>
-                        <div style="display: flex; align-items: center; gap: 1rem;">
-                            <input type="color" name="warna" id="warnaKategori" value="#4f46e5"
-                                style="width: 50px; height: 40px; padding: 0; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
-                            <span class="text-muted" style="font-size: 0.85rem;">
-                                <i class="ri-magic-line"></i> Warna akan diacak otomatis jika tidak dipilih
-                            </span>
-                            <button type="button" class="lux-btn lux-btn-outline lux-btn-sm" onclick="randomizeColor()">
-                                <i class="ri-refresh-line"></i> Acak Warna
-                            </button>
+                        <!-- Nama Kategori -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-muted-custom">Nama Kategori <span
+                                    class="text-danger">*</span></label>
+                            <input type="text" name="nama_kategori" id="namaKategori"
+                                class="form-control form-control-custom" required
+                                placeholder="Contoh: Praise & Worship, Usher, Multimedia">
+                        </div>
+
+                        <!-- Deskripsi -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-muted-custom">Deskripsi</label>
+                            <textarea name="deskripsi" id="deskripsiKategori" rows="2"
+                                class="form-control form-control-custom textarea-custom" placeholder="Deskripsi singkat tentang kategori ini..."></textarea>
+                        </div>
+
+                        <!-- Warna Badge -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-muted-custom">Warna Badge</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="color-picker-wrapper">
+                                    <input type="color" name="warna" id="warnaKategori"
+                                        class="form-control-color-custom" value="#4f46e5">
+                                    <span class="color-preview" id="colorPreview"></span>
+                                </div>
+                                <button type="button" class="btn btn-outline-custom btn-sm" onclick="randomizeColor()">
+                                    <i class="ri-refresh-line me-1"></i> Acak Warna
+                                </button>
+                                <small class="text-muted-custom ms-auto">
+                                    <i class="ri-magic-line me-1"></i>Diacak otomatis jika kosong
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Status -->
+                        <div class="form-check form-switch-custom p-3 bg-body-tertiary rounded">
+                            <input type="checkbox" name="is_active" id="isActiveKategori"
+                                class="form-check-input-custom" value="1" checked>
+                            <label class="form-check-label-custom fw-semibold" for="isActiveKategori">
+                                Kategori Aktif
+                            </label>
                         </div>
                     </div>
 
-                    <!-- Status -->
-                    <div>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                            <input type="checkbox" name="is_active" id="isActiveKategori" value="1" checked
-                                style="width: 18px; height: 18px; accent-color: var(--primary, #4f46e5);">
-                            <span style="font-weight: 500;">Aktif</span>
-                        </label>
+                    <!-- Footer -->
+                    <div class="modal-footer border-top border-custom py-3 px-4">
+                        <button type="button" class="btn btn-outline-custom" data-bs-dismiss="modal"
+                            onclick="closeModal()">
+                            Batal
+                        </button>
+                        <button type="submit" class="btn btn-custom">
+                            <i class="ri-save-line me-1"></i> Simpan
+                        </button>
                     </div>
-                </div>
-
-                <!-- Footer -->
-                <div
-                    style="padding: 1rem 1.5rem; border-top: 1px solid #e2e8f0; display: flex; gap: 0.75rem; justify-content: flex-end;">
-                    <button type="button" onclick="closeModal()"
-                        style="padding: 0.625rem 1.25rem; border: 1px solid #e2e8f0; border-radius: var(--radius, 8px); background: white; cursor: pointer; font-weight: 500;">
-                        Batal
-                    </button>
-                    <button type="submit"
-                        style="padding: 0.625rem 1.25rem; border: none; border-radius: var(--radius, 8px); background: var(--primary, #4f46e5); color: white; cursor: pointer; font-weight: 600;">
-                        Simpan
-                    </button>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
     </div>
 
-@endsection
+    <style>
+        /* ===== PAGE SPECIFIC STYLES ===== */
+        .page-wrapper {
+            animation: fadeIn 0.4s ease;
+        }
 
-@push('scripts')
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== KATEGORI CARD ===== */
+        .kategori-card {
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .kategori-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* Color Dot Indicator */
+        .color-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            border: 2px solid var(--bg-surface);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Line Clamp for Description */
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* ===== COLOR PICKER CUSTOM ===== */
+        .color-picker-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .form-control-color-custom {
+            width: 48px;
+            height: 40px;
+            padding: 0;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            background: var(--bg-surface);
+        }
+
+        .form-control-color-custom::-webkit-color-swatch {
+            border: none;
+            border-radius: calc(var(--radius-sm) - 2px);
+        }
+
+        .form-control-color-custom::-moz-color-swatch {
+            border: none;
+            border-radius: calc(var(--radius-sm) - 2px);
+        }
+
+        .color-preview {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            margin-left: -12px;
+            border: 2px solid var(--bg-surface);
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+        }
+
+        /* ===== EMPTY STATE ===== */
+        .empty-state-icon {
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            background: var(--bg-body);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            font-size: 3rem;
+            opacity: 0.5;
+        }
+
+        /* ===== BADGES ===== */
+        .badge-status-success {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.25);
+            padding: 0.4em 0.75em;
+            font-weight: 500;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .badge-status-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            padding: 0.4em 0.75em;
+            font-weight: 500;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        /* ===== ACTION BUTTONS ===== */
+        .btn-action {
+            border-radius: var(--radius-sm);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border-color);
+            background: var(--bg-surface);
+            color: var(--text-primary);
+            transition: var(--transition);
+            font-size: 0.85rem;
+            padding: 0.4rem 0.75rem;
+            font-weight: 500;
+        }
+
+        .btn-action:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-action-primary {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+        .btn-action-primary:hover {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .btn-action-danger {
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+
+        .btn-action-danger:hover {
+            background: #ef4444;
+            color: white;
+        }
+
+        /* ===== DARK MODE ADJUSTMENTS ===== */
+        [data-theme="dark"] .bg-body-tertiary {
+            background-color: var(--bg-sidebar) !important;
+        }
+
+        [data-theme="dark"] .color-dot {
+            border-color: var(--bg-sidebar);
+        }
+
+        [data-theme="dark"] .color-preview {
+            border-color: var(--bg-sidebar);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .kategori-card .card-body {
+                padding: 1.25rem !important;
+            }
+
+            .color-picker-wrapper {
+                flex-wrap: wrap;
+                gap: 0.5rem !important;
+            }
+        }
+    </style>
 
     <script>
-        $(document).ready(function() {
+        document.addEventListener('DOMContentLoaded', function() {
 
-            // Random color palette
+            // ===== MODAL INSTANCE =====
+            const modalEl = document.getElementById('modalKategori');
+            let modalInstance = null;
+            if (bootstrap && bootstrap.Modal) {
+                modalInstance = new bootstrap.Modal(modalEl);
+            }
+
+            // ===== COLOR PALETTE =====
             const colorPalette = [
                 '#4f46e5', '#10b981', '#f59e0b', '#ec4899', '#06b6d4',
                 '#8b5cf6', '#ef4444', '#14b8a6', '#f97316', '#6366f1'
             ];
 
-            // Fungsi buka modal Tambah
+            // ===== DOM ELEMENTS =====
+            const formKategori = document.getElementById('formKategori');
+            const namaKategori = document.getElementById('namaKategori');
+            const deskripsiKategori = document.getElementById('deskripsiKategori');
+            const warnaKategori = document.getElementById('warnaKategori');
+            const isActiveKategori = document.getElementById('isActiveKategori');
+            const kategoriId = document.getElementById('kategoriId');
+            const modalTitle = document.getElementById('modalTitle');
+            const colorPreview = document.getElementById('colorPreview');
+
+            // ===== FUNCTIONS =====
+
             function openModal() {
                 resetForm();
-                randomizeColor(); // auto random warna saat tambah baru
+                randomizeColor();
+                modalTitle.textContent = 'Tambah Kategori';
+                formKategori.action = "{{ route('admin.kategori.pelayanan.store') }}";
+                kategoriId.value = '';
+                formKategori.querySelector('input[name="_method"]').value = '';
 
-                $('#modalTitle').text('Tambah Kategori');
-                $('#formKategori')
-                    .attr('action', "{{ route('admin.kategori.pelayanan.store') }}")
-                    .find('input[name="_method"]').val('');
-
-                $('#kategoriId').val('');
-                $('#modalKategori').fadeIn(200);
-                $('body').css('overflow', 'hidden');
+                if (modalInstance) {
+                    modalInstance.show();
+                } else {
+                    modalEl.style.display = 'block';
+                }
+                document.body.style.overflow = 'hidden';
             }
 
-            // Fungsi buka modal Edit
             function openEditModal(kategori) {
-                // Parse jika dikirim sebagai string JSON
+                // Parse JSON if string
                 if (typeof kategori === 'string') {
                     kategori = JSON.parse(kategori);
                 }
 
-                $('#modalTitle').text('Edit Kategori');
+                modalTitle.textContent = 'Edit Kategori';
+                formKategori.action = `/admin/pelayanan/kategori/${kategori.id}`;
+                formKategori.querySelector('input[name="_method"]').value = 'PUT';
+                kategoriId.value = kategori.id;
 
-                $('#formKategori')
-                    .attr('action', '/admin/pelayanan/kategori/' + kategori.id)
-                    .find('input[name="_method"]').val('PUT');
+                namaKategori.value = kategori.nama_kategori || '';
+                deskripsiKategori.value = kategori.deskripsi || '';
+                warnaKategori.value = kategori.warna || '#4f46e5';
+                isActiveKategori.checked = kategori.is_active == 1;
 
-                $('#kategoriId').val(kategori.id);
+                updateColorPreview(warnaKategori.value);
 
-                // Isi field
-                $('#namaKategori').val(kategori.nama_kategori || '');
-                $('#deskripsiKategori').val(kategori.deskripsi || '');
-                $('#warnaKategori').val(kategori.warna || '#4f46e5');
-                $('#isActiveKategori').prop('checked', kategori.is_active == 1);
-
-                $('#modalKategori').fadeIn(200);
-                $('body').css('overflow', 'hidden');
+                if (modalInstance) {
+                    modalInstance.show();
+                } else {
+                    modalEl.style.display = 'block';
+                }
+                document.body.style.overflow = 'hidden';
             }
 
-            // Fungsi tutup modal
             function closeModal() {
-                $('#modalKategori').fadeOut(200, function() {
-                    // Optional: reset form setelah tertutup
-                    resetForm();
-                });
-                $('body').css('overflow', '');
+                if (modalInstance) {
+                    modalInstance.hide();
+                } else {
+                    modalEl.style.display = 'none';
+                }
+                document.body.style.overflow = '';
+                resetForm();
             }
 
-            // Fungsi reset form
             function resetForm() {
-                $('#formKategori')[0].reset();
-                $('#namaKategori').val('');
-                $('#deskripsiKategori').val('');
-                $('#isActiveKategori').prop('checked', true);
-                // warna tidak di-reset di sini karena randomizeColor dipanggil saat tambah
+                if (formKategori) formKategori.reset();
+                if (namaKategori) namaKategori.value = '';
+                if (deskripsiKategori) deskripsiKategori.value = '';
+                if (isActiveKategori) isActiveKategori.checked = true;
+                if (kategoriId) kategoriId.value = '';
+                if (colorPreview) colorPreview.style.backgroundColor = '';
             }
 
-            // Fungsi random warna
             function randomizeColor() {
                 const randomColor = colorPalette[Math.floor(Math.random() * colorPalette.length)];
-                $('#warnaKategori').val(randomColor);
+                if (warnaKategori) warnaKategori.value = randomColor;
+                updateColorPreview(randomColor);
             }
 
-            // ================== EVENT LISTENER ==================
+            function updateColorPreview(color) {
+                if (colorPreview) {
+                    colorPreview.style.backgroundColor = color;
+                }
+            }
 
-            // Tutup dengan tombol Escape
-            $(document).on('keydown', function(e) {
-                if (e.key === 'Escape') {
+            // ===== EVENT LISTENERS =====
+
+            // Color picker change
+            if (warnaKategori) {
+                warnaKategori.addEventListener('input', function(e) {
+                    updateColorPreview(e.target.value);
+                });
+            }
+
+            // Form validation
+            if (formKategori) {
+                formKategori.addEventListener('submit', function(e) {
+                    const nama = namaKategori?.value?.trim();
+                    if (!nama) {
+                        e.preventDefault();
+                        alert('Nama kategori harus diisi!');
+                        if (namaKategori) namaKategori.focus();
+                        return false;
+                    }
+                });
+            }
+
+            // Close on Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && modalEl.style.display === 'block') {
                     closeModal();
                 }
             });
 
-            // Validasi form sebelum submit (client-side sederhana)
-            $('#formKategori').on('submit', function(e) {
-                const nama = $('#namaKategori').val().trim();
-                if (!nama) {
-                    e.preventDefault();
-                    alert('Nama kategori harus diisi!');
-                    $('#namaKategori').focus();
-                    return false;
-                }
-            });
+            // Close modal on backdrop click (for native modal)
+            if (modalEl) {
+                modalEl.addEventListener('click', function(e) {
+                    if (e.target === modalEl) {
+                        closeModal();
+                    }
+                });
+            }
 
-            // Optional: tutup modal jika klik di luar modal-content
-            $('#modalKategori').on('click', function(e) {
-                if (e.target === this) {
-                    closeModal();
-                }
-            });
+            // Initialize color preview
+            if (warnaKategori && colorPreview) {
+                updateColorPreview(warnaKategori.value);
+            }
 
-            // Expose fungsi ke global scope (agar bisa dipanggil dari onclick inline)
+            // ===== EXPOSE TO GLOBAL SCOPE =====
             window.openModal = openModal;
             window.openEditModal = openEditModal;
             window.closeModal = closeModal;
             window.randomizeColor = randomizeColor;
 
+            // ===== AUTO CLOSE ALERTS =====
+            document.querySelectorAll('[data-auto-close]').forEach(alert => {
+                const closeBtn = alert.querySelector('.alert-close');
+                closeBtn?.addEventListener('click', () => alert.remove());
+                setTimeout(() => {
+                    alert.style.opacity = '0';
+                    alert.style.transform = 'translateX(-20px)';
+                    setTimeout(() => alert.remove(), 300);
+                }, 5000);
+            });
         });
     </script>
-@endpush
+@endsection
