@@ -26,7 +26,21 @@
             <div class="card-body p-4">
                 <form id="formFilter">
                     <div class="row g-3 align-items-end">
-                        <div class="col-6 col-md-3">
+                        @if ($isSuperAdmin)
+                            <div class="col-6 col-md-2">
+                                <label class="form-label small fw-semibold text-muted-custom mb-2">Cabang</label>
+                                <select id="filter_branch" class="form-select form-select-custom">
+                                    <option value="">Semua Cabang</option>
+                                    @foreach ($branches as $branch)
+                                        <option value="{{ $branch->id }}"
+                                            {{ request('branch_id') == $branch->id ? 'selected' : '' }}>
+                                            {{ $branch->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        @endif
+                        <div class="col-6 col-md-2">
                             <label class="form-label small fw-semibold text-muted-custom mb-2">Kategori</label>
                             <select id="filter_kategori" class="form-select form-select-custom">
                                 <option value="">Semua Kategori</option>
@@ -38,7 +52,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-md-2">
                             <label class="form-label small fw-semibold text-muted-custom mb-2">Status</label>
                             <select id="filter_status" class="form-select form-select-custom">
                                 <option value="">Semua Status</option>
@@ -53,7 +67,7 @@
                                     Dibatalkan</option>
                             </select>
                         </div>
-                        <div class="col-6 col-md-4">
+                        <div class="col-12 col-md-4">
                             <label class="form-label small fw-semibold text-muted-custom mb-2">Cari</label>
                             <div class="position-relative">
                                 <i
@@ -62,7 +76,7 @@
                                     value="{{ request('search') }}" placeholder="Nama event, lokasi...">
                             </div>
                         </div>
-                        <div class="col-6 col-md-2 d-flex gap-2">
+                        <div class="col-12 col-md-2 d-flex gap-2">
                             <button type="button" id="btnFilter" class="btn btn-custom flex-fill">
                                 <i class="ri-filter-line me-1"></i> Filter
                             </button>
@@ -82,6 +96,10 @@
                     <thead class="bg-body-tertiary">
                         <tr>
                             <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold">Event</th>
+                            @if ($isSuperAdmin)
+                                <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold">Cabang
+                                </th>
+                            @endif
                             <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold">Kategori</th>
                             <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold">Tanggal</th>
                             <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold">Lokasi</th>
@@ -109,6 +127,12 @@
                                         </div>
                                     </div>
                                 </td>
+                                @if ($isSuperAdmin)
+                                    <td class="py-3 px-4">
+                                        <span
+                                            class="badge bg-light text-dark border">{{ $evt->branch->name ?? '-' }}</span>
+                                    </td>
+                                @endif
                                 <td class="py-3 px-4">
                                     <span class="badge badge-category"
                                         style="background: {{ $evt->kategori->warna }}15; color: {{ $evt->kategori->warna }}; border: 1px solid {{ $evt->kategori->warna }}40;">
@@ -150,7 +174,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="py-5">
+                                <td colspan="{{ $isSuperAdmin ? 7 : 6 }}" class="py-5">
                                     <div class="text-center">
                                         <div class="empty-state-icon mb-3">
                                             <i class="ri-calendar-event-line"></i>
@@ -183,13 +207,14 @@
                 <form id="formEvent" enctype="multipart/form-data">
                     @csrf
                     <input type="hidden" name="id" id="eventId">
+                    <input type="hidden" name="_method" id="formMethod" value="POST">
 
                     <div class="modal-header border-bottom border-custom">
                         <h5 class="modal-title fw-semibold" id="modalEventLabel">Buat Event Baru</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
 
-                    <div class="modal-body p-4">
+                    <div class="modal-body p-4" style="max-height: 70vh; overflow-y: auto;">
                         <div class="alert alert-danger d-none" id="formErrors">
                             <i class="ri-error-warning-line me-2"></i>
                             <ul class="mb-0 small" id="errorList"></ul>
@@ -205,6 +230,20 @@
                                         </h6>
                                     </div>
                                     <div class="card-body p-4">
+                                        @if ($isSuperAdmin)
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-semibold text-muted-custom">Cabang <span
+                                                        class="text-danger">*</span></label>
+                                                <select name="branch_id" id="branch_id"
+                                                    class="form-select form-select-custom" required>
+                                                    <option value="">Pilih Cabang...</option>
+                                                    @foreach ($branches as $branch)
+                                                        <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        @endif
+
                                         <div class="mb-3">
                                             <label class="form-label small fw-semibold text-muted-custom">Nama Event <span
                                                     class="text-danger">*</span></label>
@@ -420,12 +459,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Hidden Base URLs -->
-    <input type="hidden" id="baseUrlStore" value="{{ route('admin.events.store') }}">
-    <input type="hidden" id="baseUrlUpdate" value="{{ route('admin.events.update', ['event' => '__ID__']) }}">
-    <input type="hidden" id="baseUrlDelete" value="{{ route('admin.events.destroy', ['event' => '__ID__']) }}">
-    <input type="hidden" id="baseUrlEdit" value="{{ route('admin.events.edit', ['event' => '__ID__']) }}">
 
     <style>
         /* ===== PAGE SPECIFIC STYLES ===== */
@@ -817,7 +850,6 @@
             });
 
             // ===== CONSTANTS =====
-            const currentToken = '{{ request()->attributes->get('page_token') ?? '' }}';
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
             let isEditMode = false;
             let currentEventId = null;
@@ -826,6 +858,7 @@
             document.getElementById('btnAddEvent')?.addEventListener('click', function() {
                 resetForm();
                 isEditMode = false;
+                document.getElementById('formMethod').value = 'POST';
                 document.getElementById('modalEventLabel').textContent = 'Buat Event Baru';
                 if (modalForm) modalForm.show();
             });
@@ -840,6 +873,9 @@
                 document.getElementById('filter_kategori').value = '';
                 document.getElementById('filter_status').value = '';
                 document.getElementById('filter_search').value = '';
+                @if ($isSuperAdmin)
+                    document.getElementById('filter_branch').value = '';
+                @endif
                 loadEvents(1);
             });
 
@@ -850,6 +886,12 @@
                     loadEvents(1);
                 }
             });
+
+            @if ($isSuperAdmin)
+                document.getElementById('filter_branch')?.addEventListener('change', function() {
+                    loadEvents(1);
+                });
+            @endif
 
             // ===== EVENT: View Event (delegation) =====
             document.addEventListener('click', function(e) {
@@ -909,13 +951,7 @@
                 }
 
                 const eventId = document.getElementById('eventId').value;
-                let baseUrl = isEditMode ?
-                    document.getElementById('baseUrlUpdate').value.replace('__ID__', eventId) :
-                    document.getElementById('baseUrlStore').value;
-
-                const separator = baseUrl.includes('?') ? '&' : '?';
-                const url =
-                    `${baseUrl}${separator}_token_nav=${currentToken}${isEditMode ? '&_method=PUT' : ''}`;
+                let url = isEditMode ? `/admin/events/${eventId}` : '/admin/events';
 
                 if (btnSave) {
                     btnSave.disabled = true;
@@ -935,11 +971,6 @@
                         },
                         body: formData
                     });
-
-                    if (response.redirected) {
-                        window.location.href = response.url;
-                        return;
-                    }
 
                     const data = await response.json();
 
@@ -982,18 +1013,20 @@
             function loadEvents(page = 1) {
                 const params = new URLSearchParams({
                     page: page,
+                    @if ($isSuperAdmin)
+                        branch_id: document.getElementById('filter_branch')?.value || '',
+                    @endif
                     kategori_id: document.getElementById('filter_kategori')?.value || '',
                     status: document.getElementById('filter_status')?.value || '',
                     search: document.getElementById('filter_search')?.value?.trim() || '',
-                    ajax: 1,
-                    _token_nav: currentToken
+                    ajax: 1
                 });
 
                 const tableBody = document.getElementById('eventsTableBody');
                 if (tableBody) {
                     tableBody.innerHTML = `
                 <tr>
-                    <td colspan="6" class="py-5 text-center">
+                    <td colspan="{{ $isSuperAdmin ? 7 : 6 }}" class="py-5 text-center">
                         <div class="spinner-border text-primary" role="status"></div>
                         <p class="text-muted-custom mt-3 mb-0">Memuat data event...</p>
                     </td>
@@ -1059,8 +1092,7 @@
 
                 if (modalDetail) modalDetail.show();
 
-                fetch(`{{ route('admin.events.show', '__ID__') }}?ajax=1&_token_nav=${currentToken}`.replace(
-                        '__ID__', id), {
+                fetch(`/admin/events/${id}?ajax=1`, {
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest',
                             'Accept': 'application/json',
@@ -1078,7 +1110,7 @@
                         document.getElementById('detailNamaEvent').textContent = evt.nama_event;
 
                         const featuredImg = evt.gambar_featured ?
-                            `<img src="{{ asset('storage') }}/${evt.gambar_featured}" class="img-fluid rounded mb-4" alt="${evt.nama_event}">` :
+                            `<img src="/storage/${evt.gambar_featured}" class="img-fluid rounded mb-4" alt="${evt.nama_event}">` :
                             '';
 
                         const categoryBadge =
@@ -1166,11 +1198,7 @@
 
             // ===== FUNCTION: Load Event for Edit =====
             function loadEventForEdit(id) {
-                let baseUrl = document.getElementById('baseUrlEdit').value.replace('__ID__', id);
-                const separator = baseUrl.includes('?') ? '&' : '?';
-                const url = `${baseUrl}${separator}_token_nav=${currentToken}&ajax=1`;
-
-                fetch(url, {
+                fetch(`/admin/events/${id}/edit?ajax=1`, {
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest',
                             'Accept': 'application/json'
@@ -1178,20 +1206,34 @@
                     })
                     .then(r => r.json())
                     .then(data => {
+                        if (!data.success) {
+                            showAlert('error', data.message || 'Gagal memuat data');
+                            return;
+                        }
+
                         resetForm();
                         isEditMode = true;
+                        document.getElementById('formMethod').value = 'PUT';
                         document.getElementById('modalEventLabel').textContent = 'Edit Event';
                         document.getElementById('eventId').value = data.id;
 
                         // Fill form fields
+                        @if ($isSuperAdmin)
+                            document.getElementById('branch_id').value = data.branch_id || '';
+                        @endif
                         document.getElementById('nama_event').value = data.nama_event || '';
                         document.getElementById('kategori_id').value = data.kategori_id || '';
                         document.getElementById('deskripsi').value = data.deskripsi || '';
                         document.getElementById('deskripsi_lengkap').value = data.deskripsi_lengkap || '';
-                        document.getElementById('tanggal_mulai').value = data.tanggal_mulai ? data.tanggal_mulai
-                            .replace(' ', 'T') : '';
-                        document.getElementById('tanggal_selesai').value = data.tanggal_selesai ? data
-                            .tanggal_selesai.replace(' ', 'T') : '';
+
+                        // Format dates for datetime-local input (YYYY-MM-DDTHH:mm)
+                        if (data.tanggal_mulai) {
+                            document.getElementById('tanggal_mulai').value = data.tanggal_mulai;
+                        }
+                        if (data.tanggal_selesai) {
+                            document.getElementById('tanggal_selesai').value = data.tanggal_selesai;
+                        }
+
                         document.getElementById('lokasi').value = data.lokasi || '';
                         document.getElementById('alamat_lengkap').value = data.alamat_lengkap || '';
                         document.getElementById('pembicara').value = data.pembicara || '';
@@ -1207,7 +1249,7 @@
                         const currentFeatured = document.getElementById('currentFeatured');
                         if (data.gambar_featured) {
                             currentFeatured.innerHTML = `
-                    <img src="{{ asset('storage') }}/${data.gambar_featured}" class="img-preview mb-2">
+                    <img src="/storage/${data.gambar_featured}" class="img-preview mb-2">
                     <p class="text-muted-custom small mb-0">Gambar featured saat ini</p>`;
                         } else {
                             currentFeatured.innerHTML =
@@ -1219,7 +1261,7 @@
                         if (data.gambar_galeri && data.gambar_galeri.length > 0) {
                             let html = '';
                             data.gambar_galeri.forEach(img => {
-                                html += `<img src="{{ asset('storage') }}/${img}" alt="Gallery">`;
+                                html += `<img src="/storage/${img}" alt="Gallery">`;
                             });
                             currentGallery.innerHTML = html;
                         } else {
@@ -1234,11 +1276,7 @@
 
             // ===== FUNCTION: Delete Event =====
             function deleteEvent(id) {
-                let baseUrl = document.getElementById('baseUrlDelete').value.replace('__ID__', id);
-                const separator = baseUrl.includes('?') ? '&' : '?';
-                const url = `${baseUrl}${separator}_token_nav=${currentToken}`;
-
-                fetch(url, {
+                fetch(`/admin/events/${id}`, {
                         method: 'DELETE',
                         headers: {
                             'X-CSRF-TOKEN': csrfToken,

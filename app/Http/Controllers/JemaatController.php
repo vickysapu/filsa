@@ -2,230 +2,374 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use App\Models\Branch;
 use App\Models\Jemaat;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Auth;
 
 class JemaatController extends Controller
 {
+    protected function getBranchId()
+    {
+        return Auth::user()?->roles->first()?->branch_id;
+    }
+
+    protected function isSuperAdmin()
+    {
+        $user = Auth::user();
+        return $user && ($user->hasRole('administrator') || ($user->branch && $user->branch->is_headquarter));
+    }
+
     public function index(Request $request)
     {
+        $isSuperAdmin = $this->isSuperAdmin();
+        $user = Auth::user();
+        $branchId = $user?->branch_id ?? $user?->roles->pluck('branch_id')->filter()->first();
+
         $query = Jemaat::query();
 
-        $branchId = Auth::user()?->roles->first()?->branch_id;
-        if ($branchId) {
+        if (!$isSuperAdmin && $branchId) {
             $query->where('branch_id', $branchId);
-        }
-
-        if ($request->search) {
-            $query->where(function ($q) use ($request) {
-                $q->where('nama_lengkap', 'like', "%{$request->search}%")
-                    ->orWhere('NIK', 'like', "%{$request->search}%")
-                    ->orWhere('email', 'like', "%{$request->search}%");
-            });
-        }
-
-        if ($request->jenis_kelamin !== null && $request->jenis_kelamin !== '') {
-            $query->where('jenis_kelamin', $request->jenis_kelamin);
-        }
-
-        if ($request->status_pernikahan) {
-            $query->where('status_pernikahan', $request->status_pernikahan);
-        }
-
-        if ($request->status_jemaat !== null && $request->status_jemaat !== '') {
-            $query->where('status_jemaat', $request->status_jemaat);
-        }
-
-        if (!$branchId && $request->branch_id) {
+        } elseif ($isSuperAdmin && $request->filled('branch_id')) {
             $query->where('branch_id', $request->branch_id);
         }
 
-        $jemaats = $query->latest()->paginate(15);
-
-        if ($request->ajax()) {
-            return view('features.jemaat._table', compact('jemaats'))->render();
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('nama_lengkap', 'like', "%{$search}%")
+                    ->orWhere('NIK', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('no_hp', 'like', "%{$search}%");
+            });
         }
 
-        return view('features.jemaat.index', compact('jemaats'));
+        if ($request->filled('jenis_kelamin')) {
+            $query->where('jenis_kelamin', (int) $request->jenis_kelamin);
+        }
+
+        if ($request->filled('status_pernikahan')) {
+            $query->where('status_pernikahan', $request->status_pernikahan);
+        }
+
+        if ($request->filled('status_jemaat')) {
+            $query->where('status_jemaat', (bool) $request->status_jemaat);
+        }
+
+        $jemaats = $query->latest()->paginate(15)->withQueryString();
+
+        if ($request->ajax()) {
+            return view('features.jemaat._table', compact('jemaats', 'isSuperAdmin'))->render();
+        }
+
+        $branches = $isSuperAdmin ? Branch::all() : collect();
+
+        $defaultBranchId = Auth::user()?->roles->first()?->branch_id;
+
+        return view('features.jemaat.index', compact('jemaats', 'branches', 'isSuperAdmin', 'defaultBranchId'));
+    }
+
+    public function apiIndex(Request $request)
+    {
+        $branchId = $this->getBranchId();
+        $isSuperAdmin = $this->isSuperAdmin();
+
+        $query = Jemaat::select('id', 'nama_lengkap', 'NIK', 'no_hp', 'email', 'branch_id');
+
+        if (!$isSuperAdmin && $branchId) {
+            $query->where('branch_id', $branchId);
+        } elseif ($request->filled('branch_id') && $isSuperAdmin) {
+            $query->where('branch_id', $request->branch_id);
+        }
+
+        $jemaats = $query->orderBy('nama_lengkap')->get();
+
+        return response()->json($jemaats);
+    }
+
+    public function apiShow(Jemaat $jemaat, Request $request)
+    {
+        $branchId = $this->getBranchId();
+        $isSuperAdmin = $this->isSuperAdmin();
+
+        if (!$isSuperAdmin && $branchId && $jemaat->branch_id !== $branchId) {
+            return response()->json(['message' => 'Akses ditolak'], 403);
+        }
+
+        $jemaat->load(['branch']);
+
+        return response()->json($jemaat);
     }
 
     public function create()
     {
-        return view('features.jemaat.create');
+        $isSuperAdmin = $this->isSuperAdmin();
+        $branches = $isSuperAdmin ? Branch::all() : collect();
+        $defaultBranchId = $this->getBranchId();
+        $jemaat = null;
+
+        return view('features.jemaat.form', compact('branches', 'isSuperAdmin', 'defaultBranchId', 'jemaat'));
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate(
-            [
-                'NIK' => 'required|numeric|digits:16|unique:jemaats,NIK',
+        try {
+            $isSuperAdmin = $this->isSuperAdmin();
+
+            $validationRules = [
+                'NIK' => 'required|string|size:16|unique:jemaats,NIK',
                 'nama_lengkap' => 'required|string|max:255',
-                'jenis_kelamin' => 'required|boolean',
+                'jenis_kelamin' => 'required|in:0,1',
                 'tempat_lahir' => 'required|string|max:100',
                 'tanggal_lahir' => 'required|date|before:today',
-                'alamat' => 'required|string',
-                'no_hp' => 'required|numeric',
+                'alamat' => 'required|string|max:500',
+                'no_hp' => 'required|string|regex:/^[0-9\+\-\s\(\)]{10,20}$/',
                 'email' => 'nullable|email|max:255|unique:jemaats,email',
                 'status_pernikahan' => ['required', Rule::in(['belum menikah', 'menikah', 'janda', 'duda'])],
                 'pekerjaan' => 'nullable|string|max:100',
                 'pendidikan' => 'nullable|string|max:50',
-                'status_jemaat' => 'boolean',
-                'foto' => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
-            ],
-            [
-                'NIK.digits' => 'NIK harus 16 digit',
-                'NIK.unique' => 'NIK sudah terdaftar',
-                'no_hp.digits_between' => 'Nomor HP harus antara 10-15 digit',
+                'status_jemaat' => 'nullable|boolean',
+                'foto' => 'nullable|image|mimes:jpg,png,jpeg',
+            ];
+
+            if ($isSuperAdmin) {
+                $validationRules['branch_id'] = 'required|exists:branches,id';
+            }
+
+            $validated = $request->validate($validationRules, [
+                'NIK.size' => 'NIK harus tepat 16 digit',
+                'NIK.unique' => 'NIK sudah terdaftar dalam sistem',
+                'no_hp.regex' => 'Format nomor HP tidak valid',
                 'tanggal_lahir.before' => 'Tanggal lahir harus di masa lalu',
-            ],
-        );
-
-        $fotoPath = null;
-        if ($request->hasFile('foto')) {
-            $fotoPath = $request->file('foto')->store('jemaat/foto', 'public');
-        }
-
-        Jemaat::create([
-            'branch_id' => Auth::user()?->roles->first()?->branch_id,
-            'NIK' => $validated['NIK'],
-            'nama_lengkap' => $validated['nama_lengkap'],
-            'jenis_kelamin' => $validated['jenis_kelamin'],
-            'tempat_lahir' => $validated['tempat_lahir'],
-            'tanggal_lahir' => $validated['tanggal_lahir'],
-            'alamat' => $validated['alamat'],
-            'no_hp' => $validated['no_hp'],
-            'email' => $validated['email'] ?? null,
-            'status_pernikahan' => $validated['status_pernikahan'],
-            'pekerjaan' => $validated['pekerjaan'] ?? null,
-            'pendidikan' => $validated['pendidikan'] ?? null,
-            'status_jemaat' => $validated['status_jemaat'] ?? true,
-            'foto' => $fotoPath,
-        ]);
-
-        if (request()->ajax() || request()->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Data jemaat berhasil disimpan',
             ]);
-        }
 
-        return redirect()->route('admin.jemaat.index')->with('success', 'Jemaat berhasil ditambahkan!');
+            $fotoPath = null;
+            if ($request->hasFile('foto') && $request->file('foto')->isValid()) {
+                $fotoPath = $request->file('foto')->store('jemaat/foto', 'public');
+            }
+
+            $branchId = $isSuperAdmin ? $validated['branch_id'] : $this->getBranchId();
+
+            Jemaat::create([
+                'branch_id' => $branchId,
+                'NIK' => $validated['NIK'],
+                'nama_lengkap' => $validated['nama_lengkap'],
+                'jenis_kelamin' => $validated['jenis_kelamin'],
+                'tempat_lahir' => $validated['tempat_lahir'],
+                'tanggal_lahir' => $validated['tanggal_lahir'],
+                'alamat' => $validated['alamat'],
+                'no_hp' => $validated['no_hp'],
+                'email' => $validated['email'] ?? null,
+                'status_pernikahan' => $validated['status_pernikahan'],
+                'pekerjaan' => $validated['pekerjaan'] ?? null,
+                'pendidikan' => $validated['pendidikan'] ?? null,
+                'status_jemaat' => $validated['status_jemaat'] ?? true,
+                'foto' => $fotoPath,
+            ]);
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(
+                    [
+                        'success' => true,
+                        'message' => '✅ Data jemaat berhasil disimpan!',
+                    ],
+                    201,
+                );
+            }
+
+            return redirect()->route('admin.jemaat.index')->with('success', 'Jemaat berhasil ditambahkan!');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(
+                    [
+                        'success' => false,
+                        'message' => 'Validasi gagal',
+                        'errors' => $e->errors(),
+                    ],
+                    422,
+                );
+            }
+            throw $e;
+        } catch (\Exception $e) {
+            Log::error('Jemaat Store Error: ' . $e->getMessage());
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(
+                    [
+                        'success' => false,
+                        'message' => 'Terjadi kesalahan sistem. Silakan coba lagi.',
+                    ],
+                    500,
+                );
+            }
+            return back()->with('error', 'Gagal menyimpan data. Silakan coba lagi.');
+        }
     }
 
-    public function show(Jemaat $jemaat, Request $request)
+    public function show(Jemaat $jemaat)
     {
-        $branchId = Auth::user()?->roles->first()?->branch_id;
-        if ($branchId && $jemaat->branch_id !== $branchId) {
-            abort(403);
-        }
+        $branchId = $this->getBranchId();
+        $isSuperAdmin = $this->isSuperAdmin();
 
-        if ($request->ajax()) {
-            return response()->json($jemaat);
+        if (!$isSuperAdmin && $branchId && $jemaat->branch_id !== $branchId) {
+            abort(403, 'Akses ditolak');
         }
 
         return view('features.jemaat.show', compact('jemaat'));
     }
 
-    public function edit(Jemaat $jemaat, Request $request)
+    public function edit(Jemaat $jemaat)
     {
-        $branchId = Auth::user()?->roles->first()?->branch_id;
-        if ($branchId && $jemaat->branch_id !== $branchId) {
-            abort(403);
+        $branchId = $this->getBranchId();
+        $isSuperAdmin = $this->isSuperAdmin();
+
+        if (!$isSuperAdmin && $branchId && $jemaat->branch_id !== $branchId) {
+            abort(403, 'Akses ditolak');
         }
 
-        if ($request->ajax()) {
-            return response()->json($jemaat);
-        }
+        $branches = $isSuperAdmin ? Branch::all() : collect();
 
-        return view('features.jemaat.edit', compact('jemaat'));
+        return view('features.jemaat.form', compact('jemaat', 'branches', 'isSuperAdmin'));
     }
 
     public function update(Request $request, Jemaat $jemaat)
     {
-        $branchId = Auth::user()?->roles->first()?->branch_id;
-        if ($branchId && $jemaat->branch_id !== $branchId) {
-            abort(403);
+        $branchId = $this->getBranchId();
+        $isSuperAdmin = $this->isSuperAdmin();
+
+        if (!$isSuperAdmin && $branchId && $jemaat->branch_id !== $branchId) {
+            abort(403, 'Akses ditolak');
         }
 
-        $validated = $request->validate(
-            [
-                'NIK' => 'sometimes|required|numeric|digits:16|unique:jemaats,NIK,' . $jemaat->id,
+        try {
+            $validationRules = [
+                'NIK' => 'required|string|size:16|unique:jemaats,NIK,' . $jemaat->id,
                 'nama_lengkap' => 'required|string|max:255',
-                'jenis_kelamin' => 'required|boolean',
+                'jenis_kelamin' => 'required|in:0,1',
                 'tempat_lahir' => 'required|string|max:100',
                 'tanggal_lahir' => 'required|date|before:today',
-                'alamat' => 'required|string',
-                'no_hp' => 'required|numeric|digits_between:10,15',
+                'alamat' => 'required|string|max:500',
+                'no_hp' => 'required|string|regex:/^[0-9\+\-\s\(\)]{10,20}$/',
                 'email' => 'nullable|email|max:255|unique:jemaats,email,' . $jemaat->id,
                 'status_pernikahan' => ['required', Rule::in(['belum menikah', 'menikah', 'janda', 'duda'])],
                 'pekerjaan' => 'nullable|string|max:100',
                 'pendidikan' => 'nullable|string|max:50',
-                'status_jemaat' => 'boolean',
+                'status_jemaat' => 'nullable|boolean',
                 'foto' => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
-            ],
-            [
-                'NIK.digits' => 'NIK harus 16 digit',
-                'NIK.unique' => 'NIK sudah terdaftar',
-                'no_hp.digits_between' => 'Nomor HP harus antara 10-15 digit',
-                'tanggal_lahir.before' => 'Tanggal lahir harus di masa lalu',
-            ],
-        );
+            ];
 
-        $fotoPath = $jemaat->foto;
-        if ($request->hasFile('foto')) {
-            if ($fotoPath) {
-                Storage::disk('public')->delete($fotoPath);
+            if ($isSuperAdmin) {
+                $validationRules['branch_id'] = 'required|exists:branches,id';
             }
-            $fotoPath = $request->file('foto')->store('jemaat/foto', 'public');
-        }
 
-        $jemaat->update([
-            'NIK' => $validated['NIK'],
-            'nama_lengkap' => $validated['nama_lengkap'],
-            'jenis_kelamin' => $validated['jenis_kelamin'],
-            'tempat_lahir' => $validated['tempat_lahir'],
-            'tanggal_lahir' => $validated['tanggal_lahir'],
-            'alamat' => $validated['alamat'],
-            'no_hp' => $validated['no_hp'],
-            'email' => $validated['email'] ?? null,
-            'status_pernikahan' => $validated['status_pernikahan'],
-            'pekerjaan' => $validated['pekerjaan'] ?? null,
-            'pendidikan' => $validated['pendidikan'] ?? null,
-            'status_jemaat' => $validated['status_jemaat'] ?? true,
-            'foto' => $fotoPath,
-        ]);
-
-        if (request()->ajax() || request()->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Data jemaat berhasil disimpan',
+            $validated = $request->validate($validationRules, [
+                'NIK.size' => 'NIK harus tepat 16 digit',
+                'NIK.unique' => 'NIK sudah terdaftar',
+                'no_hp.regex' => 'Format nomor HP tidak valid',
             ]);
-        }
 
-        return redirect()->route('admin.jemaat.index')->with('success', 'Data jemaat berhasil diupdate!');
+            $fotoPath = $jemaat->foto;
+            if ($request->hasFile('foto') && $request->file('foto')->isValid()) {
+                if ($fotoPath && Storage::disk('public')->exists($fotoPath)) {
+                    Storage::disk('public')->delete($fotoPath);
+                }
+                $fotoPath = $request->file('foto')->store('jemaat/foto', 'public');
+            }
+
+            $updateData = [
+                'NIK' => $validated['NIK'],
+                'nama_lengkap' => $validated['nama_lengkap'],
+                'jenis_kelamin' => $validated['jenis_kelamin'],
+                'tempat_lahir' => $validated['tempat_lahir'],
+                'tanggal_lahir' => $validated['tanggal_lahir'],
+                'alamat' => $validated['alamat'],
+                'no_hp' => $validated['no_hp'],
+                'email' => $validated['email'] ?? null,
+                'status_pernikahan' => $validated['status_pernikahan'],
+                'pekerjaan' => $validated['pekerjaan'] ?? null,
+                'pendidikan' => $validated['pendidikan'] ?? null,
+                'status_jemaat' => $validated['status_jemaat'] ?? true,
+                'foto' => $fotoPath,
+            ];
+
+            if ($isSuperAdmin && isset($validated['branch_id'])) {
+                $updateData['branch_id'] = $validated['branch_id'];
+            }
+
+            $jemaat->update($updateData);
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => '✅ Data jemaat berhasil diperbarui!',
+                    'data' => $jemaat,
+                ]);
+            }
+
+            return redirect()->route('admin.jemaat.index')->with('success', 'Data jemaat berhasil diupdate!');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(
+                    [
+                        'success' => false,
+                        'message' => 'Validasi gagal',
+                        'errors' => $e->errors(),
+                    ],
+                    422,
+                );
+            }
+            throw $e;
+        } catch (\Exception $e) {
+            Log::error('Jemaat Update Error: ' . $e->getMessage());
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(
+                    [
+                        'success' => false,
+                        'message' => 'Terjadi kesalahan sistem.',
+                    ],
+                    500,
+                );
+            }
+            return back()->with('error', 'Gagal mengupdate data.');
+        }
     }
 
     public function destroy(Jemaat $jemaat)
     {
-        $branchId = Auth::user()?->roles->first()?->branch_id;
-        if ($branchId && $jemaat->branch_id !== $branchId) {
-            abort(403);
+        $branchId = $this->getBranchId();
+        $isSuperAdmin = $this->isSuperAdmin();
+
+        if (!$isSuperAdmin && $branchId && $jemaat->branch_id !== $branchId) {
+            return response()->json(['message' => 'Akses ditolak'], 403);
         }
 
-        $jemaat->delete();
+        try {
+            if ($jemaat->foto && Storage::disk('public')->exists($jemaat->foto)) {
+                Storage::disk('public')->delete($jemaat->foto);
+            }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Data jemaat berhasil dihapus',
-        ]);
+            $jemaat->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => '🗑️ Data jemaat berhasil dihapus!',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Jemaat Delete Error: ' . $e->getMessage());
+            return response()->json(
+                [
+                    'success' => false,
+                    'message' => 'Gagal menghapus data.',
+                ],
+                500,
+            );
+        }
     }
 
     public function export()
     {
-        return back()->with('info', 'Fitur export akan segera hadir!');
+        return back()->with('info', '📥 Fitur export akan segera hadir!');
     }
 }

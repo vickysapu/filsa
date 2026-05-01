@@ -179,7 +179,8 @@
                                             <option value="">Global (Semua Cabang)</option>
                                             @foreach (\App\Models\Branch::all() as $branch)
                                                 <option value="{{ $branch->id }}">{{ $branch->name }}
-                                                    ({{ $branch->code }})</option>
+                                                    ({{ $branch->code }})
+                                                </option>
                                             @endforeach
                                         </select>
                                         <small class="text-muted-custom">Pilih cabang untuk role spesifik, atau kosongkan
@@ -587,13 +588,15 @@
 
         .modal-dialog-scrollable .modal-content {
             max-height: 90vh;
-            display: flex;
-            flex-direction: column;
         }
 
         .modal-dialog-scrollable .modal-body {
             overflow-y: auto;
-            flex: 1 1 auto;
+        }
+
+        .modal-body {
+            max-height: calc(90vh - 120px);
+            overflow-y: auto;
         }
 
         .modal-dialog-scrollable .modal-header,
@@ -685,7 +688,7 @@
             if (modalDeleteEl && bootstrap.Modal) modalDelete = new bootstrap.Modal(modalDeleteEl);
 
             // ===== TOOLTIP INIT =====
-            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
             tooltipTriggerList.map(function(tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl, {
                     trigger: 'hover'
@@ -884,7 +887,7 @@
                     if (btnConfirmDelete) {
                         btnConfirmDelete.disabled = false;
                         btnConfirmDelete.innerHTML =
-                        '<i class="ri-delete-bin-line me-1"></i> Ya, Hapus';
+                            '<i class="ri-delete-bin-line me-1"></i> Ya, Hapus';
                     }
                 }
             });

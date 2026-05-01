@@ -16,13 +16,7 @@ class DokumentasiAlbum extends Model
     public $incrementing = false;
     protected $keyType = 'string';
 
-    protected $fillable = [
-        'branch_id',
-        'slug', 'judul_album', 'deskripsi', 'kategori_id', 'event_id',
-        'cover_image', 'fotografer', 'tanggal_album', 'lokasi',
-        'jumlah_foto', 'status', 'is_featured', 'allow_download',
-        'show_in_website', 'meta_tags', 'created_by',
-    ];
+    protected $fillable = ['branch_id', 'slug', 'judul_album', 'deskripsi', 'kategori_id', 'event_id', 'cover_image', 'fotografer', 'tanggal_album', 'lokasi', 'jumlah_foto', 'status', 'is_featured', 'allow_download', 'show_in_website', 'meta_tags', 'created_by'];
 
     protected $casts = [
         'tanggal_album' => 'date',
@@ -51,22 +45,20 @@ class DokumentasiAlbum extends Model
         });
     }
 
-    protected static function booted()
-    {
-        static::addGlobalScope(new \App\Models\Scopes\BranchScope);
-    }
+    // Hapus GlobalScope jika ingin kontrol manual di Controller, atau biarkan jika ingin otomatis
+    // protected static function booted() { static::addGlobalScope(new \App\Models\Scopes\BranchScope); }
 
     public static function generateUniqueSlug($name)
     {
         $slug = Str::slug($name);
         $count = 1;
         $originalSlug = $slug;
-        
+
         while (self::where('slug', $slug)->exists()) {
             $slug = $originalSlug . '-' . $count;
             $count++;
         }
-        
+
         return $slug;
     }
 
@@ -97,8 +89,7 @@ class DokumentasiAlbum extends Model
 
     public function scopePublished($query)
     {
-        return $query->where('status', 'published')
-            ->where('show_in_website', true);
+        return $query->where('status', 'published')->where('show_in_website', true);
     }
 
     public function scopeFeatured($query)
@@ -106,16 +97,11 @@ class DokumentasiAlbum extends Model
         return $query->where('is_featured', true);
     }
 
-    public function scopeForWebsite($query)
-    {
-        return $query->where('show_in_website', true);
-    }
-
     public function updateFotoCount()
     {
         $count = $this->photos()->count();
         $this->update(['jumlah_foto' => $count]);
-        
+
         if (!$this->cover_image && $count > 0) {
             $firstPhoto = $this->photos()->first();
             if ($firstPhoto) {

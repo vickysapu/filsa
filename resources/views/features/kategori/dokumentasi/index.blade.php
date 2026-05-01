@@ -11,25 +11,19 @@
                 <h1 class="h3 mb-1 fw-bold">Kategori Dokumentasi</h1>
                 <p class="text-muted-custom mb-0">Kelola kategori album dokumentasi</p>
             </div>
-            <button type="button" class="btn btn-custom" onclick="openModal()">
+            <button type="button" class="btn btn-custom" id="btnAddKategori">
                 <i class="ri-add-line me-1"></i> Tambah Kategori
             </button>
         </div>
 
-        <!-- Success Alert -->
-        @if (session('success'))
-            <div class="alert-custom success mb-4" data-auto-close>
-                <i class="ri-checkbox-circle-fill"></i>
-                <span>{{ session('success') }}</span>
-                <button class="alert-close">&times;</button>
-            </div>
-        @endif
+        <!-- Alert Container -->
+        <div id="alertContainer" class="mb-4"></div>
 
         <!-- Categories Grid -->
         @if ($kategoris->count() > 0)
             <div class="row g-4" id="categoriesGrid">
                 @foreach ($kategoris as $kategori)
-                    <div class="col-md-6 col-lg-4">
+                    <div class="col-md-6 col-lg-4 kategori-item" data-id="{{ $kategori->id }}">
                         <div class="category-card" style="--category-color: {{ $kategori->warna }};">
 
                             <!-- Card Header with Color Accent -->
@@ -63,20 +57,19 @@
 
                                 <!-- Actions -->
                                 <div class="d-flex gap-2">
-                                    <button type="button" class="btn btn-outline-custom btn-sm flex-fill"
-                                        onclick="openEditModal({{ json_encode($kategori) }})">
+                                    <button type="button" class="btn btn-outline-custom btn-sm flex-fill btn-edit-kategori"
+                                        data-id="{{ $kategori->id }}" data-nama="{{ e($kategori->nama_kategori) }}"
+                                        data-deskripsi="{{ e($kategori->deskripsi ?? '') }}"
+                                        data-warna="{{ $kategori->warna }}"
+                                        data-is-active="{{ $kategori->is_active ? 1 : 0 }}">
                                         <i class="ri-pencil-line me-1"></i> Edit
                                     </button>
                                     @if ($kategori->albums->count() == 0)
-                                        <form action="{{ route('admin.dokumentasi-kategori.destroy', $kategori) }}"
-                                            method="POST" class="d-inline"
-                                            onsubmit="return confirmDelete(event, '{{ $kategori->nama_kategori }}')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Hapus">
-                                                <i class="ri-delete-bin-line"></i>
-                                            </button>
-                                        </form>
+                                        <button type="button" class="btn btn-outline-danger btn-sm btn-delete-kategori"
+                                            data-id="{{ $kategori->id }}" data-nama="{{ e($kategori->nama_kategori) }}"
+                                            title="Hapus">
+                                            <i class="ri-delete-bin-line"></i>
+                                        </button>
                                     @endif
                                 </div>
                             </div>
@@ -93,7 +86,7 @@
                 <h5 class="fw-semibold mb-2">Belum Ada Kategori</h5>
                 <p class="text-muted-custom small mb-4">Mulai buat kategori pertama untuk mengorganisir album dokumentasi
                 </p>
-                <button type="button" class="btn btn-custom" onclick="openModal()">
+                <button type="button" class="btn btn-custom" id="btnAddKategori2">
                     <i class="ri-add-line me-1"></i> Tambah Kategori
                 </button>
             </div>
@@ -105,9 +98,10 @@
     <div class="modal fade" id="modalKategori" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content modal-content-custom">
-                <form id="formKategori" method="POST">
+                <form id="formKategori">
                     @csrf
-                    <input type="hidden" id="methodField" name="_method" value="">
+                    <input type="hidden" name="_method" id="formMethod" value="POST">
+                    <input type="hidden" name="id" id="kategoriId">
 
                     <div class="modal-header border-bottom border-custom">
                         <h5 class="modal-title fw-semibold" id="modalTitle">Tambah Kategori</h5>
@@ -115,17 +109,23 @@
                     </div>
 
                     <div class="modal-body p-4">
+                        <div class="alert alert-danger d-none" id="formErrors">
+                            <i class="ri-error-warning-line me-2"></i>
+                            <ul class="mb-0 small" id="errorList"></ul>
+                        </div>
+
                         <div class="mb-3">
                             <label class="form-label small fw-semibold text-muted-custom">Nama Kategori <span
                                     class="text-danger">*</span></label>
                             <input type="text" name="nama_kategori" id="namaKategori"
-                                class="form-control form-control-custom" required>
+                                class="form-control form-control-custom" required maxlength="100">
+                            <div class="invalid-feedback"></div>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label small fw-semibold text-muted-custom">Deskripsi</label>
                             <textarea name="deskripsi" id="deskripsiKategori" class="form-control form-control-custom textarea-custom"
-                                rows="2"></textarea>
+                                rows="2" maxlength="500"></textarea>
                         </div>
 
                         <div class="mb-3">
@@ -134,20 +134,20 @@
                                 <input type="color" name="warna" id="warnaKategori"
                                     class="form-control form-control-color" value="#4f46e5"
                                     style="width: 60px; height: 40px; padding: 4px; border-radius: var(--radius-sm);">
-                                <span class="text-muted-custom small" id="colorValue">#4f46e5</span>
+                                <span class="text-muted-custom small" id="warnaPreview">#4f46e5</span>
                             </div>
                         </div>
 
                         <div class="form-check form-switch-custom">
-                            <input type="checkbox" name="is_active" id="isActiveKategori" class="form-check-input-custom"
-                                value="1" checked>
+                            <input type="checkbox" name="is_active" id="isActiveKategori"
+                                class="form-check-input-custom" value="1" checked>
                             <label class="form-check-label-custom" for="isActiveKategori">Aktif</label>
                         </div>
                     </div>
 
                     <div class="modal-footer border-top border-custom py-3 px-4">
                         <button type="button" class="btn btn-outline-custom" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-custom">
+                        <button type="submit" class="btn btn-custom" id="btnSubmitKategori">
                             <i class="ri-save-line me-1"></i> Simpan
                         </button>
                     </div>
@@ -199,7 +199,6 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-top: 4px solid var(--category-color, var(--accent-blue));
         }
 
         .category-card-title {
@@ -230,7 +229,6 @@
             color: var(--accent-blue);
         }
 
-        /* Color Preview */
         .category-color-preview {
             display: flex;
             align-items: center;
@@ -265,8 +263,7 @@
         }
 
         /* ===== FORM ELEMENTS ===== */
-        .form-control-custom,
-        .form-select-custom {
+        .form-control-custom {
             background: var(--bg-surface);
             border: 1px solid var(--border-color);
             color: var(--text-primary);
@@ -276,15 +273,14 @@
             transition: var(--transition);
         }
 
-        .form-control-custom:focus,
-        .form-select-custom:focus {
+        .form-control-custom:focus {
             border-color: var(--accent-blue);
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
             outline: none;
         }
 
-        .form-control-custom::placeholder {
-            color: var(--text-secondary);
+        .form-control-custom.is-invalid {
+            border-color: #ef4444;
         }
 
         .textarea-custom {
@@ -306,11 +302,6 @@
             border-radius: calc(var(--radius-sm) - 2px);
         }
 
-        .form-control-color::-moz-color-swatch {
-            border: none;
-            border-radius: calc(var(--radius-sm) - 2px);
-        }
-
         .form-check-input-custom {
             width: 18px;
             height: 18px;
@@ -326,17 +317,6 @@
             border-color: var(--accent-blue);
         }
 
-        .form-check-input-custom[type="checkbox"] {
-            border-radius: 4px;
-        }
-
-        .form-check-label-custom {
-            font-size: 0.9rem;
-            color: var(--text-primary);
-            cursor: pointer;
-            margin-left: 0.35rem;
-        }
-
         .form-switch-custom .form-check-input-custom {
             width: 40px;
             height: 22px;
@@ -347,6 +327,41 @@
 
         .form-switch-custom .form-check-input-custom:checked {
             background-color: var(--accent-blue);
+        }
+
+        /* ===== ALERT CUSTOM ===== */
+        .alert-custom {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.875rem 1.25rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            animation: slideIn 0.3s ease;
+        }
+
+        .alert-custom.success {
+            background: rgba(34, 197, 94, 0.1);
+            border-left: 4px solid #22c55e;
+            color: #166534;
+        }
+
+        .alert-custom.error {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid #ef4444;
+            color: #991b1b;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(-20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
 
         /* ===== EMPTY STATE ===== */
@@ -392,40 +407,31 @@
             background: var(--bg-surface);
         }
 
-        /* ===== ALERT CUSTOM ===== */
-        .alert-custom {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.875rem 1.25rem;
-            border-radius: var(--radius-sm);
-            font-size: 0.9rem;
-            animation: slideIn 0.3s ease;
+        /* Loading Button */
+        .btn-loading {
+            position: relative;
+            pointer-events: none;
+            opacity: 0.7;
         }
 
-        .alert-custom.success {
-            background: rgba(34, 197, 94, 0.1);
-            border-left: 4px solid #22c55e;
-            color: #166534;
+        .btn-loading::after {
+            content: "";
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 0.5rem;
         }
 
-        .alert-custom i {
-            font-size: 1.25rem;
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(-20px);
-                opacity: 0;
-            }
-
+        @keyframes spin {
             to {
-                transform: translateX(0);
-                opacity: 1;
+                transform: rotate(360deg);
             }
         }
 
-        /* ===== DARK MODE ===== */
         [data-theme="dark"] .empty-state-card {
             background: var(--bg-sidebar);
             border-color: var(--border-color);
@@ -443,7 +449,6 @@
             border-color: var(--border-color);
         }
 
-        /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
             .category-card-header {
                 flex-direction: column;
@@ -464,125 +469,246 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // ===== MODAL INSTANCE =====
-            let modalKategori;
             const modalEl = document.getElementById('modalKategori');
-            if (modalEl && bootstrap.Modal) {
+            let modalKategori = null;
+            if (modalEl && typeof bootstrap !== 'undefined') {
                 modalKategori = new bootstrap.Modal(modalEl);
             }
 
-            // ===== COLOR PICKER PREVIEW =====
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
+            const form = document.getElementById('formKategori');
+            const btnSave = document.getElementById('btnSubmitKategori');
+            const alertContainer = document.getElementById('alertContainer');
             const colorInput = document.getElementById('warnaKategori');
-            const colorValue = document.getElementById('colorValue');
+            const colorValue = document.getElementById('warnaPreview');
 
-            colorInput?.addEventListener('input', function() {
-                if (colorValue) colorValue.textContent = this.value;
-            });
+            let isEditMode = false;
 
-            // ===== OPEN MODAL (CREATE) =====
-            window.openModal = function() {
-                resetForm();
-                document.getElementById('modalTitle').textContent = 'Tambah Kategori';
-                document.getElementById('formKategori').action =
-                    "{{ route('admin.dokumentasi-kategori.store') }}";
-                document.getElementById('methodField').value = '';
-
-                if (modalKategori) modalKategori.show();
+            // Color Picker Preview
+            if (colorInput) {
+                colorInput.addEventListener('input', function() {
+                    if (colorValue) colorValue.textContent = this.value;
+                });
             }
 
-            // ===== OPEN MODAL (EDIT) =====
-            window.openEditModal = function(kategori) {
-                // Parse if string
-                if (typeof kategori === 'string') {
-                    try {
-                        kategori = JSON.parse(kategori);
-                    } catch (e) {
-                        return;
+            // Helper: Show Alert
+            function showAlert(type, message) {
+                const alertClass = type === 'success' ? 'success' : 'error';
+                const icon = type === 'success' ? 'ri-checkbox-circle-fill' : 'ri-error-warning-fill';
+
+                const html = `
+                    <div class="alert-custom ${alertClass}" data-auto-close>
+                        <i class="${icon}"></i>
+                        <span>${message}</span>
+                        <button class="alert-close">&times;</button>
+                    </div>`;
+
+                alertContainer.innerHTML = html;
+                const alertEl = alertContainer.firstElementChild;
+
+                const closeBtn = alertEl.querySelector('.alert-close');
+                if (closeBtn) closeBtn.addEventListener('click', () => alertEl.remove());
+
+                setTimeout(() => {
+                    if (alertEl) {
+                        alertEl.style.opacity = '0';
+                        alertEl.style.transform = 'translateX(-20px)';
+                        setTimeout(() => alertEl.remove(), 300);
                     }
+                }, 5000);
+            }
+
+            // Helper: Clear Errors
+            function clearErrors() {
+                document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+                document.querySelectorAll('.invalid-feedback').forEach(el => el.textContent = '');
+                const errorBox = document.getElementById('formErrors');
+                if (errorBox) errorBox.classList.add('d-none');
+            }
+
+            // Helper: Show Validation Errors
+            function showValidationErrors(errors) {
+                clearErrors();
+                const errorBox = document.getElementById('formErrors');
+                const errorList = document.getElementById('errorList');
+
+                if (errorBox && errorList) {
+                    let html = '';
+                    for (const [field, messages] of Object.entries(errors)) {
+                        const input = document.querySelector(`[name="${field}"]`);
+                        if (input) {
+                            input.classList.add('is-invalid');
+                        }
+                        const msgArray = Array.isArray(messages) ? messages : [messages];
+                        msgArray.forEach(msg => {
+                            html += `<li><strong>${field}:</strong> ${msg}</li>`;
+                        });
+                    }
+                    errorList.innerHTML = html;
+                    errorBox.classList.remove('d-none');
+                }
+            }
+
+            // Open Modal
+            function openModal(mode = 'create', data = null) {
+                clearErrors();
+                isEditMode = mode === 'edit';
+                document.getElementById('modalTitle').textContent = mode === 'edit' ? 'Edit Kategori' :
+                    'Tambah Kategori';
+                document.getElementById('formMethod').value = mode === 'edit' ? 'PUT' : 'POST';
+
+                if (mode === 'edit' && data) {
+                    document.getElementById('kategoriId').value = data.id;
+                    document.getElementById('namaKategori').value = data.nama || '';
+                    document.getElementById('deskripsiKategori').value = data.deskripsi || '';
+                    document.getElementById('warnaKategori').value = data.warna || '#4f46e5';
+                    document.getElementById('isActiveKategori').checked = data.isActive == 1;
+                    if (colorValue) colorValue.textContent = data.warna || '#4f46e5';
+                } else {
+                    document.getElementById('kategoriId').value = '';
+                    document.getElementById('namaKategori').value = '';
+                    document.getElementById('deskripsiKategori').value = '';
+                    document.getElementById('warnaKategori').value = '#4f46e5';
+                    document.getElementById('isActiveKategori').checked = true;
+                    if (colorValue) colorValue.textContent = '#4f46e5';
                 }
 
-                document.getElementById('modalTitle').textContent = 'Edit Kategori';
-                document.getElementById('formKategori').action = `/admin/dokumentasi-kategori/${kategori.id}`;
-                document.getElementById('methodField').value = 'PUT';
-
-                document.getElementById('namaKategori').value = kategori.nama_kategori || '';
-                document.getElementById('deskripsiKategori').value = kategori.deskripsi || '';
-                document.getElementById('warnaKategori').value = kategori.warna || '#4f46e5';
-                document.getElementById('isActiveKategori').checked = kategori.is_active == 1;
-
-                if (colorValue) colorValue.textContent = kategori.warna || '#4f46e5';
-
                 if (modalKategori) modalKategori.show();
             }
 
-            // ===== CLOSE MODAL =====
-            window.closeModal = function() {
+            // Close Modal
+            function closeModal() {
                 if (modalKategori) modalKategori.hide();
             }
 
-            // ===== RESET FORM =====
-            function resetForm() {
-                const form = document.getElementById('formKategori');
-                if (form) {
-                    form.reset();
-                    form.classList.remove('was-validated');
+            // Event Listeners for Buttons
+            document.getElementById('btnAddKategori')?.addEventListener('click', () => openModal('create'));
+            document.getElementById('btnAddKategori2')?.addEventListener('click', () => openModal('create'));
+
+            document.addEventListener('click', function(e) {
+                const editBtn = e.target.closest('.btn-edit-kategori');
+                if (editBtn) {
+                    e.preventDefault();
+                    const data = {
+                        id: editBtn.dataset.id,
+                        nama: editBtn.dataset.nama,
+                        deskripsi: editBtn.dataset.deskripsi,
+                        warna: editBtn.dataset.warna,
+                        isActive: editBtn.dataset.isActive
+                    };
+                    openModal('edit', data);
                 }
-                document.getElementById('methodField').value = '';
-                document.getElementById('warnaKategori').value = '#4f46e5';
-                document.getElementById('isActiveKategori').checked = true;
-                if (colorValue) colorValue.textContent = '#4f46e5';
+            });
+
+            document.addEventListener('click', function(e) {
+                const deleteBtn = e.target.closest('.btn-delete-kategori');
+                if (deleteBtn) {
+                    e.preventDefault();
+                    const id = deleteBtn.dataset.id;
+                    const nama = deleteBtn.dataset.nama;
+
+                    if (confirm(`Yakin ingin menghapus kategori "${nama}"?`)) {
+                        deleteKategori(id);
+                    }
+                }
+            });
+
+            // Handle Form Submit
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    clearErrors();
+
+                    const id = document.getElementById('kategoriId').value;
+
+                    let url = "{{ route('admin.dokumentasi-kategori.store') }}";
+                    if (isEditMode && id) {
+                        url = `/admin/dokumentasi-kategori/${id}`;
+                    }
+
+                    const formData = new FormData(form);
+
+                    btnSave.classList.add('btn-loading');
+                    btnSave.disabled = true;
+
+                    fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': csrfToken,
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            },
+                            body: formData
+                        })
+                        .then(response => {
+                            return response.json().then(data => ({
+                                status: response.status,
+                                body: data
+                            }));
+                        })
+                        .then(({
+                            status,
+                            body
+                        }) => {
+                            if (status === 200 || status === 201) {
+                                showAlert('success', body.message);
+                                closeModal();
+                                setTimeout(() => window.location.reload(), 1000);
+                            } else {
+                                if (body.errors) {
+                                    showValidationErrors(body.errors);
+                                } else {
+                                    showAlert('error', body.message || 'Terjadi kesalahan');
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            showAlert('error', 'Gagal terhubung ke server');
+                        })
+                        .finally(() => {
+                            btnSave.classList.remove('btn-loading');
+                            btnSave.disabled = false;
+                        });
+                });
             }
 
-            // ===== CONFIRM DELETE =====
-            window.confirmDelete = function(e, nama) {
-                if (typeof Swal !== 'undefined') {
-                    e.preventDefault();
-                    const form = e.target.closest('form');
+            // Handle Delete
+            function deleteKategori(id) {
+                const url = `/admin/dokumentasi-kategori/${id}`;
 
-                    Swal.fire({
-                        title: 'Hapus kategori?',
-                        text: `Kategori "${nama}" akan dihapus permanen.`,
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#ef4444',
-                        confirmButtonText: 'Ya, Hapus',
-                        cancelButtonText: 'Batal'
-                    }).then(result => {
-                        if (result.isConfirmed && form) {
-                            form.submit();
+                fetch(url, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
                         }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showAlert('success', data.message);
+                            const item = document.querySelector(`.kategori-item[data-id="${id}"]`);
+                            if (item) item.remove();
+
+                            if (document.querySelectorAll('.kategori-item').length === 0) {
+                                setTimeout(() => window.location.reload(), 1000);
+                            }
+                        } else {
+                            showAlert('error', data.message || 'Gagal menghapus data');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showAlert('error', 'Gagal terhubung ke server');
                     });
-                    return false;
-                }
-                return true; // Fallback to native confirm
             }
 
-            // ===== FORM SUBMIT =====
-            const formKategori = document.getElementById('formKategori');
-            formKategori?.addEventListener('submit', function(e) {
-                if (!formKategori.checkValidity()) {
-                    e.preventDefault();
-                    formKategori.classList.add('was-validated');
-                    return;
-                }
-                // Let form submit normally (Blade form with CSRF)
-            });
-
-            // ===== AUTO-CLOSE ALERTS =====
-            document.querySelectorAll('[data-auto-close]').forEach(alert => {
-                const closeBtn = alert.querySelector('.alert-close');
-                closeBtn?.addEventListener('click', () => alert.remove());
-                setTimeout(() => {
-                    alert.style.opacity = '0';
-                    alert.style.transform = 'translateX(-20px)';
-                    setTimeout(() => alert.remove(), 300);
-                }, 5000);
-            });
-
-            // ===== KEYBOARD: ESC TO CLOSE MODAL =====
+            // Close on Escape
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape' && modalKategori?._isShown) {
-                    modalKategori.hide();
+                    closeModal();
                 }
             });
         });

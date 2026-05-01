@@ -16,20 +16,9 @@ class User extends Authenticatable
     public $incrementing = false;
     protected $keyType = 'string';
 
-    protected $fillable = [
-        'branch_id',
-        'name',
-        'email',
-        'password',
-        'is_active',
-        'last_login_at',
-        'avatar',
-    ];
+    protected $fillable = ['id', 'branch_id', 'name', 'email', 'password', 'is_active', 'last_login_at', 'avatar'];
 
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
+    protected $hidden = ['password', 'remember_token'];
 
     protected $casts = [
         'email_verified_at' => 'datetime',
@@ -53,10 +42,14 @@ class User extends Authenticatable
         return $this->belongsTo(Branch::class);
     }
 
+    public function jemaat(): BelongsTo
+    {
+        return $this->belongsTo(Jemaat::class, 'id', 'id');
+    }
+
     public function roles(): BelongsToMany
     {
-        return $this->belongsToMany(Role::class, 'user_role')
-                    ->withTimestamps();
+        return $this->belongsToMany(Role::class, 'user_role')->withTimestamps();
     }
 
     public function isHeadquarter(): bool
@@ -80,9 +73,7 @@ class User extends Authenticatable
 
     public function hasRole(string $roleName): bool
     {
-        return $this->roles()
-            ->where('name', $roleName)
-            ->exists();
+        return $this->roles()->where('name', $roleName)->exists();
     }
 
     public function assignRole(array $roleIds): void
@@ -95,7 +86,6 @@ class User extends Authenticatable
         if ($this->relationLoaded('roles')) {
             return $this->roles->pluck('display_name')->join(', ');
         }
-        
         return $this->roles()->get()->pluck('display_name')->join(', ');
     }
 

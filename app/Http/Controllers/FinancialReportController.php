@@ -622,7 +622,7 @@ class FinancialReportController extends Controller
         ]);
     }
 
-    private function getCurrentHolder(FinancialReport $report): ?int
+    private function getCurrentHolder(FinancialReport $report): ?string
     {
         $lastForward = $report->forwards()->latest('forwarded_at')->first();
         return $lastForward ? $lastForward->to_branch_id : $report->submitted_to;

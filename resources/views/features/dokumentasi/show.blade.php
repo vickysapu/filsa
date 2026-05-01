@@ -14,6 +14,10 @@
                 <h1 class="h4 fw-bold mb-1">{{ $album->judul_album }}</h1>
                 <p class="text-muted-custom small mb-0">
                     <i class="ri-image-line me-1"></i> {{ $album->jumlah_foto }} Foto
+                    @if ($album->branch)
+                        <span class="mx-2">•</span>
+                        <i class="ri-building-line me-1"></i> {{ $album->branch->name }}
+                    @endif
                 </p>
             </div>
         </div>
@@ -128,9 +132,6 @@
                                     <i class="ri-pencil-line me-1"></i> Edit Album
                                 </a>
                             @endif
-                            <button type="button" onclick="window.print()" class="btn btn-outline-custom">
-                                <i class="ri-printer-line me-1"></i> Cetak
-                            </button>
                             @if (auth()->user()->hasPermission('dokumentasi.delete'))
                                 <button type="button" class="btn btn-outline-danger" onclick="confirmDelete()">
                                     <i class="ri-delete-bin-line me-1"></i> Hapus Album

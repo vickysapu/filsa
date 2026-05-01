@@ -52,6 +52,7 @@ class Pelayanan extends Model
     /**
      * Generate nomor jadwal yang aman terhadap soft delete
      */
+
     public static function generateNomorJadwalForDate($tanggal)
     {
         $prefix = date('Ymd', strtotime($tanggal));
@@ -67,7 +68,9 @@ class Pelayanan extends Model
 
         $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
 
-        return "JDW-{$prefix}-{$newNumber}";
+        $random = substr(Str::uuid()->toString(), 0, 8); // ambil 8 karakter saja
+
+        return "JDW-{$prefix}-{$newNumber}-{$random}";
     }
 
     public function branch(): BelongsTo

@@ -16,15 +16,12 @@ class EventKategori extends Model
     public $incrementing = false;
     protected $keyType = 'string';
 
-    protected $fillable = [
-        'branch_id',
-        'nama_kategori', 'slug', 'deskripsi', 'warna', 'icon',
-        'is_active', 'urutan', 'show_in_website',
-    ];
+    protected $fillable = ['branch_id', 'nama_kategori', 'slug', 'deskripsi', 'warna', 'icon', 'is_active', 'urutan', 'show_in_website'];
 
     protected $casts = [
         'is_active' => 'boolean',
         'show_in_website' => 'boolean',
+        'urutan' => 'integer',
     ];
 
     protected static function boot()
@@ -33,17 +30,9 @@ class EventKategori extends Model
 
         static::creating(function ($model) {
             if (empty($model->{$model->getKeyName()})) {
-                $model->{$model->getKeyName()} = Str::uuid();
-            }
-            if (empty($model->slug)) {
-                $model->slug = Str::slug($model->nama_kategori);
+                $model->{$model->getKeyName()} = (string) Str::uuid();
             }
         });
-    }
-
-    protected static function booted()
-    {
-        static::addGlobalScope(new \App\Models\Scopes\BranchScope);
     }
 
     public function branch(): BelongsTo
@@ -64,10 +53,5 @@ class EventKategori extends Model
     public function scopeOrdered($query)
     {
         return $query->orderBy('urutan')->orderBy('nama_kategori');
-    }
-
-    public function scopeForWebsite($query)
-    {
-        return $query->where('show_in_website', true);
     }
 }

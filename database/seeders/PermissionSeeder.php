@@ -52,6 +52,18 @@ class PermissionSeeder extends Seeder
             ['name' => 'finance.report.consolidate', 'display_name' => 'Konsolidasi Laporan', 'group' => 'Finance.Laporan'],
             ['name' => 'finance.report.export', 'display_name' => 'Export Laporan Excel', 'group' => 'Finance.Laporan'],
 
+            // CHURCH STRUCTURE
+            ['name' => 'church_structure.view', 'display_name' => 'Lihat Struktur Gereja', 'group' => 'Church Structure'],
+            ['name' => 'church_structure.create', 'display_name' => 'Tambah Posisi', 'group' => 'Church Structure'],
+            ['name' => 'church_structure.edit', 'display_name' => 'Edit Posisi', 'group' => 'Church Structure'],
+            ['name' => 'church_structure.delete', 'display_name' => 'Hapus Posisi', 'group' => 'Church Structure'],
+
+            // CHURCH PROFILE
+            ['name' => 'church_profile.view', 'display_name' => 'Lihat Profil Gereja', 'group' => 'Church Profile'],
+            ['name' => 'church_profile.create', 'display_name' => 'Tambah Profil Gereja', 'group' => 'Church Profile'],
+            ['name' => 'church_profile.edit', 'display_name' => 'Edit Profil Gereja', 'group' => 'Church Profile'],
+            ['name' => 'church_profile.delete', 'display_name' => 'Hapus Profil Gereja', 'group' => 'Church Profile'],
+
             // === AKSES PUSAT CABANG & PUSAT ===
             ['name' => 'finance.center.view', 'display_name' => 'Lihat Laporan Diterima (Pusat Cabang)', 'group' => 'Finance.Admin'],
             ['name' => 'finance.center.approve', 'display_name' => 'Setujui/Tolak Laporan Cabang (Pusat Cabang)', 'group' => 'Finance.Admin'],

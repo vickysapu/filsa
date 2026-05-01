@@ -4,15 +4,14 @@
 
 @section('content')
     <div class="page-wrapper">
-
-        <!-- Page Header -->
+        <!-- Header -->
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
             <div>
                 <nav aria-label="breadcrumb" class="mb-2">
                     <ol class="breadcrumb mb-0">
                         <li class="breadcrumb-item">
                             <a href="{{ route('admin.finance.reports.index') }}"
-                                class="text-muted-custom text-decoration-none">
+                                class="text-decoration-none text-muted-custom">
                                 <i class="ri-arrow-left-line me-1"></i> Laporan Keuangan
                             </a>
                         </li>
@@ -43,40 +42,35 @@
             </div>
         </div>
 
-        <!-- Financial Summary Cards -->
+        <!-- Summary Cards -->
         <div class="card-custom mb-4">
             <div class="card-body p-4">
                 <div class="row g-4 text-center">
                     <div class="col-6 col-lg-3">
                         <div class="summary-item">
                             <div class="summary-label">Saldo Awal</div>
-                            <div class="summary-value">
-                                Rp {{ number_format($report->opening_balance, 0, ',', '.') }}
-                            </div>
+                            <div class="summary-value">Rp {{ number_format($report->opening_balance, 0, ',', '.') }}</div>
                         </div>
                     </div>
                     <div class="col-6 col-lg-3">
                         <div class="summary-item">
-                            <div class="summary-label text-success">Total Pemasukan</div>
-                            <div class="summary-value text-success">
-                                + Rp {{ number_format($report->total_income, 0, ',', '.') }}
-                            </div>
+                            <div class="summary-label text-success-custom">Total Pemasukan</div>
+                            <div class="summary-value text-success-custom">+ Rp
+                                {{ number_format($report->total_income, 0, ',', '.') }}</div>
                         </div>
                     </div>
                     <div class="col-6 col-lg-3">
                         <div class="summary-item">
-                            <div class="summary-label text-danger">Total Pengeluaran</div>
-                            <div class="summary-value text-danger">
-                                - Rp {{ number_format($report->total_expense, 0, ',', '.') }}
-                            </div>
+                            <div class="summary-label text-warning-custom">Total Pengeluaran</div>
+                            <div class="summary-value text-warning-custom">- Rp
+                                {{ number_format($report->total_expense, 0, ',', '.') }}</div>
                         </div>
                     </div>
                     <div class="col-6 col-lg-3">
                         <div class="summary-item">
                             <div class="summary-label">Saldo Akhir</div>
-                            <div class="summary-value text-primary fw-bold">
-                                Rp {{ number_format($report->closing_balance, 0, ',', '.') }}
-                            </div>
+                            <div class="summary-value text-primary fw-bold">Rp
+                                {{ number_format($report->closing_balance, 0, ',', '.') }}</div>
                         </div>
                     </div>
                 </div>
@@ -85,19 +79,16 @@
 
         <!-- Rejection Alert -->
         @if ($report->status === 'rejected' && $report->rejection_reason)
-            <div class="alert-custom error mb-4">
+            <div class="alert-custom alert-rejected mb-4">
                 <i class="ri-error-warning-fill"></i>
-                <div>
-                    <strong>Alasan Penolakan:</strong> {{ $report->rejection_reason }}
-                </div>
+                <div><strong>Alasan Penolakan:</strong> {{ $report->rejection_reason }}</div>
             </div>
         @endif
 
-        <!-- Penerimaan Dana Table -->
+        <!-- Income Table -->
         <div class="card-custom mb-4">
             <div class="card-header-custom border-bottom border-custom py-3 px-4">
-                <h6 class="mb-0 fw-semibold">
-                    <i class="ri-arrow-up-circle-line me-2 text-success"></i>Penerimaan Dana
+                <h6 class="mb-0 fw-semibold"><i class="ri-arrow-up-circle-line me-2 text-success-custom"></i>Penerimaan Dana
                 </h6>
             </div>
             <div class="table-responsive">
@@ -117,18 +108,16 @@
                             @if ($detail && $detail->amount > 0)
                                 <tr class="border-bottom border-custom">
                                     <td class="py-3 px-4 fw-medium">{{ $categories[$code]['name'] ?? $code }}</td>
-                                    <td class="py-3 px-4 text-end text-success fw-medium">
-                                        Rp {{ number_format($detail->amount, 0, ',', '.') }}
-                                    </td>
+                                    <td class="py-3 px-4 text-end text-success-custom fw-medium">Rp
+                                        {{ number_format($detail->amount, 0, ',', '.') }}</td>
                                     <td class="py-3 px-4 text-muted-custom small">{{ $detail->notes ?: '-' }}</td>
                                 </tr>
                             @endif
                         @endforeach
-                        <tr class="border-bottom border-custom" style="background: var(--bg-body);">
+                        <tr class="border-bottom border-custom bg-light-subtle">
                             <td class="py-3 px-4 fw-bold">TOTAL PENERIMAAN</td>
-                            <td class="py-3 px-4 text-end text-success fw-bold">
-                                + Rp {{ number_format($report->total_income, 0, ',', '.') }}
-                            </td>
+                            <td class="py-3 px-4 text-end text-success-custom fw-bold">+ Rp
+                                {{ number_format($report->total_income, 0, ',', '.') }}</td>
                             <td class="py-3 px-4"></td>
                         </tr>
                     </tbody>
@@ -186,9 +175,8 @@
         @foreach ($expenseGroups as $groupKey => $group)
             <div class="card-custom mb-4">
                 <div class="card-header-custom border-bottom border-custom py-3 px-4">
-                    <h6 class="mb-0 fw-semibold">
-                        <i class="{{ $group['icon'] }} me-2 text-danger"></i>{{ $group['title'] }}
-                    </h6>
+                    <h6 class="mb-0 fw-semibold"><i
+                            class="{{ $group['icon'] }} me-2 text-warning-custom"></i>{{ $group['title'] }}</h6>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover mb-0 align-middle">
@@ -208,18 +196,16 @@
                                 @if ($detail && $detail->amount > 0)
                                     <tr class="border-bottom border-custom">
                                         <td class="py-3 px-4 fw-medium">{{ $categories[$code]['name'] ?? $code }}</td>
-                                        <td class="py-3 px-4 text-end text-danger fw-medium">
-                                            Rp {{ number_format($detail->amount, 0, ',', '.') }}
-                                        </td>
+                                        <td class="py-3 px-4 text-end text-warning-custom fw-medium">Rp
+                                            {{ number_format($detail->amount, 0, ',', '.') }}</td>
                                         <td class="py-3 px-4 text-muted-custom small">{{ $detail->notes ?: '-' }}</td>
                                     </tr>
                                 @endif
                             @endforeach
                             @if ($report->details->whereIn('category_code', $group['cats'])->sum('amount') > 0)
-                                <tr class="border-bottom border-custom" style="background: var(--bg-body);">
+                                <tr class="border-bottom border-custom bg-light-subtle">
                                     <td class="py-3 px-4 fw-bold">Total {{ $group['title'] }}</td>
-                                    <td class="py-3 px-4 text-end text-danger fw-bold">
-                                        Rp
+                                    <td class="py-3 px-4 text-end text-warning-custom fw-bold">Rp
                                         {{ number_format($report->details->whereIn('category_code', $group['cats'])->sum('amount'), 0, ',', '.') }}
                                     </td>
                                     <td class="py-3 px-4"></td>
@@ -239,9 +225,7 @@
         <!-- Additional Info -->
         <div class="card-custom mb-4">
             <div class="card-header-custom border-bottom border-custom py-3 px-4">
-                <h6 class="mb-0 fw-semibold">
-                    <i class="ri-information-line me-2 text-primary"></i>Informasi Tambahan
-                </h6>
+                <h6 class="mb-0 fw-semibold"><i class="ri-information-line me-2 text-primary"></i>Informasi Tambahan</h6>
             </div>
             <div class="card-body p-4">
                 <div class="row g-4">
@@ -280,8 +264,7 @@
                                 <i class="ri-checkbox-circle-line text-primary"></i>
                                 <div>
                                     <p class="text-muted-custom small mb-1">Disetujui Oleh</p>
-                                    <p class="fw-semibold mb-0">{{ $report->approver?->name ?: '-' }}</p>
-                                    <small
+                                    <p class="fw-semibold mb-0">{{ $report->approver?->name ?: '-' }}</p><small
                                         class="text-muted-custom">{{ $report->approved_at->format('d F Y H:i') }}</small>
                                 </div>
                             </div>
@@ -311,38 +294,38 @@
                         </a>
                     @endif
                     @if (auth()->user()->hasPermission('finance.report.submit'))
-                        <button class="btn btn-custom" onclick="openSubmitModal()">
+                        <button type="button" class="btn btn-custom" id="btnSubmitReport">
                             <i class="ri-send-plane-line me-1"></i> Kirim ke Pusat Cabang
                         </button>
                     @endif
                 @endif
+
                 @if (auth()->user()->hasPermission('finance.report.export'))
                     <a href="{{ route('admin.finance.export.annual-report', $report) }}" class="btn btn-outline-success">
                         <i class="ri-file-excel-2-line me-1"></i> Export Excel
                     </a>
                 @endif
+
                 @if ($report->status === 'submitted' && auth()->user()->hasPermission('finance.report.approve'))
-                    <button class="btn btn-success" onclick="approveReport()">
+                    <button type="button" class="btn btn-success-custom" id="btnApproveReport">
                         <i class="ri-check-line me-1"></i> Setujui
                     </button>
-                    <button class="btn btn-danger" onclick="openRejectModal()">
+                    <button type="button" class="btn btn-warning-custom" id="btnRejectReport">
                         <i class="ri-close-line me-1"></i> Tolak
                     </button>
                 @endif
             </div>
         </div>
-
     </div>
 
-    <!-- Submit Modal -->
+    <!-- Modals -->
     <div class="modal fade" id="submitModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content modal-content-custom">
                 <form id="submitForm">
                     <div class="modal-header border-bottom border-custom">
-                        <h5 class="modal-title fw-semibold">
-                            <i class="ri-send-plane-line me-2 text-primary"></i>Kirim Laporan
-                        </h5>
+                        <h5 class="modal-title fw-semibold"><i class="ri-send-plane-line me-2 text-primary"></i>Kirim
+                            Laporan</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body p-4">
@@ -350,7 +333,7 @@
                             <i class="ri-information-line me-2"></i>
                             <span class="small">Laporan akan dikirim ke cabang/pusat tujuan untuk direview.</span>
                         </div>
-                        <div>
+                        <div class="mb-3">
                             <label class="form-label small fw-semibold text-muted-custom">Kirim ke Cabang <span
                                     class="text-danger">*</span></label>
                             <select id="submitTo" class="form-select form-select-custom" required>
@@ -363,7 +346,7 @@
                     </div>
                     <div class="modal-footer border-top border-custom py-3 px-4">
                         <button type="button" class="btn btn-outline-custom" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-custom">
+                        <button type="submit" class="btn btn-custom" id="btnConfirmSubmit">
                             <i class="ri-send-plane-line me-1"></i> Kirim
                         </button>
                     </div>
@@ -372,15 +355,13 @@
         </div>
     </div>
 
-    <!-- Reject Modal -->
     <div class="modal fade" id="rejectModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content modal-content-custom">
                 <form id="rejectForm">
                     <div class="modal-header border-bottom border-custom">
-                        <h5 class="modal-title fw-semibold">
-                            <i class="ri-close-circle-line me-2 text-danger"></i>Tolak Laporan
-                        </h5>
+                        <h5 class="modal-title fw-semibold"><i
+                                class="ri-close-circle-line me-2 text-warning-custom"></i>Tolak Laporan</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body p-4">
@@ -394,7 +375,7 @@
                     </div>
                     <div class="modal-footer border-top border-custom py-3 px-4">
                         <button type="button" class="btn btn-outline-custom" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-danger">
+                        <button type="submit" class="btn btn-warning-custom" id="btnConfirmReject">
                             <i class="ri-close-line me-1"></i> Tolak
                         </button>
                     </div>
@@ -403,427 +384,306 @@
         </div>
     </div>
 
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999;"></div>
+
     <style>
-        /* ===== PAGE SPECIFIC STYLES ===== */
-        .page-wrapper {
-            animation: fadeIn 0.4s ease;
+        .text-success-custom {
+            color: #10b981 !important;
         }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .text-warning-custom {
+            color: #f59e0b !important;
         }
 
-        /* ===== SUMMARY ITEMS ===== */
-        .summary-item {
-            padding: 1rem;
-            border-radius: var(--radius-sm);
-            background: var(--bg-body);
-            transition: var(--transition);
+        .btn-success-custom {
+            background-color: #10b981;
+            border-color: #10b981;
+            color: white;
         }
 
-        .summary-item:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-sm);
+        .btn-success-custom:hover {
+            background-color: #059669;
+            border-color: #059669;
+            color: white;
         }
 
-        .summary-label {
-            font-size: 0.8rem;
-            font-weight: 500;
-            color: var(--text-secondary);
-            margin-bottom: 0.5rem;
+        .btn-warning-custom {
+            background-color: #f59e0b;
+            border-color: #f59e0b;
+            color: white;
         }
 
-        .summary-value {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--text-primary);
+        .btn-warning-custom:hover {
+            background-color: #d97706;
+            border-color: #d97706;
+            color: white;
         }
 
-        /* ===== INFO ITEMS ===== */
-        .info-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
-        }
-
-        .info-item i {
-            font-size: 1.25rem;
-            margin-top: 2px;
-        }
-
-        /* ===== STATUS BADGES ===== */
-        .badge-status-draft {
-            background: rgba(245, 158, 11, 0.15);
-            color: #b45309;
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            padding: 0.4em 0.75em;
-            font-weight: 500;
-            font-size: 0.8rem;
-        }
-
-        .badge-status-submitted {
-            background: rgba(59, 130, 246, 0.15);
-            color: #2563eb;
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            padding: 0.4em 0.75em;
-            font-weight: 500;
-            font-size: 0.8rem;
-        }
-
-        .badge-status-approved {
-            background: rgba(34, 197, 94, 0.15);
-            color: #22c55e;
-            border: 1px solid rgba(34, 197, 94, 0.3);
-            padding: 0.4em 0.75em;
-            font-weight: 500;
-            font-size: 0.8rem;
-        }
-
-        .badge-status-rejected {
-            background: rgba(239, 68, 68, 0.15);
-            color: #ef4444;
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            padding: 0.4em 0.75em;
-            font-weight: 500;
-            font-size: 0.8rem;
-        }
-
-        /* ===== ALERT CUSTOM ===== */
-        .alert-custom {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
-            padding: 1rem 1.25rem;
-            border-radius: var(--radius-sm);
-            font-size: 0.9rem;
-        }
-
-        .alert-custom.error {
+        .alert-rejected {
             background: rgba(239, 68, 68, 0.1);
             border-left: 4px solid #ef4444;
             color: #ef4444;
-        }
-
-        .alert-custom i {
-            font-size: 1.25rem;
-            margin-top: 2px;
-        }
-
-        /* ===== ALERT INFO ===== */
-        .alert-info-custom {
-            background: rgba(37, 99, 235, 0.08);
-            border: 1px solid rgba(37, 99, 235, 0.2);
-            border-radius: var(--radius-sm);
-            padding: 0.75rem 1rem;
             display: flex;
-            align-items: flex-start;
-            gap: 0.5rem;
-            color: var(--text-primary);
-        }
-
-        .alert-info-custom i {
-            color: var(--accent-blue);
-            font-size: 1.1rem;
-            margin-top: 2px;
-        }
-
-        /* ===== FORM ELEMENTS ===== */
-        .form-control-custom,
-        .form-select-custom {
-            background: var(--bg-surface);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            padding: 0.625rem 0.875rem;
+            gap: 0.75rem;
+            padding: 1rem;
             border-radius: var(--radius-sm);
-            font-size: 0.9rem;
-            transition: var(--transition);
         }
 
-        .form-control-custom:focus,
-        .form-select-custom:focus {
-            border-color: var(--accent-blue);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-            outline: none;
+        .toast-custom {
+            background: white;
+            border-left: 4px solid;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 1rem;
+            margin-top: 0.5rem;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            min-width: 300px;
+            animation: slideIn 0.3s ease-out;
+            color: #333;
         }
 
-        .form-control-custom::placeholder {
-            color: var(--text-secondary);
+        .toast-success {
+            border-left-color: #10b981;
         }
 
-        .textarea-custom {
-            resize: vertical;
-            min-height: 80px;
-            line-height: 1.5;
+        .toast-error {
+            border-left-color: #ef4444;
         }
 
-        /* ===== MODAL CUSTOM ===== */
-        .modal-content-custom {
-            background: var(--bg-surface);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .modal-header {
-            background: var(--bg-surface);
-            padding: 1rem 1.5rem;
-        }
-
-        .modal-body {
-            background: var(--bg-body);
-        }
-
-        .modal-footer {
-            background: var(--bg-surface);
-        }
-
-        /* ===== DARK MODE ===== */
-        [data-theme="dark"] .bg-body-tertiary {
-            background: var(--bg-sidebar) !important;
-        }
-
-        [data-theme="dark"] .summary-item {
-            background: var(--bg-sidebar);
-        }
-
-        [data-theme="dark"] .alert-info-custom {
-            background: rgba(37, 99, 235, 0.12);
-            border-color: rgba(37, 99, 235, 0.3);
-        }
-
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 768px) {
-            .summary-value {
-                font-size: 0.95rem;
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
             }
 
-            .d-flex.flex-wrap.gap-3 {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .d-flex.flex-wrap.gap-2 {
-                flex-direction: column;
-            }
-
-            .d-flex.flex-wrap.gap-2 .btn {
-                width: 100%;
-                justify-content: center;
+            to {
+                transform: translateX(0);
+                opacity: 1;
             }
         }
     </style>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // ===== MODAL INSTANCES =====
-            let submitModal, rejectModal;
+            // 1. Cek Bootstrap
+            if (typeof bootstrap === 'undefined') {
+                console.error('Bootstrap JS tidak ditemukan!');
+                return;
+            }
+
+            // 2. Inisialisasi Modal
             const submitModalEl = document.getElementById('submitModal');
             const rejectModalEl = document.getElementById('rejectModal');
+            let submitModal = submitModalEl ? new bootstrap.Modal(submitModalEl) : null;
+            let rejectModal = rejectModalEl ? new bootstrap.Modal(rejectModalEl) : null;
 
-            if (submitModalEl && bootstrap.Modal) submitModal = new bootstrap.Modal(submitModalEl);
-            if (rejectModalEl && bootstrap.Modal) rejectModal = new bootstrap.Modal(rejectModalEl);
+            // 3. Helper Functions
+            function getCsrfToken() {
+                return document.querySelector('meta[name="csrf-token"]')?.content || '';
+            }
 
-            // ===== TOOLTIP INIT =====
-            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
-            tooltipTriggerList.map(function(tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl, {
-                    trigger: 'hover'
+            function showToast(type, title, message) {
+                const container = document.getElementById('toast-container');
+                if (!container) return;
+                const toast = document.createElement('div');
+                toast.className = `toast-custom toast-${type}`;
+                const icon = type === 'success' ?
+                    '<i class="ri-checkbox-circle-line me-2" style="color:#10b981; font-size:1.2rem;"></i>' :
+                    '<i class="ri-error-warning-line me-2" style="color:#ef4444; font-size:1.2rem;"></i>';
+
+                toast.innerHTML = `${icon}<div><strong>${title}</strong><br><small>${message}</small></div>`;
+                container.appendChild(toast);
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateX(100%)';
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
+
+            function setLoading(btn, isLoading, originalHtml) {
+                if (!btn) return;
+                if (isLoading) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Memproses...';
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                }
+            }
+
+            // --- LOGIC SUBMIT (PERBAIKAN UTAMA DI SINI) ---
+            const btnSubmit = document.getElementById('btnSubmitReport');
+            if (btnSubmit) {
+                btnSubmit.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation(); // Mencegah event bubbling
+
+                    const select = document.getElementById('submitTo');
+                    if (select) select.value = '';
+
+                    if (submitModal) submitModal.show();
                 });
-            });
-
-            // ===== URLS =====
-            const urls = {
-                submit: "{{ route('admin.finance.reports.submit', ':id') }}",
-                approve: "{{ route('admin.finance.reports.approve', ':id') }}",
-                reject: "{{ route('admin.finance.reports.reject', ':id') }}"
-            };
-            const reportId = {{ $report->id }};
-
-            // ===== MODAL FUNCTIONS =====
-            window.openSubmitModal = function() {
-                document.getElementById('submitTo').value = '';
-                if (submitModal) submitModal.show();
             }
 
-            window.openRejectModal = function() {
-                document.getElementById('rejectReason').value = '';
-                if (rejectModal) rejectModal.show();
-            }
-
-            window.closeModal = function() {
-                if (submitModal) submitModal.hide();
-                if (rejectModal) rejectModal.hide();
-            }
-
-            // ===== SUBMIT FORM =====
             const submitForm = document.getElementById('submitForm');
             if (submitForm) {
                 submitForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    const url = urls.submit.replace(':id', reportId);
-                    const btn = this.querySelector('button[type="submit"]');
+                    e.preventDefault(); // WAJIB: Mencegah form submit secara default (GET)
+                    e.stopPropagation();
 
-                    if (btn) {
-                        btn.disabled = true;
-                        btn.innerHTML =
-                            '<span class="spinner-border spinner-border-sm me-2"></span> Mengirim...';
+                    const btn = document.getElementById('btnConfirmSubmit');
+                    const originalHtml = btn ? btn.innerHTML : 'Kirim';
+                    const targetId = document.getElementById('submitTo').value;
+
+                    if (!targetId) {
+                        showToast('error', 'Error', 'Pilih cabang tujuan terlebih dahulu');
+                        return;
                     }
 
+                    if (btn) setLoading(btn, true, originalHtml);
+
+                    // Gunakan URL eksplisit dari route helper Laravel
+                    const url = "{{ route('admin.finance.reports.submit', ['report' => $report->id]) }}";
+
                     fetch(url, {
-                            method: 'POST',
+                            method: 'POST', // Force POST
                             headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
-                                    ?.content || ''
+                                'Content-Type': 'application/json', // Penting agar Laravel membaca JSON
+                                'X-CSRF-TOKEN': getCsrfToken(),
+                                'Accept': 'application/json'
                             },
                             body: JSON.stringify({
-                                submitted_to: document.getElementById('submitTo').value
+                                submitted_to: targetId
                             })
                         })
-                        .then(r => r.json())
+                        .then(r => {
+                            if (!r.ok) throw new Error('Network response was not ok');
+                            return r.json();
+                        })
                         .then(res => {
                             if (res.success) {
                                 showToast('success', 'Berhasil', res.message);
                                 if (submitModal) submitModal.hide();
-                                setTimeout(() => location.reload(), 500);
+                                setTimeout(() => location.reload(), 1000);
                             } else {
                                 showToast('error', 'Gagal', res.message || 'Gagal mengirim laporan');
                             }
                         })
-                        .catch(() => showToast('error', 'Error', 'Terjadi kesalahan saat mengirim'))
+                        .catch(err => {
+                            console.error('Fetch Error:', err);
+                            showToast('error', 'Error', 'Terjadi kesalahan koneksi: ' + err.message);
+                        })
                         .finally(() => {
-                            if (btn) {
-                                btn.disabled = false;
-                                btn.innerHTML = '<i class="ri-send-plane-line me-1"></i> Kirim';
-                            }
+                            if (btn) setLoading(btn, false, originalHtml);
                         });
                 });
             }
 
-            // ===== REJECT FORM =====
+            // --- LOGIC REJECT ---
+            const btnReject = document.getElementById('btnRejectReport');
+            if (btnReject) {
+                btnReject.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const textarea = document.getElementById('rejectReason');
+                    if (textarea) textarea.value = '';
+                    if (rejectModal) rejectModal.show();
+                });
+            }
+
             const rejectForm = document.getElementById('rejectForm');
             if (rejectForm) {
                 rejectForm.addEventListener('submit', function(e) {
                     e.preventDefault();
-                    const url = urls.reject.replace(':id', reportId);
-                    const btn = this.querySelector('button[type="submit"]');
+                    e.stopPropagation();
 
-                    if (btn) {
-                        btn.disabled = true;
-                        btn.innerHTML =
-                            '<span class="spinner-border spinner-border-sm me-2"></span> Memproses...';
+                    const btn = document.getElementById('btnConfirmReject');
+                    const originalHtml = btn ? btn.innerHTML : 'Tolak';
+                    const reason = document.getElementById('rejectReason').value;
+
+                    if (reason.length < 10) {
+                        showToast('error', 'Error', 'Alasan penolakan minimal 10 karakter');
+                        return;
                     }
+
+                    if (btn) setLoading(btn, true, originalHtml);
+
+                    const url = "{{ route('admin.finance.reports.reject', ['report' => $report->id]) }}";
 
                     fetch(url, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
-                                    ?.content || ''
+                                'X-CSRF-TOKEN': getCsrfToken(),
+                                'Accept': 'application/json'
                             },
                             body: JSON.stringify({
-                                rejection_reason: document.getElementById('rejectReason').value
+                                rejection_reason: reason
                             })
                         })
-                        .then(r => r.json())
+                        .then(r => {
+                            if (!r.ok) throw new Error('Network response was not ok');
+                            return r.json();
+                        })
                         .then(res => {
                             if (res.success) {
                                 showToast('success', 'Ditolak', res.message);
                                 if (rejectModal) rejectModal.hide();
-                                setTimeout(() => location.reload(), 500);
+                                setTimeout(() => location.reload(), 1000);
                             } else {
                                 showToast('error', 'Gagal', res.message || 'Gagal menolak laporan');
                             }
                         })
-                        .catch(() => showToast('error', 'Error', 'Terjadi kesalahan saat menolak'))
+                        .catch(err => {
+                            console.error('Fetch Error:', err);
+                            showToast('error', 'Error', 'Terjadi kesalahan koneksi');
+                        })
                         .finally(() => {
-                            if (btn) {
-                                btn.disabled = false;
-                                btn.innerHTML = '<i class="ri-close-line me-1"></i> Tolak';
-                            }
+                            if (btn) setLoading(btn, false, originalHtml);
                         });
                 });
             }
 
-            // ===== APPROVE REPORT =====
-            window.approveReport = function() {
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        title: 'Setujui laporan?',
-                        text: 'Laporan ini akan ditandai sebagai disetujui dan tidak dapat diubah.',
-                        icon: 'question',
-                        showCancelButton: true,
-                        confirmButtonColor: '#22c55e',
-                        confirmButtonText: 'Ya, Setujui',
-                        cancelButtonText: 'Batal'
-                    }).then(result => {
-                        if (result.isConfirmed) performApprove();
-                    });
-                } else {
-                    if (confirm('Setujui laporan ini?')) {
-                        performApprove();
+            // --- LOGIC APPROVE ---
+            const btnApprove = document.getElementById('btnApproveReport');
+            if (btnApprove) {
+                btnApprove.addEventListener('click', function() {
+                    if (confirm('Apakah Anda yakin ingin menyetujui laporan ini?')) {
+                        const btn = this;
+                        const originalHtml = btn.innerHTML;
+                        setLoading(btn, true, originalHtml);
+
+                        const url =
+                            "{{ route('admin.finance.reports.approve', ['report' => $report->id]) }}";
+
+                        fetch(url, {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRF-TOKEN': getCsrfToken(),
+                                    'Accept': 'application/json'
+                                }
+                            })
+                            .then(r => {
+                                if (!r.ok) throw new Error('Network response was not ok');
+                                return r.json();
+                            })
+                            .then(res => {
+                                if (res.success) {
+                                    showToast('success', 'Disetujui', res.message);
+                                    setTimeout(() => location.reload(), 1000);
+                                } else {
+                                    showToast('error', 'Gagal', res.message);
+                                    setLoading(btn, false, originalHtml);
+                                }
+                            })
+                            .catch(() => {
+                                showToast('error', 'Error', 'Terjadi kesalahan koneksi');
+                                setLoading(btn, false, originalHtml);
+                            });
                     }
-                }
+                });
             }
-
-            function performApprove() {
-                const url = urls.approve.replace(':id', reportId);
-
-                fetch(url, {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
-                            'Accept': 'application/json'
-                        }
-                    })
-                    .then(r => r.json())
-                    .then(res => {
-                        if (res.success) {
-                            showToast('success', 'Disetujui', res.message);
-                            setTimeout(() => location.reload(), 500);
-                        } else {
-                            showToast('error', 'Gagal', res.message);
-                        }
-                    })
-                    .catch(() => showToast('error', 'Error', 'Terjadi kesalahan saat menyetujui'));
-            }
-
-            // ===== TOAST NOTIFICATION =====
-            function showToast(type, title, message) {
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: type,
-                        title: title,
-                        text: message,
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 2500,
-                        timerProgressBar: true
-                    });
-                } else {
-                    alert(`${title}: ${message}`);
-                }
-            }
-
-            // ===== AUTO-CLOSE ALERTS =====
-            document.querySelectorAll('[data-auto-close]').forEach(alert => {
-                const closeBtn = alert.querySelector('.alert-close');
-                closeBtn?.addEventListener('click', () => alert.remove());
-                setTimeout(() => {
-                    alert.style.opacity = '0';
-                    alert.style.transform = 'translateX(-20px)';
-                    setTimeout(() => alert.remove(), 300);
-                }, 5000);
-            });
         });
     </script>
 @endsection
