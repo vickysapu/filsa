@@ -59,6 +59,10 @@
                             data-id="{{ $album->id }}" title="Edit">
                             <i class="ri-pencil-line"></i>
                         </button>
+                        <button type="button" class="btn btn-outline-danger btn-sm btn-delete-album"
+                            data-id="{{ $album->id }}" title="Hapus">
+                            <i class="ri-delete-bin-line"></i>
+                        </button>
                     @endif
                 </div>
             </div>
@@ -216,7 +220,6 @@
         padding: 3rem 1.5rem;
         text-align: center;
         grid-column: 1 / -1;
-        /* Spans full width if grid */
     }
 
     .empty-state-icon {

@@ -14,11 +14,7 @@ class DokumentasiPhoto extends Model
     public $incrementing = false;
     protected $keyType = 'string';
 
-    protected $fillable = [
-        'branch_id',
-        'album_id', 'file_path', 'file_name', 'file_type', 'mime_type',
-        'file_size', 'caption', 'urutan', 'is_cover', 'metadata', 'uploaded_by',
-    ];
+    protected $fillable = ['branch_id', 'album_id', 'file_path', 'file_name', 'file_type', 'mime_type', 'file_size', 'caption', 'urutan', 'is_cover', 'metadata', 'uploaded_by'];
 
     protected $casts = [
         'file_size' => 'integer',
@@ -35,11 +31,6 @@ class DokumentasiPhoto extends Model
                 $model->{$model->getKeyName()} = Str::uuid();
             }
         });
-    }
-
-    protected static function booted()
-    {
-        static::addGlobalScope(new \App\Models\Scopes\BranchScope);
     }
 
     public function branch(): BelongsTo
@@ -61,11 +52,11 @@ class DokumentasiPhoto extends Model
     {
         $bytes = $this->file_size;
         $units = ['B', 'KB', 'MB', 'GB'];
-        
+
         for ($i = 0; $bytes > 1024; $i++) {
             $bytes /= 1024;
         }
-        
+
         return round($bytes, 2) . ' ' . $units[$i];
     }
 

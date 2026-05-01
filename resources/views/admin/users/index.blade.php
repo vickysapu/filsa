@@ -5,7 +5,6 @@
 @section('content')
     <div class="page-wrapper">
 
-        <!-- Page Header -->
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
             <div>
                 <h1 class="h3 mb-1 fw-bold">Manajemen Users</h1>
@@ -18,10 +17,13 @@
             @endif
         </div>
 
-        <!-- Alert Container -->
         <div id="alertContainer" class="mb-4"></div>
 
-        <!-- Users Table -->
+        <input type="hidden" id="baseUrlStore" value="{{ route('admin.users.store') }}">
+        <input type="hidden" id="baseUrlUpdate" value="{{ route('admin.users.update', '__ID__') }}">
+        <input type="hidden" id="baseUrlEdit" value="{{ route('admin.users.edit', '__ID__') }}">
+        <input type="hidden" id="baseUrlDelete" value="{{ route('admin.users.destroy', '__ID__') }}">
+
         <div class="card-custom">
             <div class="table-responsive">
                 <table class="table table-hover mb-0 align-middle" id="tabel-users">
@@ -105,7 +107,6 @@
                 </table>
             </div>
 
-            <!-- Pagination -->
             @if ($users->hasPages())
                 <div class="d-flex justify-content-center p-4 border-top border-custom">
                     {{ $users->links('pagination::simple-bootstrap-4') }}
@@ -115,13 +116,14 @@
 
     </div>
 
-    <!-- Modal Form User -->
     <div class="modal fade" id="modalUserForm" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content modal-content-custom">
                 <form id="formUser">
                     @csrf
                     <input type="hidden" name="user_id" id="userId" value="">
+                    <input type="hidden" name="name" id="hiddenName" value="">
+                    <input type="hidden" name="email" id="hiddenEmail" value="">
 
                     <div class="modal-header border-bottom border-custom">
                         <h5 class="modal-title fw-semibold" id="modalUserLabel">Tambah User Baru</h5>
@@ -136,7 +138,6 @@
                         </div>
 
                         <div class="row g-4">
-                            <!-- Left Column: Account Info -->
                             <div class="col-lg-6">
                                 <div class="card card-custom">
                                     <div class="card-header-custom border-bottom border-custom py-3 px-4">
@@ -146,20 +147,43 @@
                                     </div>
                                     <div class="card-body p-4">
 
-                                        <div class="mb-3">
-                                            <label class="form-label small fw-semibold text-muted-custom">Nama Lengkap <span
-                                                    class="text-danger">*</span></label>
-                                            <input type="text" name="name" id="name"
-                                                class="form-control form-control-custom" required maxlength="100"
-                                                placeholder="Contoh: Budi Santoso">
+                                        <div class="mb-3" id="jemaatSection">
+                                            <label class="form-label small fw-semibold text-muted-custom">Pilih Jemaat
+                                                <span class="text-danger">*</span></label>
+                                            <select name="jemaat_id" id="jemaat_id"
+                                                class="form-control form-control-custom">
+                                                <option selected disabled>Pilih Jemaat</option>
+                                                @forelse($jemaats as $jemaat)
+                                                    <option value="{{ $jemaat->id }}"
+                                                        data-email="{{ $jemaat->email ?? '' }}"
+                                                        data-name="{{ $jemaat->nama_lengkap }}">
+                                                        {{ $jemaat->nama_lengkap }} - {{ $jemaat->NIK }}
+                                                    </option>
+                                                @empty
+                                                    <option value="" disabled selected>Tidak ada data jemaat tersedia
+                                                    </option>
+                                                @endforelse
+                                            </select>
+                                            @if ($jemaats->isEmpty())
+                                                <small class="text-danger">Semua jemaat sudah memiliki akun atau belum ada
+                                                    data jemaat.</small>
+                                            @endif
                                         </div>
 
                                         <div class="mb-3">
-                                            <label class="form-label small fw-semibold text-muted-custom">Email <span
-                                                    class="text-danger">*</span></label>
-                                            <input type="email" name="email" id="email"
-                                                class="form-control form-control-custom" required maxlength="100"
-                                                placeholder="email@perusahaan.com">
+                                            <label class="form-label small fw-semibold text-muted-custom">Nama
+                                                Lengkap</label>
+                                            <input type="text" id="displayName"
+                                                class="form-control form-control-custom" readonly
+                                                placeholder="Dipilih dari jemaat">
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold text-muted-custom">Email</label>
+                                            <input type="email" id="displayEmail"
+                                                class="form-control form-control-custom" readonly
+                                                placeholder="Dipilih dari jemaat">
+                                            <small class="text-muted-custom">Email otomatis dari data jemaat</small>
                                         </div>
 
                                         <div class="mb-3">
@@ -183,7 +207,6 @@
                                 </div>
                             </div>
 
-                            <!-- Right Column: Roles & Settings -->
                             <div class="col-lg-6">
                                 <div class="card card-custom mb-4">
                                     <div class="card-header-custom border-bottom border-custom py-3 px-4">
@@ -244,7 +267,6 @@
     </div>
 
     <style>
-        /* ===== PAGE SPECIFIC STYLES ===== */
         .page-wrapper {
             animation: fadeIn 0.4s ease;
         }
@@ -261,7 +283,6 @@
             }
         }
 
-        /* ===== USER AVATAR ===== */
         .user-avatar {
             width: 40px;
             height: 40px;
@@ -276,7 +297,6 @@
             flex-shrink: 0;
         }
 
-        /* ===== ROLE BADGE ===== */
         .badge-role {
             background: var(--bg-body);
             color: var(--text-primary);
@@ -286,7 +306,6 @@
             font-weight: 500;
         }
 
-        /* ===== STATUS BADGES ===== */
         .badge-status-active {
             background: rgba(34, 197, 94, 0.15);
             color: #22c55e;
@@ -305,7 +324,6 @@
             font-size: 0.75rem;
         }
 
-        /* ===== ACTION BUTTONS ===== */
         .btn-action {
             width: 32px;
             height: 32px;
@@ -346,7 +364,6 @@
             color: white;
         }
 
-        /* ===== ROLES LIST ===== */
         .roles-list {
             display: flex;
             flex-direction: column;
@@ -391,7 +408,6 @@
             margin-top: 0.15rem;
         }
 
-        /* ===== FORM ELEMENTS ===== */
         .form-control-custom,
         .form-select-custom {
             background: var(--bg-surface);
@@ -452,7 +468,6 @@
             background-color: var(--accent-blue);
         }
 
-        /* ===== ALERT CUSTOM ===== */
         .alert-custom {
             display: flex;
             align-items: center;
@@ -491,7 +506,6 @@
             }
         }
 
-        /* ===== EMPTY STATE ===== */
         .empty-state-icon {
             width: 80px;
             height: 80px;
@@ -506,7 +520,6 @@
             opacity: 0.6;
         }
 
-        /* ===== MODAL CUSTOM ===== */
         .modal-content-custom {
             background: var(--bg-surface);
             border: 1px solid var(--border-color);
@@ -543,7 +556,6 @@
             flex-shrink: 0;
         }
 
-        /* ===== PAGINATION ===== */
         .pagination .page-link {
             background: var(--bg-surface);
             border: 1px solid var(--border-color);
@@ -566,7 +578,6 @@
             color: var(--text-secondary);
         }
 
-        /* ===== DARK MODE ===== */
         [data-theme="dark"] .bg-body-tertiary {
             background: var(--bg-sidebar) !important;
         }
@@ -589,7 +600,6 @@
             border-color: var(--border-color);
         }
 
-        /* ===== RESPONSIVE ===== */
         @media (max-width: 991px) {
             .roles-list {
                 max-height: 200px;
@@ -614,14 +624,12 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // ===== MODAL INSTANCE =====
             let modalUser;
             const modalEl = document.getElementById('modalUserForm');
             if (modalEl && bootstrap.Modal) {
                 modalUser = new bootstrap.Modal(modalEl);
             }
 
-            // ===== TOOLTIP INIT =====
             const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
             tooltipTriggerList.map(function(tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl, {
@@ -629,12 +637,10 @@
                 });
             });
 
-            // ===== CONSTANTS =====
             const currentToken = '{{ request()->attributes->get('page_token') ?? '' }}';
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
             let isEditMode = false;
 
-            // ===== EVENT: Add User =====
             document.getElementById('btn-tambah-user')?.addEventListener('click', function() {
                 resetForm();
                 isEditMode = false;
@@ -643,10 +649,22 @@
                     'Password <span class="text-danger">*</span>';
                 document.getElementById('password').required = true;
                 document.getElementById('password_confirmation').required = true;
+                document.getElementById('jemaatSection').style.display = 'block';
+                document.getElementById('displayName').closest('.mb-3').style.display = 'block';
+                document.getElementById('displayEmail').closest('.mb-3').style.display = 'block';
                 if (modalUser) modalUser.show();
             });
 
-            // ===== EVENT: Edit User (delegation) =====
+            document.getElementById('jemaat_id')?.addEventListener('change', function() {
+                const selected = this.options[this.selectedIndex];
+                const email = selected.dataset.email || this.value + '@system.local';
+                const name = selected.dataset.name || '';
+                document.getElementById('displayEmail').value = email;
+                document.getElementById('displayName').value = name;
+                document.getElementById('hiddenEmail').value = email;
+                document.getElementById('hiddenName').value = name;
+            });
+
             document.addEventListener('click', function(e) {
                 const editBtn = e.target.closest('.btn-edit');
                 if (editBtn) {
@@ -655,7 +673,6 @@
                 }
             });
 
-            // ===== EVENT: Delete User (delegation) =====
             document.addEventListener('click', function(e) {
                 const deleteBtn = e.target.closest('.btn-delete');
                 if (deleteBtn) {
@@ -680,12 +697,30 @@
                 }
             });
 
-            // ===== EVENT: Form Submit =====
             const formUser = document.getElementById('formUser');
             const btnSave = document.getElementById('btnSubmit');
 
             formUser?.addEventListener('submit', async function(e) {
                 e.preventDefault();
+
+                if (!isEditMode) {
+                    const jemaatId = document.getElementById('jemaat_id').value;
+                    const password = document.getElementById('password').value;
+                    const passwordConfirm = document.getElementById('password_confirmation').value;
+
+                    if (!jemaatId) {
+                        showAlert('error', 'Silakan pilih jemaat terlebih dahulu');
+                        return;
+                    }
+                    if (!password || !passwordConfirm) {
+                        showAlert('error', 'Password dan konfirmasi password harus diisi');
+                        return;
+                    }
+                    if (password !== passwordConfirm) {
+                        showAlert('error', 'Konfirmasi password tidak cocok');
+                        return;
+                    }
+                }
 
                 if (!formUser.checkValidity()) {
                     formUser.classList.add('was-validated');
@@ -749,10 +784,8 @@
                 }
             });
 
-            // ===== FUNCTION: Load Users =====
             function loadUsers() {
                 const url = '{{ route('admin.users.index') }}?ajax=1&_token_nav=' + currentToken;
-
                 fetch(url, {
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest',
@@ -769,7 +802,6 @@
                     .catch(() => showAlert('error', 'Gagal memuat data'));
             }
 
-            // ===== FUNCTION: Load User for Edit =====
             function loadUserForEdit(id) {
                 let baseUrl = document.getElementById('baseUrlEdit').value.replace('__ID__', id);
                 const separator = baseUrl.includes('?') ? '&' : '?';
@@ -787,18 +819,20 @@
                         isEditMode = true;
                         document.getElementById('modalUserLabel').textContent = 'Edit User';
                         document.getElementById('userId').value = data.user.id;
-                        document.getElementById('name').value = data.user.name || '';
-                        document.getElementById('email').value = data.user.email || '';
+                        document.getElementById('hiddenName').value = data.user.name || '';
+                        document.getElementById('hiddenEmail').value = data.user.email || '';
+                        document.getElementById('displayName').value = data.user.name || '';
+                        document.getElementById('displayEmail').value = data.user.email || '';
                         document.getElementById('is_active').checked = !!data.user.is_active;
                         document.getElementById('passwordLabel').innerHTML =
                             'Password Baru <span class="text-muted-custom">(kosongkan jika tidak ingin ubah)</span>';
                         document.getElementById('password').required = false;
                         document.getElementById('password_confirmation').required = false;
+                        document.getElementById('jemaatSection').style.display = 'none';
+                        document.getElementById('displayName').closest('.mb-3').style.display = 'block';
+                        document.getElementById('displayEmail').closest('.mb-3').style.display = 'block';
 
-                        // Reset all role checkboxes
                         document.querySelectorAll('input[name="roles[]"]').forEach(cb => cb.checked = false);
-
-                        // Check assigned roles
                         if (data.userRoles?.length) {
                             data.userRoles.forEach(rid => {
                                 const cb = document.querySelector(
@@ -812,7 +846,6 @@
                     .catch(() => showAlert('error', 'Gagal memuat data user'));
             }
 
-            // ===== FUNCTION: Delete User =====
             function deleteUser(id) {
                 let baseUrl = document.getElementById('baseUrlDelete').value.replace('__ID__', id);
                 const separator = baseUrl.includes('?') ? '&' : '?';
@@ -838,41 +871,35 @@
                     .catch(() => showAlert('error', 'Terjadi kesalahan koneksi'));
             }
 
-            // ===== FUNCTION: Reset Form =====
             function resetForm() {
                 const form = document.getElementById('formUser');
                 if (form) {
                     form.reset();
                     form.classList.remove('was-validated');
                 }
-
                 const errorBox = document.getElementById('formErrors');
                 if (errorBox) errorBox.classList.add('d-none');
-
                 document.getElementById('userId').value = '';
+                document.getElementById('hiddenName').value = '';
+                document.getElementById('hiddenEmail').value = '';
+                document.getElementById('displayName').value = '';
+                document.getElementById('displayEmail').value = '';
                 document.getElementById('password').value = '';
                 document.getElementById('password_confirmation').value = '';
                 document.querySelectorAll('input[name="roles[]"]').forEach(cb => cb.checked = false);
             }
 
-            // ===== FUNCTION: Show Alert =====
             function showAlert(type, message) {
                 const container = document.getElementById('alertContainer');
                 if (!container) return;
-
                 const alertClass = type === 'success' ? 'success' : 'error';
                 const icon = type === 'success' ? 'ri-checkbox-circle-fill' : 'ri-error-warning-fill';
-                const borderColor = type === 'success' ? '#22c55e' : '#ef4444';
-                const textColor = type === 'success' ? '#166534' : '#991b1b';
-
                 container.innerHTML = `
-            <div class="alert-custom ${alertClass}" data-auto-close>
-                <i class="${icon}"></i>
-                <span>${message}</span>
-                <button class="alert-close">&times;</button>
-            </div>`;
-
-                // Auto close after 5 seconds
+                    <div class="alert-custom ${alertClass}" data-auto-close>
+                        <i class="${icon}"></i>
+                        <span>${message}</span>
+                        <button class="alert-close">&times;</button>
+                    </div>`;
                 const alert = container.firstElementChild;
                 setTimeout(() => {
                     if (alert) {
@@ -881,17 +908,13 @@
                         setTimeout(() => alert.remove(), 300);
                     }
                 }, 5000);
-
-                // Close button handler
                 alert?.querySelector('.alert-close')?.addEventListener('click', () => alert.remove());
             }
 
-            // ===== FUNCTION: Show Validation Errors =====
             function showErrors(errors) {
                 const errorBox = document.getElementById('formErrors');
                 const errorList = document.getElementById('errorList');
                 if (!errorBox || !errorList) return;
-
                 let html = '';
                 for (let field in errors) {
                     const messages = Array.isArray(errors[field]) ? errors[field] : [errors[field]];
@@ -907,17 +930,13 @@
                 });
             }
 
-            // ===== FUNCTION: Bind Events =====
             function bindEvents() {
-                // Re-bind edit buttons
                 document.querySelectorAll('.btn-edit').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const id = this.dataset.id;
                         loadUserForEdit(id);
                     });
                 });
-
-                // Re-bind delete buttons
                 document.querySelectorAll('.btn-delete').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const id = this.dataset.id;
@@ -942,7 +961,6 @@
                 });
             }
 
-            // ===== AUTO-CLOSE ALERTS =====
             document.querySelectorAll('[data-auto-close]').forEach(alert => {
                 const closeBtn = alert.querySelector('.alert-close');
                 closeBtn?.addEventListener('click', () => alert.remove());
@@ -953,14 +971,12 @@
                 }, 5000);
             });
 
-            // ===== ESC KEY TO CLOSE MODAL =====
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape' && modalUser?._isShown) {
                     modalUser.hide();
                 }
             });
 
-            // ===== INIT =====
             bindEvents();
         });
     </script>

@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Jemaat;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 
@@ -14,28 +16,33 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
-        /** @var \App\Models\User $currentUser */
         $currentUser = Auth::user();
 
         $users = User::with('roles', 'branch')->paginate(10);
+
         $roles = Role::active()
             ->when(!$currentUser->isSuperAdmin(), fn($q) => $q->where('branch_id', $currentUser->branch_id))
             ->get();
 
+        $jemaats = collect();
+        if (!$request->ajax()) {
+            $jemaats = Jemaat::whereDoesntHave('user')
+                ->when(!$currentUser->isSuperAdmin(), fn($q) => $q->where('branch_id', $currentUser->branch_id))
+                ->orderBy('nama_lengkap')
+                ->get();
+        }
+
         if ($request->ajax()) {
             $html = view('admin.users.index', compact('users', 'roles'))->render();
             preg_match('/<tbody>(.*?)<\/tbody>/s', $html, $matches);
-            return response()->json([
-                'html' => $matches[1] ?? '',
-            ]);
+            return response()->json(['html' => $matches[1] ?? '']);
         }
 
-        return view('admin.users.index', compact('users', 'roles'));
+        return view('admin.users.index', compact('users', 'roles', 'jemaats'));
     }
 
     public function edit(User $user, Request $request)
     {
-        /** @var \App\Models\User $currentUser */
         $currentUser = Auth::user();
 
         if (!$currentUser->isSuperAdmin() && $user->branch_id !== $currentUser->branch_id) {
@@ -59,16 +66,23 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:100',
-            'email' => 'required|string|email|max:100|unique:users',
+            'jemaat_id' => 'required|uuid|exists:jemaats,id',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'roles' => 'required|array|min:1',
             'roles.*' => 'exists:roles,id',
             'is_active' => 'boolean',
         ]);
 
-        /** @var \App\Models\User $currentUser */
         $currentUser = Auth::user();
+        $jemaat = Jemaat::findOrFail($validated['jemaat_id']);
+
+        if (!$currentUser->isSuperAdmin() && $jemaat->branch_id !== $currentUser->branch_id) {
+            return response()->json(['success' => false, 'message' => 'Anda hanya dapat membuat user dari cabang Anda.'], 403);
+        }
+
+        if (User::find($validated['jemaat_id'])) {
+            return response()->json(['success' => false, 'message' => 'User untuk jemaat ini sudah terdaftar.'], 409);
+        }
 
         if (!$currentUser->isSuperAdmin()) {
             $adminRole = Role::where('name', 'administrator')->first();
@@ -81,21 +95,27 @@ class UserController extends Controller
             }
         }
 
-        $user = User::create([
-            'branch_id' => $currentUser->branch_id,
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'is_active' => $validated['is_active'] ?? true,
-        ]);
-        $user->assignRole($validated['roles']);
-
-        return response()->json(['success' => true, 'message' => 'User berhasil dibuat!']);
+        DB::beginTransaction();
+        try {
+            $user = User::create([
+                'id' => $validated['jemaat_id'],
+                'branch_id' => $jemaat->branch_id,
+                'name' => $jemaat->nama_lengkap,
+                'email' => $jemaat->email ?? $validated['jemaat_id'] . '@system.local',
+                'password' => Hash::make($validated['password']),
+                'is_active' => $validated['is_active'] ?? true,
+            ]);
+            $user->assignRole($validated['roles']);
+            DB::commit();
+            return response()->json(['success' => true, 'message' => 'User berhasil dibuat!']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Gagal membuat user: ' . $e->getMessage()], 500);
+        }
     }
 
     public function update(Request $request, User $user)
     {
-        /** @var \App\Models\User $currentUser */
         $currentUser = Auth::user();
 
         if (!$currentUser->isSuperAdmin() && $user->branch_id !== $currentUser->branch_id) {
@@ -134,7 +154,6 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
-        /** @var \App\Models\User $currentUser */
         $currentUser = Auth::user();
 
         if (!$currentUser->isSuperAdmin() && $user->branch_id !== $currentUser->branch_id) {

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\BranchScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -17,6 +18,7 @@ class KategoriPelayanan extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'id',
         'branch_id',
         'nama_kategori',
         'deskripsi',
@@ -27,6 +29,7 @@ class KategoriPelayanan extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'urutan' => 'integer',
     ];
 
     protected static function boot()
@@ -34,14 +37,14 @@ class KategoriPelayanan extends Model
         parent::boot();
         static::creating(function ($model) {
             if (empty($model->{$model->getKeyName()})) {
-                $model->{$model->getKeyName()} = Str::uuid();
+                $model->{$model->getKeyName()} = (string) Str::uuid();
             }
         });
     }
 
     protected static function booted()
     {
-        static::addGlobalScope(new \App\Models\Scopes\BranchScope);
+        static::addGlobalScope(new BranchScope());
     }
 
     public function branch(): BelongsTo

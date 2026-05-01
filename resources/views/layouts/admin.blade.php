@@ -490,6 +490,56 @@
                 transform: translateY(0);
             }
         }
+
+        /* ===== DROPDOWN USER MENU ===== */
+        .dropdown-menu {
+            background: var(--bg-surface) !important;
+            border: 1px solid var(--border-color) !important;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .dropdown-item {
+            color: var(--text-primary) !important;
+            font-size: 0.9rem;
+            border-radius: var(--radius-sm) !important;
+            margin: 2px 4px;
+            transition: var(--transition);
+        }
+
+        .dropdown-item:hover {
+            background: var(--bg-sidebar-hover) !important;
+            color: #fff !important;
+        }
+
+        .dropdown-item:hover i {
+            color: #fff !important;
+        }
+
+        .dropdown-item.text-danger:hover {
+            background: rgba(239, 68, 68, 0.15) !important;
+            color: #ef4444 !important;
+        }
+
+        .dropdown-item.text-danger:hover i {
+            color: #ef4444 !important;
+        }
+
+        .dropdown-divider {
+            border-color: var(--border-color) !important;
+            margin: 0.25rem 0 !important;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 
@@ -528,6 +578,15 @@
                         class="nav-item {{ request()->routeIs('admin.latihan-pelayanan.*') ? 'active' : '' }}">
                         <i class="ri-calendar-event-line"></i>
                         <span>Latihan Pelayanan</span>
+                    </a>
+                @endif
+
+                @if (auth()->user()->hasPermission('church_structure.view'))
+                    <div class="nav-label"><i class="ri-org-chart-line"></i> Struktur Gereja</div>
+                    <a href="@routeToken('admin.church_structure.index')"
+                        class="nav-item {{ request()->routeIs('admin.church_structure.*') ? 'active' : '' }}">
+                        <i class="ri-tree-line"></i>
+                        <span>Struktur Gereja</span>
                     </a>
                 @endif
 
@@ -656,6 +715,13 @@
                         <span>Zoom</span>
                     </a>
                 @endif
+                    <li class="nav-item">
+                        <a href="{{ route('admin.church_profile.index') }}" 
+                        class="nav-link d-flex align-items-center gap-2 {{ request()->routeIs('admin.church_profile.*') ? 'active' : '' }}">
+                            <i class="ri-building-line"></i>
+                            <span>Profile Gereja</span>
+                        </a>
+                    </li>
 
                 @if (auth()->user()->hasPermission('users.view') ||
                         auth()->user()->hasPermission('roles.view') ||
@@ -716,13 +782,56 @@
                             <p class="user-name">{{ auth()->user()->name }}</p>
                             <p class="user-role">{{ auth()->user()->role_names }}</p>
                         </div>
-                        <div class="user-avatar">{{ substr(auth()->user()->name, 0, 1) }}</div>
-                        <form action="@routeToken('logout')" method="POST">
-                            @csrf
-                            <button type="submit" class="btn-logout" aria-label="Logout">
-                                <i class="ri-logout-box-line"></i>
+
+                        <!-- Avatar + Dropdown -->
+                        <div class="dropdown">
+                            <button class="btn btn-link p-0 border-0 text-decoration-none dropdown-toggle"
+                                type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <div class="user-avatar">{{ substr(auth()->user()->name, 0, 1) }}</div>
                             </button>
-                        </form>
+
+                            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2"
+                                style="min-width: 200px; border-radius: var(--radius);">
+                                <!-- Header -->
+                                <li class="px-3 py-2 border-bottom border-custom">
+                                    <small class="text-muted-custom d-block">Signed in as</small>
+                                    <span class="fw-semibold text-truncate d-block"
+                                        style="max-width: 150px;">{{ auth()->user()->name }}</span>
+                                </li>
+
+                                <!-- Menu Items -->
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3"
+                                        href="@routeToken('profile.index')" id="navProfileLink">
+                                        <i class="ri-user-line text-muted-custom"></i>
+                                        <span>Profil Saya</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3"
+                                        href="@routeToken('profile.index')#password-section" id="navPasswordLink">
+                                        <i class="ri-lock-line text-muted-custom"></i>
+                                        <span>Ubah Password</span>
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <hr class="dropdown-divider border-custom my-1">
+                                </li>
+
+                                <!-- Logout -->
+                                <li>
+                                    <form action="@routeToken('logout')" method="POST" class="w-100">
+                                        @csrf
+                                        <button type="submit"
+                                            class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 text-danger">
+                                            <i class="ri-logout-box-line"></i>
+                                            <span>Logout</span>
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </header>

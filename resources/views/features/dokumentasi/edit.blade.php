@@ -48,6 +48,21 @@
                         </div>
                         <div class="card-body p-4">
 
+                            @if ($isSuperAdmin ?? false)
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold text-muted-custom">Cabang <span
+                                            class="text-danger">*</span></label>
+                                    <select name="branch_id" class="form-select form-select-custom" required>
+                                        @foreach ($branches ?? collect() as $branch)
+                                            <option value="{{ $branch->id }}"
+                                                {{ old('branch_id', $album->branch_id) == $branch->id ? 'selected' : '' }}>
+                                                {{ $branch->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            @endif
+
                             <div class="mb-3">
                                 <label class="form-label small fw-semibold text-muted-custom">Judul Album <span
                                         class="text-danger">*</span></label>

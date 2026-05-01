@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use App\Models\Branch;
 use App\Models\Jemaat;
 use App\Models\KategoriPelayanan;
 use App\Models\Pelayanan;
@@ -14,10 +14,29 @@ use Illuminate\Support\Str;
 
 class PelayananController extends Controller
 {
+    protected function getBranchId()
+    {
+        return Auth::user()?->roles->first()?->branch_id ?? Auth::user()?->branch_id;
+    }
+
+    protected function isSuperAdmin()
+    {
+        $user = Auth::user();
+        return $user && ($user->hasRole('administrator') || ($user->branch && $user->branch->is_headquarter));
+    }
+
     public function index(Request $request)
     {
-        $query = Pelayanan::with(['details.jemaat'])
-            ->latest('tanggal');
+        $isSuperAdmin = $this->isSuperAdmin();
+        $branchId = $this->getBranchId();
+
+        $query = Pelayanan::with(['details.jemaat', 'details.kategori'])->latest('tanggal');
+
+        if (!$isSuperAdmin && $branchId) {
+            $query->where('branch_id', $branchId);
+        } elseif ($isSuperAdmin && $request->filled('branch_id')) {
+            $query->where('branch_id', $request->branch_id);
+        }
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -32,13 +51,21 @@ class PelayananController extends Controller
             $search = trim($request->search);
             $query->where(function ($q) use ($search) {
                 $q->where('nama_pelayanan', 'LIKE', "%{$search}%")
-                  ->orWhere('lokasi', 'LIKE', "%{$search}%")
-                  ->orWhere('nomor_jadwal', 'LIKE', "%{$search}%");
+                    ->orWhere('lokasi', 'LIKE', "%{$search}%")
+                    ->orWhere('nomor_jadwal', 'LIKE', "%{$search}%");
             });
         }
 
         $pelayanans = $query->paginate(12)->appends($request->query());
-        $kategoris = KategoriPelayanan::active()->ordered()->get();
+
+        // Load kategoris sesuai branch
+        $kategoriQuery = KategoriPelayanan::active()->ordered();
+        if (!$isSuperAdmin && $branchId) {
+            $kategoriQuery->where('branch_id', $branchId);
+        } elseif ($isSuperAdmin && $request->filled('branch_id')) {
+            $kategoriQuery->where('branch_id', $request->branch_id);
+        }
+        $kategoris = $kategoriQuery->get();
 
         if ($request->ajax() || $request->input('ajax') == 1) {
             return view('features.pelayanan._list', compact('pelayanans', 'kategoris'))->render();
@@ -49,25 +76,38 @@ class PelayananController extends Controller
 
     public function create(Request $request)
     {
-        $jemaats = Jemaat::where('status_jemaat', true)
-            ->orderBy('nama_lengkap')
-            ->get(['id', 'nama_lengkap', 'no_hp']);
+        $branchId = $this->getBranchId();
+        $isSuperAdmin = $this->isSuperAdmin();
 
-        $kategoris = KategoriPelayanan::active()->ordered()->get();
+        $jemaatQuery = Jemaat::where('status_jemaat', true)->orderBy('nama_lengkap');
+        if (!$isSuperAdmin && $branchId) {
+            $jemaatQuery->where('branch_id', $branchId);
+        } elseif ($isSuperAdmin && $request->filled('branch_id')) {
+            $jemaatQuery->where('branch_id', $request->branch_id);
+        }
+        $jemaats = $jemaatQuery->get(['id', 'nama_lengkap', 'no_hp']);
+
+        $kategoriQuery = KategoriPelayanan::active()->ordered();
+        if (!$isSuperAdmin && $branchId) {
+            $kategoriQuery->where('branch_id', $branchId);
+        } elseif ($isSuperAdmin && $request->filled('branch_id')) {
+            $kategoriQuery->where('branch_id', $request->branch_id);
+        }
+        $kategoris = $kategoriQuery->get();
 
         if ($request->ajax() || $request->input('ajax') == 1) {
             $selected = $request->input('selected', []);
 
             $petugas_html = view('features.pelayanan._petugas_list', [
-                'jemaats'      => $jemaats,
-                'kategoris'    => $kategoris,
-                'selected'     => $selected,
-                'roles'        => [],
+                'jemaats' => $jemaats,
+                'kategoris' => $kategoris,
+                'selected' => $selected,
+                'roles' => [],
                 'kategori_ids' => [],
             ])->render();
 
             return response()->json([
-                'success'      => true,
+                'success' => true,
                 'petugas_html' => $petugas_html,
             ]);
         }
@@ -77,36 +117,47 @@ class PelayananController extends Controller
 
     public function store(Request $request)
     {
+        $branchId = $this->getBranchId();
+        $isSuperAdmin = $this->isSuperAdmin();
+
+        if (!$branchId) {
+            return response()->json(['success' => false, 'message' => 'Branch ID tidak valid.'], 403);
+        }
+
         $validated = $request->validate([
             'nama_pelayanan' => 'required|string|max:255',
-            'tanggal'        => 'required|date',
-            'waktu'          => 'required|date_format:H:i',
-            'lokasi'         => 'required|string|max:255',
-            'keterangan'     => 'nullable|string',
-            'status'         => 'required|in:draft,active,completed,cancelled',
+            'tanggal' => 'required|date',
+            'waktu' => 'required|date_format:H:i',
+            'lokasi' => 'required|string|max:255',
+            'keterangan' => 'nullable|string',
+            'status' => 'required|in:draft,active,completed,cancelled',
 
-            'jemaat_ids'     => 'required|array|min:1',
-            'jemaat_ids.*'   => 'exists:jemaats,id',
+            'jemaat_ids' => 'required|array|min:1',
+            'jemaat_ids.*' => 'exists:jemaats,id',
 
-            'kategori_id'    => 'required|array',
-            'kategori_id.*'  => 'required|exists:kategori_pelayanans,id',
+            'kategori_id' => 'required|array',
+            'kategori_id.*' => 'required|exists:kategori_pelayanans,id',
 
-            'roles'          => 'nullable|array',
-            'roles.*'        => 'nullable|string|max:100',
+            'roles' => 'nullable|array',
+            'roles.*' => 'nullable|string|max:100',
+
+            'branch_id' => $isSuperAdmin ? 'sometimes|exists:branches,id' : '',
         ]);
+
+        $targetBranchId = $isSuperAdmin ? $validated['branch_id'] ?? $branchId : $branchId;
 
         DB::beginTransaction();
         try {
             $pelayanan = Pelayanan::create([
-                'branch_id'      => Auth::user()->branch_id,
+                'branch_id' => $targetBranchId,
                 'nama_pelayanan' => $validated['nama_pelayanan'],
-                'tanggal'        => $validated['tanggal'],
-                'waktu'          => $validated['waktu'],
-                'lokasi'         => $validated['lokasi'],
-                'keterangan'     => $validated['keterangan'],
-                'status'         => $validated['status'],
-                'created_by'     => Auth::id(),
-                'nomor_jadwal'   => Pelayanan::generateNomorJadwalForDate($validated['tanggal']),
+                'tanggal' => $validated['tanggal'],
+                'waktu' => $validated['waktu'],
+                'lokasi' => $validated['lokasi'],
+                'keterangan' => $validated['keterangan'],
+                'status' => $validated['status'],
+                'created_by' => Auth::id(),
+                'nomor_jadwal' => Pelayanan::generateNomorJadwalForDate($validated['tanggal']),
             ]);
 
             foreach ($validated['jemaat_ids'] as $jemaatId) {
@@ -117,12 +168,12 @@ class PelayananController extends Controller
                 }
 
                 PelayananDetail::create([
-                    'branch_id'    => Auth::user()->branch_id,
+                    'branch_id' => $targetBranchId,
                     'pelayanan_id' => $pelayanan->id,
-                    'jemaat_id'    => $jemaatId,
-                    'kategori_id'  => $kategoriId,
-                    'role'         => $validated['roles'][$jemaatId] ?? null,
-                    'status'       => 'active',
+                    'jemaat_id' => $jemaatId,
+                    'kategori_id' => $kategoriId,
+                    'role' => $validated['roles'][$jemaatId] ?? null,
+                    'status' => 'active',
                 ]);
             }
 
@@ -130,91 +181,122 @@ class PelayananController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => "Jadwal berhasil dibuat dengan {$pelayanan->details()->count()} petugas."
+                'message' => "Jadwal berhasil dibuat dengan {$pelayanan->details()->count()} petugas.",
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 422);
+            return response()->json(
+                [
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                ],
+                422,
+            );
         }
     }
 
     public function edit(Pelayanan $pelayanan, Request $request)
     {
-        if (!$request->ajax()) abort(404);
+        $branchId = $this->getBranchId();
+        $isSuperAdmin = $this->isSuperAdmin();
 
-        $jemaats = Jemaat::where('status_jemaat', true)
-            ->orderBy('nama_lengkap')
-            ->get();
+        if (!$isSuperAdmin && $branchId && $pelayanan->branch_id !== $branchId) {
+            abort(403, 'Akses ditolak');
+        }
 
-        $kategoris = KategoriPelayanan::active()->ordered()->get();
+        if (!$request->ajax()) {
+            abort(404);
+        }
+
+        $jemaatQuery = Jemaat::where('status_jemaat', true)->orderBy('nama_lengkap');
+        if (!$isSuperAdmin && $branchId) {
+            $jemaatQuery->where('branch_id', $branchId);
+        }
+        $jemaats = $jemaatQuery->get();
+
+        $kategoriQuery = KategoriPelayanan::active()->ordered();
+        if (!$isSuperAdmin && $branchId) {
+            $kategoriQuery->where('branch_id', $branchId);
+        }
+        $kategoris = $kategoriQuery->get();
 
         $selectedJemaatIds = $pelayanan->details->pluck('jemaat_id')->toArray();
-        $roles         = $pelayanan->details->pluck('role', 'jemaat_id')->toArray();
-        $kategoriIds   = $pelayanan->details->pluck('kategori_id', 'jemaat_id')->toArray();
+        $roles = $pelayanan->details->pluck('role', 'jemaat_id')->toArray();
+        $kategoriIds = $pelayanan->details->pluck('kategori_id', 'jemaat_id')->toArray();
 
         $petugas_html = view('features.pelayanan._petugas_list', [
-            'jemaats'      => $jemaats,
-            'kategoris'    => $kategoris,
-            'selected'     => $selectedJemaatIds,
-            'roles'        => $roles,
+            'jemaats' => $jemaats,
+            'kategoris' => $kategoris,
+            'selected' => $selectedJemaatIds,
+            'roles' => $roles,
             'kategori_ids' => $kategoriIds,
         ])->render();
 
         return response()->json([
-            'success'             => true,
-            'nama_pelayanan'      => $pelayanan->nama_pelayanan,
-            'tanggal'             => $pelayanan->tanggal?->format('Y-m-d'),
-            'waktu'               => $pelayanan->waktu?->format('H:i'),
-            'lokasi'              => $pelayanan->lokasi,
-            'keterangan'          => $pelayanan->keterangan,
-            'status'              => $pelayanan->status,
-            'kategori_ids'        => $kategoriIds,
+            'success' => true,
+            'nama_pelayanan' => $pelayanan->nama_pelayanan,
+            'tanggal' => $pelayanan->tanggal?->format('Y-m-d'),
+            'waktu' => $pelayanan->waktu?->format('H:i'),
+            'lokasi' => $pelayanan->lokasi,
+            'keterangan' => $pelayanan->keterangan,
+            'status' => $pelayanan->status,
+            'kategori_ids' => $kategoriIds,
             'selected_jemaat_ids' => $selectedJemaatIds,
-            'roles'               => $roles,
+            'roles' => $roles,
         ]);
     }
 
     public function update(Request $request, Pelayanan $pelayanan)
     {
+        $branchId = $this->getBranchId();
+        $isSuperAdmin = $this->isSuperAdmin();
+
+        if (!$isSuperAdmin && $branchId && $pelayanan->branch_id !== $branchId) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
+        }
+
         if (in_array($pelayanan->status, ['completed', 'cancelled'])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Pelayanan yang sudah selesai/dibatalkan tidak dapat diedit!'
-            ], 403);
+            return response()->json(
+                [
+                    'success' => false,
+                    'message' => 'Pelayanan yang sudah selesai/dibatalkan tidak dapat diedit!',
+                ],
+                403,
+            );
         }
 
         $validated = $request->validate([
             'nama_pelayanan' => 'required|string|max:255',
-            'tanggal'        => 'required|date',
-            'waktu'          => 'required|date_format:H:i',
-            'lokasi'         => 'required|string|max:255',
-            'keterangan'     => 'nullable|string|max:1000',
-            'status'         => 'required|in:draft,active,completed,cancelled',
+            'tanggal' => 'required|date',
+            'waktu' => 'required|date_format:H:i',
+            'lokasi' => 'required|string|max:255',
+            'keterangan' => 'nullable|string|max:1000',
+            'status' => 'required|in:draft,active,completed,cancelled',
 
-            'jemaat_ids'     => 'required|array|min:1',
-            'jemaat_ids.*'   => 'exists:jemaats,id',
+            'jemaat_ids' => 'required|array|min:1',
+            'jemaat_ids.*' => 'exists:jemaats,id',
 
-            // VALIDASI YANG BENAR
-            'kategori_id'    => 'required|array',
-            'kategori_id.*'  => 'required|exists:kategori_pelayanans,id',
+            'kategori_id' => 'required|array',
+            'kategori_id.*' => 'required|exists:kategori_pelayanans,id',
 
-            'roles'          => 'nullable|array',
-            'roles.*'        => 'nullable|string|max:100',
+            'roles' => 'nullable|array',
+            'roles.*' => 'nullable|string|max:100',
+
+            'branch_id' => $isSuperAdmin ? 'sometimes|exists:branches,id' : '',
         ]);
+
+        $targetBranchId = $isSuperAdmin ? $validated['branch_id'] ?? $pelayanan->branch_id : $pelayanan->branch_id;
 
         DB::beginTransaction();
         try {
             $pelayanan->update([
                 'nama_pelayanan' => $validated['nama_pelayanan'],
-                'tanggal'        => $validated['tanggal'],
-                'waktu'          => $validated['waktu'],
-                'lokasi'         => $validated['lokasi'],
-                'keterangan'     => $validated['keterangan'] ?? null,
-                'status'         => $validated['status'],
+                'tanggal' => $validated['tanggal'],
+                'waktu' => $validated['waktu'],
+                'lokasi' => $validated['lokasi'],
+                'keterangan' => $validated['keterangan'] ?? null,
+                'status' => $validated['status'],
+                'branch_id' => $targetBranchId,
             ]);
 
             // Hapus detail lama
@@ -225,19 +307,19 @@ class PelayananController extends Controller
                 $kategoriId = $validated['kategori_id'][$jemaatId] ?? null;
 
                 if (!$kategoriId) {
-                    throw new \Exception("Kategori pelayanan wajib dipilih untuk setiap petugas.");
+                    throw new \Exception('Kategori pelayanan wajib dipilih untuk setiap petugas.');
                 }
 
                 $details[] = [
-                    'id'           => Str::uuid(),
-                    'branch_id'    => Auth::user()->branch_id,
+                    'id' => Str::uuid(),
+                    'branch_id' => $targetBranchId,
                     'pelayanan_id' => $pelayanan->id,
-                    'jemaat_id'    => $jemaatId,
-                    'kategori_id'  => $kategoriId,
-                    'role'         => $validated['roles'][$jemaatId] ?? null,
-                    'status'       => 'active',
-                    'created_at'   => now(),
-                    'updated_at'   => now(),
+                    'jemaat_id' => $jemaatId,
+                    'kategori_id' => $kategoriId,
+                    'role' => $validated['roles'][$jemaatId] ?? null,
+                    'status' => 'active',
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ];
             }
 
@@ -247,74 +329,90 @@ class PelayananController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Jadwal pelayanan berhasil diperbarui!'
+                'message' => 'Jadwal pelayanan berhasil diperbarui!',
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 422);
+            return response()->json(
+                [
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                ],
+                422,
+            );
         }
     }
 
     public function destroy(Pelayanan $pelayanan, Request $request)
     {
+        $branchId = $this->getBranchId();
+        $isSuperAdmin = $this->isSuperAdmin();
+
+        if (!$isSuperAdmin && $branchId && $pelayanan->branch_id !== $branchId) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
+            }
+            abort(403);
+        }
+
         $pelayanan->delete();
 
         if ($request->ajax()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Jadwal pelayanan berhasil dihapus!'
+                'message' => 'Jadwal pelayanan berhasil dihapus!',
             ]);
         }
 
-        return redirect()->route('admin.jadwal.index')
-            ->with('success', 'Jadwal pelayanan berhasil dihapus!');
+        return redirect()->route('admin.jadwal.index')->with('success', 'Jadwal pelayanan berhasil dihapus!');
     }
 
     public function show(Pelayanan $pelayanan, Request $request)
     {
+        $branchId = $this->getBranchId();
+        $isSuperAdmin = $this->isSuperAdmin();
+
+        if (!$isSuperAdmin && $branchId && $pelayanan->branch_id !== $branchId) {
+            abort(403, 'Akses ditolak');
+        }
+
         // Load semua relasi yang dibutuhkan oleh view
-        $pelayanan->load([
-            'details.jemaat',
-            'details.kategori',
-            'creator',
-        ]);
-    
+        $pelayanan->load(['details.jemaat', 'details.kategori', 'creator']);
+
         if ($request->ajax() || $request->input('ajax') == 1) {
             return response()->json([
-                'success'        => true,
-                'id'             => $pelayanan->id,
+                'success' => true,
+                'id' => $pelayanan->id,
                 'nama_pelayanan' => $pelayanan->nama_pelayanan,
-                'nomor_jadwal'   => $pelayanan->nomor_jadwal,
-                'tanggal'        => $pelayanan->tanggal?->format('Y-m-d'),
-                'tanggal_label'  => $pelayanan->tanggal?->translatedFormat('l, d F Y'),
-                'waktu'          => $pelayanan->waktu?->format('H:i'),
-                'lokasi'         => $pelayanan->lokasi,
-                'keterangan'     => $pelayanan->keterangan,
-                'status'         => $pelayanan->status,
-                'status_label'   => $pelayanan->status_label,
-                'creator'        => $pelayanan->creator?->name,
-                'created_at'     => $pelayanan->created_at?->format('d M Y, H:i'),
-                'updated_at'     => $pelayanan->updated_at?->format('d M Y, H:i'),
-                'total_petugas'  => $pelayanan->details->count(),
-                'total_aktif'    => $pelayanan->details->where('status', 'active')->count(),
-                'total_off'      => $pelayanan->details->where('status', 'off')->count(),
-                'details'        => $pelayanan->details->map(fn($d) => [
-                    'id'         => $d->id,
-                    'jemaat_id'  => $d->jemaat_id,
-                    'nama'       => $d->jemaat?->nama_lengkap,
-                    'no_hp'      => $d->jemaat?->no_hp,
-                    'kategori'   => $d->kategori?->nama_kategori,
-                    'role'       => $d->role,
-                    'status'     => $d->status,
-                    'alasan_off' => $d->alasan_off,
-                ]),
+                'nomor_jadwal' => $pelayanan->nomor_jadwal,
+                'tanggal' => $pelayanan->tanggal?->format('Y-m-d'),
+                'tanggal_label' => $pelayanan->tanggal?->translatedFormat('l, d F Y'),
+                'waktu' => $pelayanan->waktu?->format('H:i'),
+                'lokasi' => $pelayanan->lokasi,
+                'keterangan' => $pelayanan->keterangan,
+                'status' => $pelayanan->status,
+                'status_label' => $pelayanan->status_label,
+                'creator' => $pelayanan->creator?->name,
+                'created_at' => $pelayanan->created_at?->format('d M Y, H:i'),
+                'updated_at' => $pelayanan->updated_at?->format('d M Y, H:i'),
+                'total_petugas' => $pelayanan->details->count(),
+                'total_aktif' => $pelayanan->details->where('status', 'active')->count(),
+                'total_off' => $pelayanan->details->where('status', 'off')->count(),
+                'details' => $pelayanan->details->map(
+                    fn($d) => [
+                        'id' => $d->id,
+                        'jemaat_id' => $d->jemaat_id,
+                        'nama' => $d->jemaat?->nama_lengkap,
+                        'no_hp' => $d->jemaat?->no_hp,
+                        'kategori' => $d->kategori?->nama_kategori,
+                        'role' => $d->role,
+                        'status' => $d->status,
+                        'alasan_off' => $d->alasan_off,
+                    ],
+                ),
             ]);
         }
-    
+
         return view('features.pelayanan.show', compact('pelayanan'));
     }
 }

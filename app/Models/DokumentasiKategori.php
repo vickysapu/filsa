@@ -41,11 +41,6 @@ class DokumentasiKategori extends Model
         });
     }
 
-    protected static function booted()
-    {
-        static::addGlobalScope(new \App\Models\Scopes\BranchScope);
-    }
-
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);

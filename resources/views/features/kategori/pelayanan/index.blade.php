@@ -11,34 +11,20 @@
                 <h1 class="h3 mb-1 fw-bold">Kategori Pelayanan</h1>
                 <p class="text-muted-custom mb-0">Kelola jenis/kategori pelayanan gereja</p>
             </div>
-            <button class="btn btn-custom" onclick="openModal()">
+            <button class="btn btn-custom" type="button" onclick="openModal()">
                 <i class="ri-add-line me-1"></i> Tambah Kategori
             </button>
         </div>
 
-        <!-- Alerts -->
-        @if (session('success'))
-            <div class="alert-custom success mb-4" data-auto-close>
-                <i class="ri-checkbox-circle-fill"></i>
-                <span>{{ session('success') }}</span>
-                <button class="alert-close">&times;</button>
-            </div>
-        @endif
-        @if (session('error'))
-            <div class="alert-custom error mb-4" data-auto-close>
-                <i class="ri-error-warning-fill"></i>
-                <span>{{ session('error') }}</span>
-                <button class="alert-close">&times;</button>
-            </div>
-        @endif
+        <!-- Alerts Container for AJAX Messages -->
+        <div id="alertContainer"></div>
 
         <!-- Kategori Cards Grid -->
-        @if ($kategoris->count() > 0)
-            <div class="row g-4" id="kategoriGrid">
+        <div class="row g-4" id="kategoriGrid">
+            @if ($kategoris->count() > 0)
                 @foreach ($kategoris as $kategori)
-                    <div class="col-md-6 col-lg-4">
-                        <div class="card-custom h-100 kategori-card" style="border-top: 4px solid {{ $kategori->warna }};"
-                            data-id="{{ $kategori->id }}">
+                    <div class="col-md-6 col-lg-4 kategori-item" data-id="{{ $kategori->id }}">
+                        <div class="card-custom h-100 kategori-card" style="border-top: 4px solid {{ $kategori->warna }};">
 
                             <!-- Status Badge -->
                             <div class="position-absolute top-0 end-0 p-3">
@@ -75,43 +61,40 @@
 
                                 <!-- Actions -->
                                 <div class="d-flex gap-2">
-                                    <button class="btn-action btn-action-primary btn-sm w-100"
-                                        onclick="openEditModal({{ json_encode($kategori) }})">
+                                    <button class="btn-action btn-action-primary btn-sm w-100 edit-btn" type="button"
+                                        data-kategori='@json($kategori)'>
                                         <i class="ri-pencil-line me-1"></i> Edit
                                     </button>
                                     @if ($kategori->pelayanans->count() == 0)
-                                        <form action="{{ route('admin.kategori.pelayanan.destroy', $kategori) }}"
-                                            method="POST" class="w-100"
-                                            onsubmit="return confirm('Yakin ingin menghapus kategori ini?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn-action btn-action-danger btn-sm w-100"
-                                                title="Hapus">
-                                                <i class="ri-delete-bin-line"></i>
-                                            </button>
-                                        </form>
+                                        <button class="btn-action btn-action-danger btn-sm w-100 delete-btn" type="button"
+                                            data-id="{{ $kategori->id }}" data-name="{{ $kategori->nama_kategori }}">
+                                            <i class="ri-delete-bin-line"></i>
+                                        </button>
                                     @endif
                                 </div>
                             </div>
                         </div>
                     </div>
                 @endforeach
-            </div>
-        @else
-            <!-- Empty State -->
-            <div class="card-custom">
-                <div class="card-body p-5 text-center">
-                    <div class="empty-state-icon mb-4">
-                        <i class="ri-folder-off-line"></i>
+            @else
+                <!-- Empty State -->
+                <div class="col-12">
+                    <div class="card-custom">
+                        <div class="card-body p-5 text-center">
+                            <div class="empty-state-icon mb-4">
+                                <i class="ri-folder-off-line"></i>
+                            </div>
+                            <h5 class="fw-semibold mb-2">Belum Ada Kategori</h5>
+                            <p class="text-muted-custom small mb-4">Mulai dengan menambahkan kategori pelayanan pertama Anda
+                            </p>
+                            <button class="btn btn-custom" type="button" onclick="openModal()">
+                                <i class="ri-add-line me-1"></i> Tambah Kategori Pertama
+                            </button>
+                        </div>
                     </div>
-                    <h5 class="fw-semibold mb-2">Belum Ada Kategori</h5>
-                    <p class="text-muted-custom small mb-4">Mulai dengan menambahkan kategori pelayanan pertama Anda</p>
-                    <button class="btn btn-custom" onclick="openModal()">
-                        <i class="ri-add-line me-1"></i> Tambah Kategori Pertama
-                    </button>
                 </div>
-            </div>
-        @endif
+            @endif
+        </div>
 
     </div>
 
@@ -120,9 +103,10 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content modal-content-custom">
 
-                <form id="formKategori" method="POST">
+                <form id="formKategori">
                     @csrf
-                    <input type="hidden" id="kategoriId" name="_method" value="">
+                    <input type="hidden" name="_method" id="formMethod" value="POST">
+                    <input type="hidden" name="id" id="kategoriId">
 
                     <!-- Header -->
                     <div class="modal-header border-bottom border-custom">
@@ -141,6 +125,7 @@
                             <input type="text" name="nama_kategori" id="namaKategori"
                                 class="form-control form-control-custom" required
                                 placeholder="Contoh: Praise & Worship, Usher, Multimedia">
+                            <div class="invalid-feedback"></div>
                         </div>
 
                         <!-- Deskripsi -->
@@ -184,7 +169,7 @@
                             onclick="closeModal()">
                             Batal
                         </button>
-                        <button type="submit" class="btn btn-custom">
+                        <button type="submit" class="btn btn-custom" id="btnSubmit">
                             <i class="ri-save-line me-1"></i> Simpan
                         </button>
                     </div>
@@ -222,7 +207,6 @@
             box-shadow: var(--shadow-lg);
         }
 
-        /* Color Dot Indicator */
         .color-dot {
             width: 12px;
             height: 12px;
@@ -232,7 +216,6 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        /* Line Clamp for Description */
         .line-clamp-3 {
             display: -webkit-box;
             -webkit-line-clamp: 3;
@@ -380,61 +363,131 @@
                 gap: 0.5rem !important;
             }
         }
+
+        /* Loading Overlay */
+        .btn-loading {
+            position: relative;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .btn-loading::after {
+            content: "";
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 0.5rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-
-            // ===== MODAL INSTANCE =====
             const modalEl = document.getElementById('modalKategori');
             let modalInstance = null;
-            if (bootstrap && bootstrap.Modal) {
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
                 modalInstance = new bootstrap.Modal(modalEl);
             }
 
-            // ===== COLOR PALETTE =====
             const colorPalette = [
                 '#4f46e5', '#10b981', '#f59e0b', '#ec4899', '#06b6d4',
                 '#8b5cf6', '#ef4444', '#14b8a6', '#f97316', '#6366f1'
             ];
 
-            // ===== DOM ELEMENTS =====
             const formKategori = document.getElementById('formKategori');
             const namaKategori = document.getElementById('namaKategori');
             const deskripsiKategori = document.getElementById('deskripsiKategori');
             const warnaKategori = document.getElementById('warnaKategori');
             const isActiveKategori = document.getElementById('isActiveKategori');
+            const formMethod = document.getElementById('formMethod');
             const kategoriId = document.getElementById('kategoriId');
             const modalTitle = document.getElementById('modalTitle');
             const colorPreview = document.getElementById('colorPreview');
+            const btnSubmit = document.getElementById('btnSubmit');
+            const alertContainer = document.getElementById('alertContainer');
+            const kategoriGrid = document.getElementById('kategoriGrid');
 
-            // ===== FUNCTIONS =====
+            // Helper: Show Alert
+            function showAlert(type, message) {
+                const alertClass = type === 'success' ? 'success' : 'error';
+                const icon = type === 'success' ? 'ri-checkbox-circle-fill' : 'ri-error-warning-fill';
+
+                const alertHtml = `
+                    <div class="alert-custom ${alertClass} mb-4" data-auto-close>
+                        <i class="${icon}"></i>
+                        <span>${message}</span>
+                        <button class="alert-close">&times;</button>
+                    </div>
+                `;
+
+                alertContainer.innerHTML = alertHtml;
+
+                // Auto close logic
+                const alertEl = alertContainer.firstElementChild;
+                const closeBtn = alertEl.querySelector('.alert-close');
+                closeBtn?.addEventListener('click', () => alertEl.remove());
+
+                setTimeout(() => {
+                    if (alertEl) {
+                        alertEl.style.opacity = '0';
+                        alertEl.style.transform = 'translateX(-20px)';
+                        setTimeout(() => alertEl.remove(), 300);
+                    }
+                }, 5000);
+            }
+
+            // Helper: Clear Validation Errors
+            function clearErrors() {
+                document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+                document.querySelectorAll('.invalid-feedback').forEach(el => el.textContent = '');
+            }
+
+            // Helper: Show Validation Errors
+            function showErrors(errors) {
+                clearErrors();
+                for (const [field, messages] of Object.entries(errors)) {
+                    const input = document.querySelector(`[name="${field}"]`);
+                    if (input) {
+                        input.classList.add('is-invalid');
+                        const feedback = input.nextElementSibling;
+                        if (feedback && feedback.classList.contains('invalid-feedback')) {
+                            feedback.textContent = messages[0];
+                        }
+                    }
+                }
+            }
 
             function openModal() {
                 resetForm();
                 randomizeColor();
                 modalTitle.textContent = 'Tambah Kategori';
                 formKategori.action = "{{ route('admin.kategori.pelayanan.store') }}";
+                formMethod.value = 'POST';
                 kategoriId.value = '';
-                formKategori.querySelector('input[name="_method"]').value = '';
 
                 if (modalInstance) {
                     modalInstance.show();
                 } else {
                     modalEl.style.display = 'block';
+                    modalEl.classList.add('show');
                 }
+                document.body.classList.add('modal-open');
                 document.body.style.overflow = 'hidden';
             }
 
             function openEditModal(kategori) {
-                // Parse JSON if string
-                if (typeof kategori === 'string') {
-                    kategori = JSON.parse(kategori);
-                }
-
                 modalTitle.textContent = 'Edit Kategori';
                 formKategori.action = `/admin/pelayanan/kategori/${kategori.id}`;
-                formKategori.querySelector('input[name="_method"]').value = 'PUT';
+                formMethod.value = 'PUT';
                 kategoriId.value = kategori.id;
 
                 namaKategori.value = kategori.nama_kategori || '';
@@ -443,12 +496,15 @@
                 isActiveKategori.checked = kategori.is_active == 1;
 
                 updateColorPreview(warnaKategori.value);
+                clearErrors();
 
                 if (modalInstance) {
                     modalInstance.show();
                 } else {
                     modalEl.style.display = 'block';
+                    modalEl.classList.add('show');
                 }
+                document.body.classList.add('modal-open');
                 document.body.style.overflow = 'hidden';
             }
 
@@ -457,9 +513,11 @@
                     modalInstance.hide();
                 } else {
                     modalEl.style.display = 'none';
+                    modalEl.classList.remove('show');
                 }
+                document.body.classList.remove('modal-open');
                 document.body.style.overflow = '';
-                resetForm();
+                setTimeout(() => resetForm(), 300);
             }
 
             function resetForm() {
@@ -469,6 +527,7 @@
                 if (isActiveKategori) isActiveKategori.checked = true;
                 if (kategoriId) kategoriId.value = '';
                 if (colorPreview) colorPreview.style.backgroundColor = '';
+                clearErrors();
             }
 
             function randomizeColor() {
@@ -483,36 +542,128 @@
                 }
             }
 
-            // ===== EVENT LISTENERS =====
-
-            // Color picker change
+            // Event Listeners
             if (warnaKategori) {
                 warnaKategori.addEventListener('input', function(e) {
                     updateColorPreview(e.target.value);
                 });
             }
 
-            // Form validation
-            if (formKategori) {
-                formKategori.addEventListener('submit', function(e) {
-                    const nama = namaKategori?.value?.trim();
-                    if (!nama) {
-                        e.preventDefault();
-                        alert('Nama kategori harus diisi!');
-                        if (namaKategori) namaKategori.focus();
-                        return false;
+            // Handle Form Submit via AJAX
+            formKategori.addEventListener('submit', function(e) {
+                e.preventDefault();
+                clearErrors();
+
+                const formData = new FormData(formKategori);
+                const method = formMethod.value;
+                const url = formKategori.action;
+
+                // Convert FormData to object for easier handling if needed, or send directly
+                // Laravel accepts FormData directly
+
+                btnSubmit.classList.add('btn-loading');
+                btnSubmit.disabled = true;
+
+                fetch(url, {
+                        method: method === 'POST' ? 'POST' :
+                        'POST', // Laravel uses POST with _method override
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
+                                ?.content || '{{ csrf_token() }}',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            // Don't set Content-Type for FormData, browser sets it with boundary
+                        },
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showAlert('success', data.message);
+                            closeModal();
+
+                            // Refresh page to show new data or update DOM manually
+                            // For simplicity and consistency with Blade rendering, we reload
+                            // But if you want no reload, you'd need to append the card HTML here
+                            setTimeout(() => window.location.reload(), 1000);
+                        } else {
+                            showAlert('error', data.message || 'Terjadi kesalahan');
+                            if (data.errors) {
+                                showErrors(data.errors);
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showAlert('error', 'Gagal terhubung ke server');
+                    })
+                    .finally(() => {
+                        btnSubmit.classList.remove('btn-loading');
+                        btnSubmit.disabled = false;
+                    });
+            });
+
+            // Handle Edit Button Click
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const kategori = JSON.parse(this.getAttribute('data-kategori'));
+                    openEditModal(kategori);
+                });
+            });
+
+            // Handle Delete Button Click
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    const name = this.getAttribute('data-name');
+
+                    if (confirm(`Yakin ingin menghapus kategori "${name}"?`)) {
+                        const url = `/admin/pelayanan/kategori/${id}`;
+
+                        fetch(url, {
+                                method: 'DELETE',
+                                headers: {
+                                    'X-CSRF-TOKEN': document.querySelector(
+                                            'meta[name="csrf-token"]')?.content ||
+                                        '{{ csrf_token() }}',
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Content-Type': 'application/json'
+                                }
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    showAlert('success', data.message);
+                                    // Remove card from DOM
+                                    const card = document.querySelector(
+                                        `.kategori-item[data-id="${id}"]`);
+                                    if (card) {
+                                        card.remove();
+                                        // Check if grid is empty
+                                        if (document.querySelectorAll('.kategori-item')
+                                            .length === 0) {
+                                            window.location
+                                        .reload(); // Reload to show empty state
+                                        }
+                                    }
+                                } else {
+                                    showAlert('error', data.message || 'Gagal menghapus data');
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                showAlert('error', 'Gagal terhubung ke server');
+                            });
                     }
                 });
-            }
+            });
 
-            // Close on Escape key
             document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && modalEl.style.display === 'block') {
+                if (e.key === 'Escape' && (modalEl.classList.contains('show') || modalEl.style.display ===
+                        'block')) {
                     closeModal();
                 }
             });
 
-            // Close modal on backdrop click (for native modal)
             if (modalEl) {
                 modalEl.addEventListener('click', function(e) {
                     if (e.target === modalEl) {
@@ -521,27 +672,14 @@
                 });
             }
 
-            // Initialize color preview
             if (warnaKategori && colorPreview) {
                 updateColorPreview(warnaKategori.value);
             }
 
-            // ===== EXPOSE TO GLOBAL SCOPE =====
             window.openModal = openModal;
             window.openEditModal = openEditModal;
             window.closeModal = closeModal;
             window.randomizeColor = randomizeColor;
-
-            // ===== AUTO CLOSE ALERTS =====
-            document.querySelectorAll('[data-auto-close]').forEach(alert => {
-                const closeBtn = alert.querySelector('.alert-close');
-                closeBtn?.addEventListener('click', () => alert.remove());
-                setTimeout(() => {
-                    alert.style.opacity = '0';
-                    alert.style.transform = 'translateX(-20px)';
-                    setTimeout(() => alert.remove(), 300);
-                }, 5000);
-            });
         });
     </script>
 @endsection

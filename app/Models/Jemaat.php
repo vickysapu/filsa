@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
-use \App\Models\Scopes\BranchScope;
+use App\Models\Scopes\BranchScope;
 
 class Jemaat extends Model
 {
@@ -16,22 +16,7 @@ class Jemaat extends Model
     public $incrementing = false;
     protected $keyType = 'string';
 
-    protected $fillable = [
-        'branch_id',
-        'NIK',
-        'nama_lengkap',
-        'jenis_kelamin',
-        'tempat_lahir',
-        'tanggal_lahir',
-        'alamat',
-        'no_hp',
-        'email',
-        'status_pernikahan',
-        'pekerjaan',
-        'pendidikan',
-        'status_jemaat',
-        'foto',
-    ];
+    protected $fillable = ['branch_id', 'NIK', 'nama_lengkap', 'jenis_kelamin', 'tempat_lahir', 'tanggal_lahir', 'alamat', 'no_hp', 'email', 'status_pernikahan', 'pekerjaan', 'pendidikan', 'status_jemaat', 'foto'];
 
     protected $casts = [
         'NIK' => 'integer',
@@ -54,7 +39,7 @@ class Jemaat extends Model
 
     protected static function booted()
     {
-        static::addGlobalScope(new BranchScope);
+        static::addGlobalScope(new BranchScope());
     }
 
     public function branch(): BelongsTo
@@ -84,5 +69,10 @@ class Jemaat extends Model
     public function getUsiaAttribute()
     {
         return $this->tanggal_lahir ? $this->tanggal_lahir->age : null;
+    }
+
+    public function user()
+    {
+        return $this->hasOne(User::class, 'id', 'id');
     }
 }

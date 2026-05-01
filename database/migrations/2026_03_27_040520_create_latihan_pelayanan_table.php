@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('latihan_pelayanan', function (Blueprint $table) {
             $table->id();
-
+            $table->foreignUuid('branch_id')->nullable()->constrained('branches')->onDelete('cascade');
             // Foreign ke tabel pelayanans (UUID) - WAJIB
             $table->foreignUuid('pelayanan_id')
                   ->constrained('pelayanans')

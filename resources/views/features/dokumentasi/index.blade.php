@@ -32,7 +32,21 @@
             <div class="card-body p-4">
                 <form id="formFilter">
                     <div class="row g-3 align-items-end">
-                        <div class="col-6 col-md-3">
+                        @if ($isSuperAdmin)
+                            <div class="col-6 col-md-2">
+                                <label class="form-label small fw-semibold text-muted-custom mb-2">Cabang</label>
+                                <select id="filter_branch" name="branch_id" class="form-select form-select-custom">
+                                    <option value="">Semua Cabang</option>
+                                    @foreach ($branches as $branch)
+                                        <option value="{{ $branch->id }}"
+                                            {{ request('branch_id') == $branch->id ? 'selected' : '' }}>
+                                            {{ $branch->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        @endif
+                        <div class="col-6 col-md-2">
                             <label class="form-label small fw-semibold text-muted-custom mb-2">Kategori</label>
                             <select id="kategori_id" name="kategori_id" class="form-select form-select-custom">
                                 <option value="">Semua Kategori</option>
@@ -44,7 +58,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-md-2">
                             <label class="form-label small fw-semibold text-muted-custom mb-2">Event</label>
                             <select id="event_id" name="event_id" class="form-select form-select-custom">
                                 <option value="">Semua Event</option>
@@ -56,34 +70,35 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-md-2">
                             <label class="form-label small fw-semibold text-muted-custom mb-2">Status</label>
                             <select id="status" name="status" class="form-select form-select-custom">
                                 <option value="">Semua Status</option>
                                 <option value="draft" {{ request('status') == 'draft' ? 'selected' : '' }}>Draft</option>
-                                <option value="published" {{ request('status') == 'published' ? 'selected' : '' }}>Published
+                                <option value="published" {{ request('status') == 'published' ? 'selected' : '' }}>
+                                    Published
                                 </option>
                                 <option value="archived" {{ request('status') == 'archived' ? 'selected' : '' }}>Archived
                                 </option>
                             </select>
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-md-2">
                             <label class="form-label small fw-semibold text-muted-custom mb-2">Cari</label>
                             <div class="position-relative">
                                 <i
                                     class="ri-search-line position-absolute top-50 start-0 translate-middle-y ms-3 text-muted-custom"></i>
                                 <input type="text" id="search" name="search"
                                     class="form-control form-control-custom ps-5" value="{{ request('search') }}"
-                                    placeholder="Judul album, fotografer...">
+                                    placeholder="Judul album...">
                             </div>
                         </div>
                         <div class="col-12 col-md-auto d-flex gap-2">
                             <button type="button" id="btnFilter" class="btn btn-custom flex-fill flex-md-fill-0">
                                 <i class="ri-filter-line me-1"></i> Filter
                             </button>
-                            <a href="{{ route('admin.dokumentasi.index') }}" class="btn btn-outline-custom" title="Reset">
+                            <button type="button" id="btnReset" class="btn btn-outline-custom" title="Reset">
                                 <i class="ri-refresh-line"></i>
-                            </a>
+                            </button>
                         </div>
                     </div>
                 </form>
@@ -107,7 +122,7 @@
     <!-- ================== MODAL CREATE & EDIT ================== -->
     <div class="modal fade" id="modalAlbumForm" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content modal-content-custom">
+            <div class="modal-content modal-content-custom" style="max-height: 90vh;">
 
                 <div class="modal-header border-bottom border-custom">
                     <h5 class="modal-title fw-semibold" id="modalAlbumLabel">Buat Album Dokumentasi</h5>
@@ -119,8 +134,7 @@
                     <input type="hidden" name="_method" id="formMethod" value="POST">
                     <input type="hidden" name="id" id="albumId" value="">
 
-                    <div class="modal-body p-4">
-
+                    <div class="modal-body p-4" style="max-height: 70vh; overflow-y: auto;">
                         <div class="alert alert-danger d-none" id="formErrors">
                             <i class="ri-error-warning-line me-2"></i>
                             <ul class="mb-0 small" id="errorList"></ul>
@@ -136,6 +150,20 @@
                                         </h6>
                                     </div>
                                     <div class="card-body p-4">
+
+                                        @if ($isSuperAdmin)
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-semibold text-muted-custom">Cabang <span
+                                                        class="text-danger">*</span></label>
+                                                <select name="branch_id" id="branch_id_form"
+                                                    class="form-select form-select-custom" required>
+                                                    <option value="">Pilih Cabang...</option>
+                                                    @foreach ($branches as $branch)
+                                                        <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        @endif
 
                                         <div class="mb-3">
                                             <label class="form-label small fw-semibold text-muted-custom">Judul Album <span
@@ -493,7 +521,6 @@
             line-height: 1.5;
         }
 
-        /* ===== FILE INPUT & PREVIEW ===== */
         .form-control-custom[type="file"] {
             padding: 0.375rem 0.625rem;
         }
@@ -512,7 +539,6 @@
             object-fit: cover;
         }
 
-        /* ===== FORM CHECK CUSTOM ===== */
         .form-check-input-custom {
             width: 18px;
             height: 18px;
@@ -718,10 +744,64 @@
                 }
             });
 
+            // ===== EVENT: Delete Album (delegation) =====
+            document.addEventListener('click', function(e) {
+                const deleteBtn = e.target.closest('.btn-delete-album');
+                if (deleteBtn) {
+                    e.preventDefault();
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Hapus Album?',
+                        text: 'Album dan semua fotonya akan dihapus permanen.',
+                        showCancelButton: true,
+                        confirmButtonColor: '#ef4444',
+                        confirmButtonText: 'Ya, Hapus',
+                        cancelButtonText: 'Batal'
+                    }).then(result => {
+                        if (result.isConfirmed) {
+                            fetch(`/admin/dokumentasi/${deleteBtn.dataset.id}`, {
+                                    method: 'DELETE',
+                                    headers: {
+                                        'X-CSRF-TOKEN': csrfToken,
+                                        'Accept': 'application/json',
+                                        'X-Requested-With': 'XMLHttpRequest'
+                                    }
+                                })
+                                .then(r => r.json())
+                                .then(data => {
+                                    if (data.success) {
+                                        showToast('success', 'Berhasil', data.message);
+                                        reloadGrid();
+                                    } else {
+                                        showToast('error', 'Gagal', data.message);
+                                    }
+                                });
+                        }
+                    });
+                }
+            });
+
             // ===== EVENT: Filter =====
             document.getElementById('btnFilter')?.addEventListener('click', function() {
                 reloadGrid();
             });
+
+            document.getElementById('btnReset')?.addEventListener('click', function() {
+                document.getElementById('kategori_id').value = '';
+                document.getElementById('event_id').value = '';
+                document.getElementById('status').value = '';
+                document.getElementById('search').value = '';
+                @if ($isSuperAdmin)
+                    document.getElementById('filter_branch').value = '';
+                @endif
+                reloadGrid();
+            });
+
+            @if ($isSuperAdmin)
+                document.getElementById('filter_branch')?.addEventListener('change', function() {
+                    reloadGrid();
+                });
+            @endif
 
             // ===== EVENT: Form Submit =====
             const formAlbum = document.getElementById('formAlbum');
@@ -829,7 +909,6 @@
 
             // ===== FUNCTION: Load Album for Edit =====
             function loadAlbumForEdit(id) {
-                // Show loading
                 if (typeof Swal !== 'undefined') {
                     Swal.fire({
                         title: 'Memuat...',
@@ -838,7 +917,7 @@
                     });
                 }
 
-                fetch(`{{ route('admin.dokumentasi.edit', ':id') }}`.replace(':id', id) + '?ajax=1', {
+                fetch(`/admin/dokumentasi/${id}/edit?ajax=1`, {
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest',
                             'Accept': 'application/json'
@@ -855,15 +934,17 @@
 
                         resetForm('edit');
 
-                        // Update form action
                         const form = document.getElementById('formAlbum');
                         if (form) {
-                            form.action = `{{ route('admin.dokumentasi.update', ':id') }}`.replace(':id', id);
+                            form.action = `/admin/dokumentasi/${id}`;
                         }
                         document.getElementById('formMethod').value = 'PUT';
                         document.getElementById('albumId').value = id;
 
-                        // Fill text fields
+                        @if ($isSuperAdmin)
+                            document.getElementById('branch_id_form').value = data.branch_id || '';
+                        @endif
+
                         document.getElementById('judul_album').value = data.judul_album || '';
                         document.getElementById('deskripsi').value = data.deskripsi || '';
                         document.getElementById('kategori_id_form').value = data.kategori_id || '';
@@ -872,13 +953,11 @@
                         document.getElementById('tanggal_album').value = data.tanggal_album || '';
                         document.getElementById('lokasi').value = data.lokasi || '';
 
-                        // Checkboxes
                         document.getElementById('chkPublished').checked = data.status === 'published';
                         document.getElementById('chkFeatured').checked = !!data.is_featured;
                         document.getElementById('chkDownload').checked = !!data.allow_download;
                         document.getElementById('chkShowWeb').checked = !!data.show_in_website;
 
-                        // Photo preview
                         const preview = document.getElementById('photoPreview');
                         preview.innerHTML = '';
                         if (data.photos && data.photos.length > 0) {
@@ -886,7 +965,7 @@
                                 const col = document.createElement('div');
                                 col.className = 'col-4 col-md-3';
                                 col.innerHTML =
-                                    `<div class="photo-preview-item"><img src="{{ asset('storage') }}/${photo}" alt="Existing photo"></div>`;
+                                    `<div class="photo-preview-item"><img src="/storage/${photo}" alt="Existing photo"></div>`;
                                 preview.appendChild(col);
                             });
                             preview.classList.remove('d-none');
@@ -906,6 +985,9 @@
             // ===== FUNCTION: Reload Grid =====
             function reloadGrid() {
                 const params = new URLSearchParams({
+                    @if ($isSuperAdmin)
+                        branch_id: document.getElementById('filter_branch')?.value || '',
+                    @endif
                     kategori_id: document.getElementById('kategori_id')?.value || '',
                     event_id: document.getElementById('event_id')?.value || '',
                     status: document.getElementById('status')?.value || '',
@@ -962,6 +1044,13 @@
                         e.preventDefault();
                         const url = new URL(this.href);
                         const page = url.searchParams.get('page') || 1;
+
+                        // Update URL params for pagination click to keep filters
+                        const currentParams = new URLSearchParams(window.location.search);
+                        currentParams.set('page', page);
+
+                        // Trigger reload with current filter values instead of just clicking link
+                        // Or simpler: just call reloadGrid which reads current inputs
                         reloadGrid();
                     });
                 });
