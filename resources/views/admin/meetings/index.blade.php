@@ -2,6 +2,49 @@
 
 @section('title', 'Jadwal Meeting')
 
+@php
+function getPlatformName($p)
+{
+    return [
+        'jitsi' => 'Jitsi Meet',
+        'zoom' => 'Zoom',
+        'google_meet' => 'Google Meet',
+    ][$p] ?? $p ?? '-';
+}
+
+function getPlatformIcon($p)
+{
+    return [
+        'jitsi' => 'video-line',
+        'zoom' => 'camera-line',
+        'google_meet' => 'camera-lens-line',
+    ][$p] ?? 'video-line';
+}
+
+function getStatusText($m)
+{
+    if (!$m || !$m->tanggal_mulai) return '-';
+
+    $now = now();
+
+    if ($m->tanggal_mulai > $now) return 'Akan Datang';
+    if ($m->tanggal_selesai && $m->tanggal_selesai < $now) return 'Selesai';
+    return 'Berlangsung';
+}
+
+function getStatusBadgeClass($m)
+{
+    if (!$m || !$m->tanggal_mulai) return 'badge-status-upcoming';
+
+    $now = now();
+
+    if ($m->tanggal_mulai > $now) return 'badge-status-upcoming';
+    if ($m->tanggal_selesai && $m->tanggal_selesai < $now) return 'badge-status-completed';
+    return 'badge-status-ongoing';
+}
+
+@endphp
+
 @section('content')
     <div class="page-wrapper">
 
@@ -996,46 +1039,6 @@
             `;
                     })
                     .catch(() => showAlert('error', 'Terjadi kesalahan koneksi'));
-            }
-
-            // ===== HELPER: Platform Name =====
-            function getPlatformName(p) {
-                return {
-                    jitsi: 'Jitsi Meet',
-                    zoom: 'Zoom',
-                    google_meet: 'Google Meet'
-                } [p] || p;
-            }
-
-            // ===== HELPER: Platform Icon =====
-            function getPlatformIcon(p) {
-                return {
-                    jitsi: 'video-line',
-                    zoom: 'camera-line',
-                    google_meet: 'camera-lens-line'
-                } [p] || 'video-line';
-            }
-
-            // ===== HELPER: Status Text =====
-            function getStatusText(m) {
-                const now = new Date();
-                const start = new Date(m.tanggal_mulai);
-                const end = m.tanggal_selesai ? new Date(m.tanggal_selesai) : null;
-
-                if (start > now) return 'Akan Datang';
-                if (end && end < now) return 'Selesai';
-                return 'Berlangsung';
-            }
-
-            // ===== HELPER: Status Badge Class =====
-            function getStatusBadgeClass(m) {
-                const now = new Date();
-                const start = new Date(m.tanggal_mulai);
-                const end = m.tanggal_selesai ? new Date(m.tanggal_selesai) : null;
-
-                if (start > now) return 'badge-status-upcoming';
-                if (end && end < now) return 'badge-status-completed';
-                return 'badge-status-ongoing';
             }
 
             // ===== FUNCTION: Reset Form =====

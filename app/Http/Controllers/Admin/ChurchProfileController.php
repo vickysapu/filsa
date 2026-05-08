@@ -41,7 +41,10 @@ class ChurchProfileController extends Controller
         $branchId = $this->getBranchId();
         $branches = $branchId ? Branch::where('id', $branchId)->get() : Branch::orderBy('name')->get();
 
-        return view('admin.church_profile.form', compact('branches'));
+        return view('admin.church_profile.form', [
+            'churchProfile' => null, 
+            'branches' => $branches
+        ]);
     }
 
     public function store(Request $request)
