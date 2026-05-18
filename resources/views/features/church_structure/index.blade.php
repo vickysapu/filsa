@@ -67,88 +67,30 @@
                 </div>
             </div>
 
-            <div class="card card-custom mt-4">
-                <div class="card-header"><i class="ri-list-check me-1"></i>Daftar Posisi</div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th width="50">No</th>
-                                    <th>Posisi</th>
-                                    <th>Level</th>
-                                    <th>Jemaat</th>
-                                    <th width="100">Status</th>
-                                    <th width="120" class="text-end">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($structures as $index => $structure)
-                                    <tr>
-                                        <td>{{ $structures->firstItem() + $index }}</td>
-                                        <td>
-                                            <div class="fw-500">{{ $structure->position_name }}</div>
-                                            @if ($structure->description)
-                                                <small
-                                                    class="text-muted-custom d-block">{{ Str::limit($structure->description, 40) }}</small>
-                                            @endif
-                                        </td>
-                                        <td><span
-                                                class="badge bg-{{ ['gembala' => 'purple', 'pengurus' => 'primary', 'pelayan' => 'success', 'staff' => 'secondary', 'lainnya' => 'warning'][$structure->position_level] ?? 'secondary' }}-subtle text-{{ ['gembala' => 'purple', 'pengurus' => 'primary', 'pelayan' => 'success', 'staff' => 'secondary', 'lainnya' => 'warning'][$structure->position_level] ?? 'secondary' }}">{{ $structure->position_level }}</span>
-                                        </td>
-                                        <td>{{ $structure->jemaat?->nama_lengkap ?? '<span class="text-muted">Belum diisi</span>' }}
-                                        </td>
-                                        <td><span
-                                                class="badge bg-{{ $structure->is_active ? 'success' : 'danger' }}-subtle text-{{ $structure->is_active ? 'success' : 'danger' }}">{{ $structure->is_active ? 'Aktif' : 'Nonaktif' }}</span>
-                                        </td>
-                                        <td class="text-end">
-                                            <button class="btn btn-sm btn-light"
-                                                onclick="editStructure({{ json_encode($structure->load('jemaat')) }})"><i
-                                                    class="ri-edit-line"></i></button>
-                                            <button class="btn btn-sm btn-light text-danger"
-                                                onclick="deleteStructure('{{ $structure->id }}')"><i
-                                                    class="ri-delete-bin-line"></i></button>
-                                        </td>
-                                    </tr>
-                                    @if ($structure->children->isNotEmpty())
-                                        @foreach ($structure->children as $child)
-                                            <tr class="table-secondary">
-                                                <td></td>
-                                                <td>
-                                                    <div class="fw-500"><i
-                                                            class="ri-arrow-right-s-line me-1"></i>{{ $child->position_name }}
-                                                    </div>
-                                                </td>
-                                                <td><span
-                                                        class="badge bg-{{ ['gembala' => 'purple', 'pengurus' => 'primary', 'pelayan' => 'success', 'staff' => 'secondary', 'lainnya' => 'warning'][$child->position_level] ?? 'secondary' }}-subtle text-{{ ['gembala' => 'purple', 'pengurus' => 'primary', 'pelayan' => 'success', 'staff' => 'secondary', 'lainnya' => 'warning'][$child->position_level] ?? 'secondary' }}">{{ $child->position_level }}</span>
-                                                </td>
-                                                <td>{{ $child->jemaat?->nama_lengkap ?? '<span class="text-muted">Belum diisi</span>' }}
-                                                </td>
-                                                <td><span
-                                                        class="badge bg-{{ $child->is_active ? 'success' : 'danger' }}-subtle text-{{ $child->is_active ? 'success' : 'danger' }}">{{ $child->is_active ? 'Aktif' : 'Nonaktif' }}</span>
-                                                </td>
-                                                <td class="text-end">
-                                                    <button class="btn btn-sm btn-light"
-                                                        onclick="editStructure({{ json_encode($child->load('jemaat')) }})"><i
-                                                            class="ri-edit-line"></i></button>
-                                                    <button class="btn btn-sm btn-light text-danger"
-                                                        onclick="deleteStructure('{{ $child->id }}')"><i
-                                                            class="ri-delete-bin-line"></i></button>
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                    @endif
-                                @empty
-                                    <tr>
-                                        <td colspan="6" class="text-center py-4 text-muted">Belum ada data struktur
-                                            gereja</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                        @if ($structures->hasPages())
-                            <div class="card-footer">{{ $structures->withQueryString()->links() }}</div>
-                        @endif
+            <div class="card card-custom mt-4 border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <div>
+                        <h5 class="mb-0 fw-semibold">
+                            <i class="ri-list-check-3 me-2 text-primary"></i>
+                            Daftar Struktur Posisi
+                        </h5>
+                        <small class="text-muted">
+                            Klik posisi untuk melihat bawahan
+                        </small>
+                    </div>
+
+                    <button class="btn btn-sm btn-outline-primary" id="btnReloadAccordion">
+                        <i class="ri-refresh-line"></i>
+                        Reload
+                    </button>
+                </div>
+
+                <div class="card-body p-3">
+                    <div id="accordionStructureContainer">
+                        <div class="text-center py-5 text-muted">
+                            <div class="spinner-border spinner-border-sm me-2"></div>
+                            Memuat struktur...
+                        </div>
                     </div>
                 </div>
             </div>
@@ -190,8 +132,7 @@
                         </div>
                         <div class="mb-3 mt-3">
                             <label class="form-label">Penanggung Jawab (Jemaat)</label>
-                            <select name="jemaat_id" class="form-select select2-jemaat" id="jemaat_id_add"
-                                style="width:100%">
+                            <select name="jemaat_id" class="form-select" id="jemaat_id_add">
                                 <option value="">-- Pilih Jemaat --</option>
                             </select>
                         </div>
@@ -219,7 +160,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content card-custom">
                 <form id="formEdit" method="POST">
-                    @csrf @method('PUT')
+                    @csrf @method('POST')
                     <input type="hidden" id="edit_id" name="id">
                     <div class="modal-header">
                         <h5 class="modal-title"><i class="ri-edit-line me-2"></i>Edit Posisi</h5>
@@ -251,8 +192,7 @@
                         </div>
                         <div class="mb-3 mt-3">
                             <label class="form-label">Penanggung Jawab (Jemaat)</label>
-                            <select name="jemaat_id" id="edit_jemaat_id" class="form-select select2-jemaat"
-                                style="width:100%">
+                            <select name="jemaat_id" class="form-select" id="edit_jemaat_id">
                                 <option value="">-- Pilih Jemaat --</option>
                             </select>
                         </div>
@@ -389,44 +329,150 @@
             height: 500px;
             color: #64748b;
         }
+
+        .org-node.drop-hover {
+            border-color: #22c55e;
+            background: #f0fdf4;
+        }
+
+        .org-node {
+            transition: transform 0.1s ease;
+        }
+
+        .org-node.drop-hover {
+            transform: scale(1.05);
+        }
+
+        .structure-accordion .accordion-item {
+            border: none;
+            margin-bottom: 10px;
+            border-radius: 14px !important;
+            overflow: hidden;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, .05);
+        }
+
+        .structure-accordion .accordion-button {
+            background: white;
+            border: none;
+            padding: 16px 18px;
+            box-shadow: none !important;
+        }
+
+        .structure-accordion .accordion-button:not(.collapsed) {
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+
+        .structure-accordion .accordion-button::after {
+            transform: scale(.8);
+        }
+
+        .structure-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .structure-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .structure-avatar {
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            background: #3b82f6;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .structure-title {
+            font-weight: 600;
+            font-size: .95rem;
+        }
+
+        .structure-subtitle {
+            font-size: .8rem;
+            color: #64748b;
+        }
+
+        .structure-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .structure-child {
+            margin-left: 22px;
+            border-left: 2px dashed #dbeafe;
+            padding-left: 16px;
+            margin-top: 12px;
+        }
+
+        .structure-badge {
+            font-size: .7rem;
+            padding: 5px 10px;
+            border-radius: 999px;
+        }
+
+        .empty-children {
+            font-size: .8rem;
+            color: #94a3b8;
+            padding: 8px 12px;
+        }
     </style>
 @endsection
 
-@push('styles')
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css"
-        rel="stylesheet">
-@endpush
-
 @push('scripts')
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        const churchStructureBaseUrl =
+            "{{ url('/admin/church-structure') }}";
+    </script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            let structuresData = [];
+            const getItemId = (item) => item.id;
             let draggedItem = null;
+            let isDragging = false;
+            let startX = 0;
+            let startY = 0;
+            let suppressClick = false;
+
+            let structuresData = [];
             let jemaatsData = [];
             const chartContainer = document.getElementById('structureChart');
             const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 
-            const initSelect2 = (elementId, selectedId = null) => {
-                const element = document.getElementById(elementId);
-                if (!element) return;
-                if ($(element).hasClass('select2-hidden-accessible')) $(element).select2('destroy');
+            const initJemaatSelect = (selectId, selectedId = null) => {
 
-                $(element).select2({
-                    theme: 'bootstrap-5',
-                    placeholder: '-- Pilih Jemaat --',
-                    allowClear: true,
-                    width: '100%',
-                    dropdownParent: $(element).closest('.modal'),
-                    data: jemaatsData.map(j => ({
-                        id: j.id,
-                        text: j.nama_lengkap
-                    }))
+                const select = document.getElementById(selectId);
+
+                if (!select) return;
+
+                select.innerHTML = '<option value="">-- Pilih Jemaat --</option>';
+
+                jemaatsData.forEach(jemaat => {
+
+                    const option = document.createElement('option');
+
+                    option.value = jemaat.id;
+
+                    option.textContent = jemaat.nama_lengkap;
+
+                    if (selectedId && String(selectedId) === String(jemaat.id)) {
+                        option.selected = true;
+                    }
+
+                    select.appendChild(option);
                 });
-
-                if (selectedId) $(element).val(selectedId).trigger('change');
             };
 
             const loadJemaats = async () => {
@@ -451,6 +497,7 @@
                     const data = await res.json();
                     structuresData = data.tree || [];
                     renderOrgChart(structuresData);
+                    renderAccordionStructure(structuresData);
                 } catch (e) {
                     chartContainer.innerHTML =
                         '<div class="empty-state"><i class="ri-error-warning-line fs-1"></i><p>Gagal memuat struktur</p><button class="btn btn-sm btn-custom mt-3" onclick="loadStructure()">Coba Lagi</button></div>';
@@ -479,9 +526,11 @@
                     chartContainer.appendChild(node);
                 });
 
-                setTimeout(() => {
-                    drawConnectors(items);
-                }, 100);
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        drawConnectors(items);
+                    });
+                });
             };
 
             const calculatePositions = (items, level, startX, nodeWidth, nodeHeight, levelHeight, siblingGap) => {
@@ -527,132 +576,337 @@
             };
 
             const createNodeElement = (item, x, y) => {
+
                 const node = document.createElement('div');
+
                 node.className = 'org-node';
-                node.dataset.id = item.id;
+
+                node.dataset.id = getItemId(item);
+
                 node.style.left = x + 'px';
+
                 node.style.top = y + 'px';
 
-                const initials = (item.jemaat?.nama_lengkap || '?').charAt(0).toUpperCase();
+                const initials = (item.jemaat?.nama_lengkap || '?')
+                    .charAt(0)
+                    .toUpperCase();
+
                 const badgeClass = item.position_level || 'lainnya';
 
                 node.innerHTML = `
-                    <span class="org-node-badge ${badgeClass}">${item.position_level}</span>
+                    <span class="org-node-badge ${badgeClass}">
+                        ${item.position_level}
+                    </span>
+
+                    <div class="position-absolute top-0 start-0 m-1 d-flex gap-1">
+                        <button 
+                            type="button"
+                            class="btn btn-sm btn-light shadow-sm btn-edit-node"
+                            title="Edit"
+                        >
+                            <i class="ri-edit-line"></i>
+                        </button>
+                    </div>
+
                     <div class="org-node-header">
                         <div class="org-node-avatar">${initials}</div>
-                        <div class="org-node-title">${item.position_name}</div>
-                        <div class="org-node-subtitle">${item.jemaat?.nama_lengkap || 'Belum diisi'}</div>
+
+                        <div class="org-node-title">
+                            ${item.position_name}
+                        </div>
+
+                        <div class="org-node-subtitle">
+                            ${item.jemaat?.nama_lengkap || 'Belum diisi'}
+                        </div>
                     </div>
-                    <div class="drop-zone" data-parent-id="${item.id}">+ Tambah Bawahan</div>
+
+                    <div 
+                        class="drop-zone"
+                        data-parent-id="${getItemId(item)}"
+                    >
+                        + Tambah Bawahan
+                    </div>
                 `;
 
+                // =========================
+                // DRAG
+                // =========================
                 node.addEventListener('mousedown', (e) => {
-                    if (e.target.closest('.drop-zone')) return;
+
+                    if (
+                        e.target.closest('.drop-zone') ||
+                        e.target.closest('.btn-edit-node')
+                    ) return;
+
+                    startX = e.clientX;
+                    startY = e.clientY;
+
+                    isDragging = false;
+                    suppressClick = false;
+
                     const rect = node.getBoundingClientRect();
-                    const containerRect = chartContainer.getBoundingClientRect();
+
                     draggedItem = {
                         node: node,
-                        id: item.id,
+                        id: getItemId(item),
                         offsetX: e.clientX - rect.left,
                         offsetY: e.clientY - rect.top
                     };
+
                     node.classList.add('dragging');
+
                     document.addEventListener('mousemove', onMouseMove);
+
                     document.addEventListener('mouseup', onMouseUp);
+
                     e.preventDefault();
                 });
 
-                node.addEventListener('click', (e) => {
-                    if (e.target.closest('.drop-zone') || draggedItem) return;
+                // =========================
+                // BUTTON EDIT
+                // =========================
+                const btnEdit = node.querySelector('.btn-edit-node');
+
+                btnEdit.addEventListener('click', (e) => {
+
+                    e.stopPropagation();
+
                     editStructure(item);
                 });
 
+                // =========================
+                // TAMBAH BAWAHAN
+                // =========================
                 const dropZone = node.querySelector('.drop-zone');
-                dropZone.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    dropZone.classList.add('active');
-                });
-                dropZone.addEventListener('dragleave', () => dropZone.classList.remove('active'));
-                dropZone.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    dropZone.classList.remove('active');
-                    if (draggedItem && draggedItem.id !== item.id) {
-                        reorderItem(draggedItem.id, item.id);
-                    }
+
+                dropZone.addEventListener('click', async (e) => {
+
+                    e.stopPropagation();
+
+                    const modal = new bootstrap.Modal(
+                        document.getElementById('modalEdit')
+                    );
+
+                    window.currentEditItem = null;
+
+                    // mode create child
+                    document.getElementById('formEdit').reset();
+
+                    document.getElementById('edit_id').value = '';
+
+                    document.getElementById('edit_position_name').value = '';
+
+                    document.getElementById('edit_position_level').value = 'pelayan';
+
+                    document.getElementById('edit_description').value = '';
+
+                    document.getElementById('edit_is_active').checked = true;
+
+                    // parent otomatis = item yang dipilih
+                    await loadParentsOptions(
+                        'edit_parent_id',
+                        getItemId(item)
+                    );
+
+                    setTimeout(() => {
+                        initJemaatSelect('edit_jemaat_id', item.jemaat?.id);
+                    }, 150);
+
+                    modal.show();
                 });
 
                 return node;
             };
 
             const drawConnectors = (items) => {
-                const existingConnectors = chartContainer.querySelectorAll('.org-connector');
-                existingConnectors.forEach(c => c.remove());
+                chartContainer.querySelectorAll('.org-connector').forEach(c => c.remove());
 
-                items.forEach(parent => {
-                    if (!parent.children?.length) return;
-                    const pNode = document.querySelector(`.org-node[data-id="${parent.id}"]`);
-                    if (!pNode) return;
+                const draw = (nodes) => {
+                    nodes.forEach(parent => {
 
-                    const pRect = pNode.getBoundingClientRect();
-                    const contRect = chartContainer.getBoundingClientRect();
-                    const parentCenterX = pRect.left + pRect.width / 2 - contRect.left + chartContainer
-                        .scrollLeft;
-                    const parentBottomY = pRect.bottom - contRect.top + chartContainer.scrollTop;
-
-                    parent.children.forEach((child, index) => {
-                        const cNode = document.querySelector(
-                        `.org-node[data-id="${child.id}"]`);
-                        if (!cNode) return;
-
-                        const cRect = cNode.getBoundingClientRect();
-                        const childCenterX = cRect.left + cRect.width / 2 - contRect.left +
-                            chartContainer.scrollLeft;
-                        const childTopY = cRect.top - contRect.top + chartContainer.scrollTop;
-
-                        const connector = document.createElement('div');
-                        connector.className = 'org-connector';
-
-                        const midY = parentBottomY + (childTopY - parentBottomY) / 2;
-
-                        if (parent.children.length === 1) {
-                            connector.innerHTML = `
-                                <div style="position:absolute; width:2px; background:#3b82f6; left:${parentCenterX}px; top:${parentBottomY}px; height:${childTopY - parentBottomY}px"></div>
-                            `;
-                        } else {
-                            connector.innerHTML = `
-                                <div style="position:absolute; width:2px; background:#3b82f6; left:${parentCenterX}px; top:${parentBottomY}px; height:${midY - parentBottomY}px"></div>
-                                <div style="position:absolute; height:2px; background:#3b82f6; left:${Math.min(parentCenterX, childCenterX)}px; top:${midY}px; width:${Math.abs(childCenterX - parentCenterX)}px"></div>
-                                <div style="position:absolute; width:2px; background:#3b82f6; left:${childCenterX}px; top:${midY}px; height:${childTopY - midY}px"></div>
-                            `;
+                        if (!parent.children || parent.children.length === 0) {
+                            return;
                         }
 
-                        chartContainer.appendChild(connector);
+                        const pNode = document.querySelector(
+                            `.org-node[data-id="${getItemId(parent)}"]`
+                        );
+
+                        if (!pNode) return;
+
+                        const parentCenterX = pNode.offsetLeft + (pNode.offsetWidth / 2);
+                        const parentBottomY = pNode.offsetTop + pNode.offsetHeight;
+
+                        parent.children.forEach(child => {
+
+                            const cNode = document.querySelector(
+                                `.org-node[data-id="${getItemId(child)}"]`
+                            );
+
+                            if (!cNode) return;
+
+                            const childCenterX = cNode.offsetLeft + (cNode.offsetWidth / 2);
+                            const childTopY = cNode.offsetTop;
+
+                            const connector = document.createElement('div');
+                            connector.className = 'org-connector';
+
+                            const midY = parentBottomY + ((childTopY - parentBottomY) / 2);
+
+                            connector.innerHTML = `
+                                <div style="
+                                    position:absolute;
+                                    width:2px;
+                                    background:#3b82f6;
+                                    left:${parentCenterX}px;
+                                    top:${parentBottomY}px;
+                                    height:${midY - parentBottomY}px;
+                                "></div>
+
+                                <div style="
+                                    position:absolute;
+                                    height:2px;
+                                    background:#3b82f6;
+                                    left:${Math.min(parentCenterX, childCenterX)}px;
+                                    top:${midY}px;
+                                    width:${Math.abs(childCenterX - parentCenterX)}px;
+                                "></div>
+
+                                <div style="
+                                    position:absolute;
+                                    width:2px;
+                                    background:#3b82f6;
+                                    left:${childCenterX}px;
+                                    top:${midY}px;
+                                    height:${childTopY - midY}px;
+                                "></div>
+                            `;
+
+                            chartContainer.appendChild(connector);
+                        });
+
+                        draw(parent.children);
                     });
-                });
+                };
+
+                draw(items);
             };
 
             const onMouseMove = (e) => {
                 if (!draggedItem) return;
+
+                if (!isDragging) {
+                    if (Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5) {
+                        isDragging = true;
+                    }
+                }
+
                 const containerRect = chartContainer.getBoundingClientRect();
+
                 const newX = e.clientX - containerRect.left - draggedItem.offsetX + chartContainer.scrollLeft;
                 const newY = e.clientY - containerRect.top - draggedItem.offsetY + chartContainer.scrollTop;
+
                 draggedItem.node.style.left = newX + 'px';
                 draggedItem.node.style.top = newY + 'px';
+
+                document.querySelectorAll('.org-node').forEach(n => n.classList.remove('drop-hover'));
+
+                const elements = document.elementsFromPoint(e.clientX, e.clientY);
+
+                const target = elements
+                    .map(el => el.closest('.org-node'))
+                    .find(el => el && el.dataset.id !== draggedItem.id);
+
+                if (target) {
+                    target.classList.add('drop-hover');
+                }
             };
 
             const onMouseUp = (e) => {
                 if (!draggedItem) return;
+
                 draggedItem.node.classList.remove('dragging');
+
                 document.removeEventListener('mousemove', onMouseMove);
                 document.removeEventListener('mouseup', onMouseUp);
 
-                const dropTarget = document.elementFromPoint(e.clientX, e.clientY)?.closest('.org-node');
-                if (dropTarget && dropTarget.dataset.id !== draggedItem.id) {
+                const elements = document.elementsFromPoint(e.clientX, e.clientY);
+
+                const dropTarget = elements
+                    .map(el => el.closest('.org-node'))
+                    .find(el => el && el.dataset.id !== draggedItem.id);
+
+                if (isDragging && dropTarget) {
+
+                    if (isDescendant(draggedItem.id, dropTarget.dataset.id, structuresData)) {
+                        showToast('error', 'Tidak bisa memindahkan ke dalam bawahan sendiri');
+
+                        loadStructure();
+                        draggedItem = null;
+                        return;
+                    }
+
                     reorderItem(draggedItem.id, dropTarget.dataset.id);
                 } else {
                     loadStructure();
                 }
+
                 draggedItem = null;
+
+                setTimeout(() => {
+                    suppressClick = false;
+                }, 100);
+            };
+
+            const isDescendant = (draggedId, targetId, nodes) => {
+
+                draggedId = String(draggedId);
+                targetId = String(targetId);
+
+                // cari node yang sedang dipindah
+                const findNode = (items, id) => {
+
+                    for (const item of items) {
+
+                        if (String(item.id) === id) {
+                            return item;
+                        }
+
+                        if (item.children && item.children.length) {
+
+                            const found = findNode(item.children, id);
+
+                            if (found) return found;
+                        }
+                    }
+
+                    return null;
+                };
+
+                // cek apakah target ada di bawah node tersebut
+                const containsChild = (node, id) => {
+
+                    if (!node.children) return false;
+
+                    for (const child of node.children) {
+
+                        if (String(child.id) === id) {
+                            return true;
+                        }
+
+                        if (containsChild(child, id)) {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                };
+
+                const draggedNode = findNode(nodes, draggedId);
+
+                if (!draggedNode) return false;
+
+                return containsChild(draggedNode, targetId);
             };
 
             const reorderItem = async (itemId, newParentId) => {
@@ -687,17 +941,33 @@
             };
 
             window.editStructure = (item) => {
+
                 window.currentEditItem = item;
                 const modal = new bootstrap.Modal(document.getElementById('modalEdit'));
-                document.getElementById('edit_id').value = item.id;
+                document.getElementById('edit_id').value = getItemId(item);
                 document.getElementById('edit_position_name').value = item.position_name;
                 document.getElementById('edit_position_level').value = item.position_level;
                 document.getElementById('edit_description').value = item.description || '';
                 document.getElementById('edit_is_active').checked = !!item.is_active;
 
-                loadParentsOptions('edit_parent_id', item.parent_id).then(() => {
-                    initSelect2('edit_jemaat_id', item.jemaat?.id);
-                });
+                // ambil parent id / uuid dengan aman
+                const selectedParent =
+                    item.parent_id ||
+                    item.parent?.id ||
+                    null;
+                loadParentsOptions('edit_parent_id', selectedParent)
+                    .then(() => {
+
+                        setTimeout(() => {
+
+                            initJemaatSelect(
+                                'edit_jemaat_id',
+                                item.jemaat?.id
+                            );
+
+                        }, 100);
+                    });
+
                 modal.show();
             };
 
@@ -713,28 +983,156 @@
             };
 
             const loadParentsOptions = async (selectId, selectedId = null) => {
+
                 try {
-                    const res = await fetch("{{ route('admin.church_structure.api.tree') }}", {
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'Accept': 'application/json'
+
+                    const res = await fetch(
+                        "{{ route('admin.church_structure.api.tree') }}", {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            }
                         }
-                    });
+                    );
+
                     const data = await res.json();
+
+                    // =========================
+                    // CHECK DESCENDANT
+                    // =========================
+                    const isChildOfCurrent = (node, currentId) => {
+
+                        if (!window.currentEditItem) return false;
+
+                        const currentNodeId = String(getItemId(window.currentEditItem));
+
+                        // kalau node ini adalah current edit item
+                        if (String(getItemId(node)) === currentNodeId) {
+                            return true;
+                        }
+
+                        // recursive child
+                        if (node.children && node.children.length > 0) {
+
+                            for (const child of node.children) {
+
+                                if (isChildOfCurrent(child, currentId)) {
+                                    return true;
+                                }
+                            }
+                        }
+
+                        return false;
+                    };
+
+                    // ambil semua descendant dari current item
+                    const getInvalidIds = (nodes, currentId) => {
+
+                        let invalidIds = [];
+
+                        const findCurrent = (node) => {
+
+                            if (String(getItemId(node)) === String(currentId)) {
+
+                                collectChildren(node);
+
+                                return true;
+                            }
+
+                            if (node.children) {
+
+                                for (const child of node.children) {
+
+                                    if (findCurrent(child)) {
+                                        return true;
+                                    }
+                                }
+                            }
+
+                            return false;
+                        };
+
+                        const collectChildren = (node) => {
+
+                            invalidIds.push(String(getItemId(node)));
+
+                            if (node.children) {
+
+                                node.children.forEach(child => {
+                                    collectChildren(child);
+                                });
+                            }
+                        };
+
+                        nodes.forEach(node => findCurrent(node));
+
+                        return invalidIds;
+                    };
+
+                    let invalidIds = [];
+
+                    if (window.currentEditItem) {
+
+                        invalidIds = getInvalidIds(
+                            data.tree || [],
+                            getItemId(window.currentEditItem)
+                        );
+                    }
+
+                    // =========================
+                    // BUILD OPTION
+                    // =========================
                     const build = (nodes, prefix = '') => {
+
                         let html = '';
+
                         nodes.forEach(n => {
-                            html +=
-                                `<option value="${n.id}" ${n.id == selectedId ? 'selected' : ''}>${prefix}${n.position_name}</option>`;
-                            if (n.children?.length) html += build(n.children, prefix + '─ ');
+
+                            const optionValue = String(getItemId(n));
+                            const selectedValue = selectedId ? String(selectedId) : '';
+
+                            // disable dirinya sendiri + seluruh child
+                            const disabled = invalidIds.includes(optionValue);
+
+                            html += `
+                                <option 
+                                    value="${optionValue}"
+                                    ${optionValue === selectedValue ? 'selected' : ''}
+                                    ${disabled ? 'disabled' : ''}
+                                >
+                                    ${prefix}${n.position_name}
+                                    ${disabled ? ' (tidak valid)' : ''}
+                                </option>
+                            `;
+
+                            if (n.children && n.children.length > 0) {
+
+                                html += build(
+                                    n.children,
+                                    prefix + '─ '
+                                );
+                            }
                         });
+
                         return html;
                     };
+
                     const select = document.getElementById(selectId);
-                    if (select) select.innerHTML = '<option value="">Root / Tidak ada induk</option>' +
-                        build(data.tree || []);
+
+                    if (select) {
+
+                        select.innerHTML =
+                            '<option value="">Root / Tidak ada induk</option>' +
+                            build(data.tree || []);
+                    }
+
+                    return true;
+
                 } catch (e) {
+
                     console.error(e);
+
+                    return false;
                 }
             };
 
@@ -772,36 +1170,78 @@
             });
 
             document.getElementById('formEdit').addEventListener('submit', async function(e) {
+
                 e.preventDefault();
+
                 const id = document.getElementById('edit_id').value;
+
                 const btn = this.querySelector('button[type="submit"]');
+
                 btn.disabled = true;
-                btn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Menyimpan...';
+
+                btn.innerHTML =
+                    '<i class="ri-loader-4-line ri-spin"></i> Menyimpan...';
 
                 try {
-                    const res = await fetch(`/admin/church-structure/${id}`, {
-                        method: 'PUT',
+
+                    let url = '';
+                    const formData = new FormData(this);
+
+                    if (id && id !== 'new-child') {
+
+                        url = `${churchStructureBaseUrl}/${id}`;
+
+                        formData.append('_method', 'PUT');
+
+                    } else {
+
+                        url = "{{ route('admin.church_structure.store') }}";
+                    }
+
+                    const res = await fetch(url, {
+                        method: 'POST',
                         headers: {
                             'X-CSRF-TOKEN': csrfToken,
                             'Accept': 'application/json',
                             'X-Requested-With': 'XMLHttpRequest'
                         },
-                        body: new FormData(this)
+                        body: formData
                     });
+
                     const result = await res.json();
+
                     if (result.success) {
-                        bootstrap.Modal.getInstance(document.getElementById('modalEdit')).hide();
+
+                        bootstrap.Modal
+                            .getInstance(document.getElementById('modalEdit'))
+                            .hide();
+
                         showToast('success', result.message);
+
                         loadStructure();
+
                     } else {
-                        showToast('error', Object.values(result.errors || {}).flat().join(', ') ||
-                            'Gagal update');
+
+                        showToast(
+                            'error',
+                            Object.values(result.errors || {})
+                            .flat()
+                            .join(', ') || 'Gagal'
+                        );
                     }
+
                 } catch (err) {
+
+                    console.error(err);
+
                     showToast('error', 'Kesalahan koneksi');
+
                 } finally {
+
                     btn.disabled = false;
-                    btn.innerHTML = '<i class="ri-save-line me-1"></i>Update';
+
+                    btn.innerHTML =
+                        '<i class="ri-save-line me-1"></i>Update';
                 }
             });
 
@@ -828,19 +1268,193 @@
                 }
             };
 
-            document.getElementById('modalAdd').addEventListener('shown.bs.modal', () => {
-                loadParentsOptions('parent_id');
-                initSelect2('jemaat_id_add');
+            document.getElementById('modalAdd').addEventListener('shown.bs.modal', async () => {
+
+                await loadParentsOptions('parent_id');
+
+                setTimeout(() => {
+
+                    initJemaatSelect('jemaat_id_add');
+
+                }, 100);
             });
 
-            document.getElementById('modalEdit').addEventListener('shown.bs.modal', () => {
-                if (window.currentEditItem) {
-                    loadParentsOptions('edit_parent_id', window.currentEditItem.parent_id);
-                    initSelect2('edit_jemaat_id', window.currentEditItem.jemaat?.id);
+            const levelBadgeClass = (level) => {
+
+                const map = {
+                    gembala: 'bg-purple-subtle text-dark',
+                    pengurus: 'bg-primary-subtle text-primary',
+                    pelayan: 'bg-success-subtle text-success',
+                    staff: 'bg-secondary-subtle text-secondary',
+                    lainnya: 'bg-warning-subtle text-warning'
+                };
+
+                return map[level] || 'bg-light text-dark';
+            };
+
+            const renderAccordionStructure = (items) => {
+
+                const container = document.getElementById(
+                    'accordionStructureContainer'
+                );
+
+                if (!items || !items.length) {
+
+                    container.innerHTML = `
+                        <div class="text-center py-5 text-muted">
+                            Belum ada struktur organisasi
+                        </div>
+                    `;
+
+                    return;
                 }
-            });
+
+                const buildAccordion = (nodes, depth = 0) => {
+
+                    let html = `
+                        <div class="accordion structure-accordion">
+                    `;
+
+                    nodes.forEach(node => {
+
+                        const nodeId = `acc_${node.id}`;
+
+                        const initials = (
+                                node.jemaat?.nama_lengkap || '?'
+                            )
+                            .charAt(0)
+                            .toUpperCase();
+
+                        const hasChildren =
+                            node.children &&
+                            node.children.length > 0;
+
+                        html += `
+                            <div class="accordion-item">
+
+                                <h2 class="accordion-header">
+
+                                    <button
+                                        class="accordion-button collapsed"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#${nodeId}"
+                                    >
+
+                                        <div class="structure-card">
+
+                                            <div class="structure-left">
+
+                                                <div class="structure-avatar">
+                                                    ${initials}
+                                                </div>
+
+                                                <div>
+
+                                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+
+                                                        <div class="structure-title">
+                                                            ${node.position_name}
+                                                        </div>
+
+                                                        <span class="badge structure-badge ${levelBadgeClass(node.position_level)}">
+                                                            ${node.position_level}
+                                                        </span>
+
+                                                        ${
+                                                            node.is_active
+                                                            ? `<span class="badge bg-success-subtle text-success">
+                                                                        Aktif
+                                                                </span>`
+                                                            : `<span class="badge bg-danger-subtle text-danger">
+                                                                        Nonaktif
+                                                                </span>`
+                                                        }
+
+                                                    </div>
+
+                                                    <div class="structure-subtitle">
+                                                        ${node.jemaat?.nama_lengkap || 'Belum ada penanggung jawab'}
+                                                    </div>
+
+                                                </div>
+
+                                            </div>
+
+                                        </div>
+
+                                    </button>
+
+                                </h2>
+
+                                <div
+                                    id="${nodeId}"
+                                    class="accordion-collapse collapse"
+                                >
+
+                                    <div class="accordion-body">
+
+                                        <div class="d-flex justify-content-end mb-3 structure-actions">
+
+                                            <button
+                                                class="btn btn-sm btn-light"
+                                                onclick='editStructure(${JSON.stringify(node)})'
+                                            >
+                                                <i class="ri-edit-line"></i>
+                                            </button>
+
+                                            <button
+                                                class="btn btn-sm btn-light text-danger"
+                                                onclick="deleteStructure('${node.id}')"
+                                            >
+                                                <i class="ri-delete-bin-line"></i>
+                                            </button>
+
+                                        </div>
+
+                                        ${
+                                            node.description
+                                            ? `
+                                                    <div class="small text-muted mb-3">
+                                                        ${node.description}
+                                                    </div>
+                                                `
+                                            : ''
+                                        }
+
+                                        ${
+                                            hasChildren
+                                            ? `
+                                                    <div class="structure-child">
+                                                        ${buildAccordion(node.children, depth + 1)}
+                                                    </div>
+                                                `
+                                            : `
+                                                    <div class="empty-children">
+                                                        Tidak ada bawahan
+                                                    </div>
+                                                `
+                                        }
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+                        `;
+                    });
+
+                    html += `</div>`;
+
+                    return html;
+                };
+
+                container.innerHTML = buildAccordion(items);
+            };
+
 
             document.getElementById('btnRefresh').addEventListener('click', loadStructure);
+            document.getElementById('btnReloadAccordion').addEventListener('click', loadStructure);
 
             loadJemaats().then(() => loadStructure());
         });

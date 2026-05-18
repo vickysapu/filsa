@@ -158,7 +158,7 @@ class ChurchStructureController extends Controller
             'jemaat_id' => 'nullable|exists:jemaats,id',
             'parent_id' => 'nullable|exists:church_structures,id',
             'description' => 'nullable|string|max:500',
-            'is_active' => 'boolean',
+            'is_active' => 'nullable|boolean'
         ]);
 
         if ($validated['parent_id'] && $validated['parent_id'] !== $churchStructure->parent_id) {
@@ -196,7 +196,7 @@ class ChurchStructureController extends Controller
     public function reorder(Request $request)
     {
         $branchId = $this->getBranchId();
-        $validated = $request->validate([
+        $validated = $request->validate([   
             'items' => 'required|array',
             'items.*.id' => 'required|exists:church_structures,id',
             'items.*.parent_id' => 'nullable|exists:church_structures,id',
@@ -240,6 +240,7 @@ class ChurchStructureController extends Controller
                 $children = $item->children->filter(fn($c) => !$branchId || $c->branch_id === $branchId);
                 return [
                     'id' => $item->id,
+                    'parent_id' => $item->parent_id,
                     'position_name' => $item->position_name,
                     'position_level' => $item->position_level,
                     'jemaat' => $item->jemaat ? ['id' => $item->jemaat->id, 'nama_lengkap' => $item->jemaat->nama_lengkap] : null,
