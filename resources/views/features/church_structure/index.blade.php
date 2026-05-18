@@ -55,12 +55,22 @@
         </div>
 
         <div class="col-lg-9">
-            <div class="card card-custom">
+            <div class="card card-custom" id="visualizationCard">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <span><i class="ri-tree me-1"></i>Visualisasi Struktur</span>
-                    <button class="btn btn-sm btn-outline-secondary" id="btnRefresh">
-                        <i class="ri-refresh-line"></i> Refresh
-                    </button>
+                    <div class="d-flex gap-2">
+
+                        <button class="btn btn-sm btn-outline-dark" id="btnFullscreen">
+                            <i class="ri-fullscreen-line"></i>
+                            Perbesar
+                        </button>
+
+                        <button class="btn btn-sm btn-outline-secondary" id="btnRefresh">
+                            <i class="ri-refresh-line"></i>
+                            Refresh
+                        </button>
+
+                    </div>
                 </div>
                 <div class="card-body p-0">
                     <div id="structureChart" class="structure-chart"></div>
@@ -115,13 +125,29 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label">Level *</label>
-                                <select name="position_level" class="form-select" required>
+
+                                <select name="position_level_select" class="form-select" id="position_level_add_select" required>
                                     <option value="gembala">Gembala</option>
                                     <option value="pengurus">Pengurus</option>
                                     <option value="pelayan">Pelayan</option>
                                     <option value="staff">Staff</option>
                                     <option value="lainnya">Lainnya</option>
                                 </select>
+
+                                <input 
+                                    type="text"
+                                    name="position_level"
+                                    id="position_level_add_custom"
+                                    class="form-control mt-2 d-none"
+                                    placeholder="Masukkan level custom"
+                                    maxlength="100"
+                                >
+
+                                <input 
+                                    type="hidden"
+                                    id="position_level_add_hidden"
+                                    name="position_level"
+                                >
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Induk Posisi</label>
@@ -140,6 +166,56 @@
                             <label class="form-label">Deskripsi</label>
                             <textarea name="description" class="form-control" rows="2" maxlength="500"
                                 placeholder="Tugas dan tanggung jawab..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Prioritas</label>
+
+                            <div class="d-flex gap-4 flex-wrap">
+
+                                <div class="form-check">
+                                    <input 
+                                        class="form-check-input"
+                                        type="radio"
+                                        name="priority"
+                                        id="priority_primary"
+                                        value="primer"
+                                    >
+
+                                    <label class="form-check-label" for="priority_primary">
+                                        ⭐ Primer
+                                    </label>
+                                </div>
+
+                                <div class="form-check">
+                                    <input 
+                                        class="form-check-input"
+                                        type="radio"
+                                        name="priority"
+                                        id="priority_secondary"
+                                        value="sekunder"
+                                    >
+
+                                    <label class="form-check-label" for="priority_secondary">
+                                        ⭐ Sekunder
+                                    </label>
+                                </div>
+
+                                <div class="form-check">
+                                    <input 
+                                        class="form-check-input"
+                                        type="radio"
+                                        name="priority"
+                                        id="priority_none"
+                                        value=""
+                                        checked
+                                    >
+
+                                    <label class="form-check-label" for="priority_none">
+                                        Tidak Diprioritaskan
+                                    </label>
+                                </div>
+
+                            </div>
                         </div>
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" name="is_active" id="is_active"
@@ -175,13 +251,28 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label">Level *</label>
-                                <select name="position_level" id="edit_position_level" class="form-select" required>
+
+                                <select name="position_level_select" id="edit_position_level_select" class="form-select" required>
                                     <option value="gembala">Gembala</option>
                                     <option value="pengurus">Pengurus</option>
                                     <option value="pelayan">Pelayan</option>
                                     <option value="staff">Staff</option>
                                     <option value="lainnya">Lainnya</option>
                                 </select>
+
+                                <input 
+                                    type="text"
+                                    id="edit_position_level_custom"
+                                    class="form-control mt-2 d-none"
+                                    placeholder="Masukkan level custom"
+                                    maxlength="100"
+                                >
+
+                                <input 
+                                    type="hidden"
+                                    name="position_level"
+                                    id="edit_position_level_hidden"
+                                >
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Induk Posisi</label>
@@ -199,6 +290,55 @@
                         <div class="mb-3">
                             <label class="form-label">Deskripsi</label>
                             <textarea name="description" id="edit_description" class="form-control" rows="2" maxlength="500"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Prioritas</label>
+
+                            <div class="d-flex gap-4 flex-wrap">
+
+                                <div class="form-check">
+                                    <input 
+                                        class="form-check-input"
+                                        type="radio"
+                                        name="priority"
+                                        id="edit_priority_primary"
+                                        value="primer"
+                                    >
+
+                                    <label class="form-check-label" for="edit_priority_primary">
+                                        ⭐ Primer
+                                    </label>
+                                </div>
+
+                                <div class="form-check">
+                                    <input 
+                                        class="form-check-input"
+                                        type="radio"
+                                        name="priority"
+                                        id="edit_priority_secondary"
+                                        value="sekunder"
+                                    >
+
+                                    <label class="form-check-label" for="edit_priority_secondary">
+                                        ⭐ Sekunder
+                                    </label>
+                                </div>
+
+                                <div class="form-check">
+                                    <input 
+                                        class="form-check-input"
+                                        type="radio"
+                                        name="priority"
+                                        id="edit_priority_none"
+                                        value=""
+                                    >
+
+                                    <label class="form-check-label" for="edit_priority_none">
+                                        Tidak Diprioritaskan
+                                    </label>
+                                </div>
+
+                            </div>
                         </div>
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" name="is_active" id="edit_is_active"
@@ -428,6 +568,51 @@
             color: #94a3b8;
             padding: 8px 12px;
         }
+
+        .browser-fullscreen {
+            position: fixed !important;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            z-index: 99999;
+            margin: 0 !important;
+            width: auto !important;
+            height: auto !important;
+            background: white;
+            border-radius: 12px !important;
+            box-shadow: 0 10px 30px rgba(0,0,0,.2);
+        }
+
+        .browser-fullscreen .structure-chart {
+            height: calc(100vh - 90px);
+            min-height: calc(100vh - 90px);
+        }
+
+        .priority-star {
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            box-shadow: 0 2px 6px rgba(0,0,0,.15);
+            z-index: 20;
+        }
+
+        .priority-primer {
+            background: #facc15;
+            color: #854d0e;
+        }
+
+        .priority-sekunder {
+            background: #d1d5db;
+            color: #374151;
+        }
     </style>
 @endsection
 
@@ -482,6 +667,100 @@
                 } catch (e) {
                     console.error(e);
                 }
+            };
+
+            const handlePriorityValidation = (selectId, prefix = '') => {
+
+                const jemaatSelect = document.getElementById(selectId);
+
+                const primer = document.getElementById(`${prefix}priority_primary`);
+                const sekunder = document.getElementById(`${prefix}priority_secondary`);
+                const none = document.getElementById(`${prefix}priority_none`);
+
+                const updateState = () => {
+
+                    const hasJemaat = jemaatSelect.value !== '';
+
+                    primer.disabled = !hasJemaat;
+                    sekunder.disabled = !hasJemaat;
+
+                    // kalau jemaat kosong -> reset ke none
+                    if (!hasJemaat) {
+
+                        none.checked = true;
+                    }
+                };
+
+                // initial
+                updateState();
+
+                // change listener
+                jemaatSelect.addEventListener('change', updateState);
+            };
+
+            const defaultLevels = [
+                'gembala',
+                'pengurus',
+                'pelayan',
+                'staff'
+            ];
+
+            const initPositionLevel = ({
+                selectId,
+                customInputId,
+                hiddenInputId,
+                currentValue = ''
+            }) => {
+
+                const select = document.getElementById(selectId);
+                const customInput = document.getElementById(customInputId);
+                const hiddenInput = document.getElementById(hiddenInputId);
+
+                const updateValue = () => {
+
+                    if (select.value === 'lainnya') {
+
+                        customInput.classList.remove('d-none');
+
+                        hiddenInput.value = customInput.value;
+
+                    } else {
+
+                        customInput.classList.add('d-none');
+
+                        hiddenInput.value = select.value;
+                    }
+                };
+
+                // mode edit
+                if (currentValue) {
+
+                    if (defaultLevels.includes(currentValue)) {
+
+                        select.value = currentValue;
+
+                        hiddenInput.value = currentValue;
+
+                    } else {
+
+                        select.value = 'lainnya';
+
+                        customInput.classList.remove('d-none');
+
+                        customInput.value = currentValue;
+
+                        hiddenInput.value = currentValue;
+                    }
+                }
+
+                select.addEventListener('change', updateValue);
+
+                customInput.addEventListener('input', () => {
+
+                    hiddenInput.value = customInput.value;
+                });
+
+                updateValue();
             };
 
             const loadStructure = async () => {
@@ -574,6 +853,7 @@
 
                 return positions;
             };
+            
 
             const createNodeElement = (item, x, y) => {
 
@@ -593,7 +873,25 @@
 
                 const badgeClass = item.position_level || 'lainnya';
 
+                const priorityStar =
+                item.jemaat?.priority === 'primer'
+                ? `
+                    <div class="priority-star priority-primer">
+                        <i class="ri-star-fill"></i>
+                    </div>
+                `
+                : item.jemaat?.priority === 'sekunder'
+                ? `
+                    <div class="priority-star priority-sekunder">
+                        <i class="ri-star-fill"></i>
+                    </div>
+                `
+                : '';
+
                 node.innerHTML = `
+
+                    ${priorityStar}
+
                     <span class="org-node-badge ${badgeClass}">
                         ${item.position_level}
                     </span>
@@ -696,7 +994,7 @@
 
                     document.getElementById('edit_position_name').value = '';
 
-                    document.getElementById('edit_position_level').value = 'pelayan';
+                    document.getElementById('edit_position_level').value = '';
 
                     document.getElementById('edit_description').value = '';
 
@@ -711,6 +1009,23 @@
                     setTimeout(() => {
                         initJemaatSelect('edit_jemaat_id', item.jemaat?.id);
                     }, 150);
+
+                    document.querySelectorAll('input[name="priority"]').forEach(r => {
+                        r.checked = false;
+                    });
+
+                    if (item.jemaat?.priority === 'primer') {
+
+                        document.getElementById('edit_priority_primary').checked = true;
+
+                    } else if (item.jemaat?.priority === 'sekunder') {
+
+                        document.getElementById('edit_priority_secondary').checked = true;
+
+                    } else {
+
+                        document.getElementById('edit_priority_none').checked = true;
+                    }
 
                     modal.show();
                 });
@@ -946,7 +1261,6 @@
                 const modal = new bootstrap.Modal(document.getElementById('modalEdit'));
                 document.getElementById('edit_id').value = getItemId(item);
                 document.getElementById('edit_position_name').value = item.position_name;
-                document.getElementById('edit_position_level').value = item.position_level;
                 document.getElementById('edit_description').value = item.description || '';
                 document.getElementById('edit_is_active').checked = !!item.is_active;
 
@@ -965,8 +1279,37 @@
                                 item.jemaat?.id
                             );
 
+                            handlePriorityValidation(
+                                'edit_jemaat_id',
+                                'edit_'
+                            );
+
+                            initPositionLevel({
+                                selectId: 'edit_position_level_select',
+                                customInputId: 'edit_position_level_custom',
+                                hiddenInputId: 'edit_position_level_hidden',
+                                currentValue: item.position_level
+                            });
+
                         }, 100);
                     });
+
+                document.querySelectorAll('input[name="priority"]').forEach(r => {
+                    r.checked = false;
+                });
+
+                if (item.jemaat?.priority === 'primer') {
+
+                    document.getElementById('edit_priority_primary').checked = true;
+
+                } else if (item.jemaat?.priority === 'sekunder') {
+
+                    document.getElementById('edit_priority_secondary').checked = true;
+
+                } else {
+
+                    document.getElementById('edit_priority_none').checked = true;
+                }
 
                 modal.show();
             };
@@ -1276,6 +1619,14 @@
 
                     initJemaatSelect('jemaat_id_add');
 
+                    handlePriorityValidation('jemaat_id_add');
+
+                    initPositionLevel({
+                        selectId: 'position_level_add_select',
+                        customInputId: 'position_level_add_custom',
+                        hiddenInputId: 'position_level_add_hidden'
+                    });
+
                 }, 100);
             });
 
@@ -1329,6 +1680,21 @@
                             node.children &&
                             node.children.length > 0;
 
+                        const priorityBadge =
+                            node.jemaat?.priority === 'primer'
+                            ? `
+                                <span class="badge bg-warning text-dark">
+                                    <i class="ri-star-fill"></i>
+                                </span>
+                            `
+                            : node.jemaat?.priority === 'sekunder'
+                            ? `
+                                <span class="badge bg-secondary">
+                                    <i class="ri-star-fill"></i>
+                                </span>
+                            `
+                            : '';
+
                         html += `
                             <div class="accordion-item">
 
@@ -1353,8 +1719,14 @@
 
                                                     <div class="d-flex align-items-center gap-2 flex-wrap">
 
-                                                        <div class="structure-title">
-                                                            ${node.position_name}
+                                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+
+                                                            <div class="structure-title">
+                                                                ${node.position_name}
+                                                            </div>
+
+                                                            ${priorityBadge}
+
                                                         </div>
 
                                                         <span class="badge structure-badge ${levelBadgeClass(node.position_level)}">
@@ -1454,6 +1826,45 @@
 
 
             document.getElementById('btnRefresh').addEventListener('click', loadStructure);
+
+            const btnFullscreen = document.getElementById('btnFullscreen');
+            const visualizationCard = document.getElementById('visualizationCard');
+
+            let isExpanded = false;
+
+            btnFullscreen.addEventListener('click', () => {
+
+                isExpanded = !isExpanded;
+
+                visualizationCard.classList.toggle(
+                    'browser-fullscreen',
+                    isExpanded
+                );
+
+                if (isExpanded) {
+
+                    btnFullscreen.innerHTML = `
+                        <i class="ri-fullscreen-exit-line"></i>
+                        Kecilkan
+                    `;
+
+                    document.body.style.overflow = 'hidden';
+
+                } else {
+
+                    btnFullscreen.innerHTML = `
+                        <i class="ri-fullscreen-line"></i>
+                        Perbesar
+                    `;
+
+                    document.body.style.overflow = '';
+                }
+
+                setTimeout(() => {
+                    drawConnectors(structuresData);
+                }, 200);
+            });
+
             document.getElementById('btnReloadAccordion').addEventListener('click', loadStructure);
 
             loadJemaats().then(() => loadStructure());

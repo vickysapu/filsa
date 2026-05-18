@@ -36,7 +36,7 @@
                         @if ($isSuperAdmin)
                             <div class="col-md-6 col-lg-3">
                                 <label class="form-label small fw-semibold mb-2">Filter Cabang</label>
-                                <select id="branch_id" name="branch_id" class="form-select form-select-custom">
+                                <select id="filter_branch_id" name="branch_id" class="form-select form-select-custom">
                                     <option value="">Semua Cabang</option>
                                     @foreach (\App\Models\Branch::all() as $branch)
                                         <option value="{{ $branch->id }}"
@@ -909,12 +909,48 @@
 
             document.querySelectorAll('.btn-tambah-jemaat').forEach(btn => {
                 btn.addEventListener('click', () => {
+
                     form.reset();
+
                     formMethod.value = 'POST';
                     jemaatId.value = '';
-                    document.getElementById('modalJemaatLabel').textContent = 'Tambah Jemaat Baru';
-                    document.getElementById('fotoPreview')?.classList.add('d-none');
+
+                    // reset semua input manual
+                    document.getElementById('nama_lengkap').value = '';
+                    document.getElementById('NIK').value = '';
+                    document.getElementById('tempat_lahir').value = '';
+                    document.getElementById('tanggal_lahir').value = '';
+                    document.getElementById('email').value = '';
+                    document.getElementById('no_hp').value = '';
+                    document.getElementById('alamat').value = '';
+                    document.getElementById('pendidikan').value = '';
+                    document.getElementById('pekerjaan').value = '';
+                    document.getElementById('status_pernikahan').value = '';
+
+                    // reset radio
+                    document.querySelectorAll('input[name="jenis_kelamin"]')
+                        .forEach(r => r.checked = false);
+
+                    // reset switch
+                    document.getElementById('status_jemaat').checked = true;
+
+                    // reset foto
+                    document.getElementById('foto').value = '';
+                    document.getElementById('imgPreview').src = '';
+                    document.getElementById('fotoPreview')
+                        ?.classList.add('d-none');
+
+                    // reset branch
+                    const branchInput = document.getElementById('branch_id');
+                    if (branchInput) {
+                        branchInput.value = '';
+                    }
+
+                    document.getElementById('modalJemaatLabel')
+                        .textContent = 'Tambah Jemaat Baru';
+
                     errorAlert?.classList.add('d-none');
+
                     modalForm.show();
                 });
             });
@@ -941,7 +977,9 @@
                         document.getElementById('nama_lengkap').value = data.nama_lengkap || '';
                         document.getElementById('NIK').value = data.NIK || '';
                         document.getElementById('tempat_lahir').value = data.tempat_lahir || '';
-                        document.getElementById('tanggal_lahir').value = data.tanggal_lahir ||
+                        document.getElementById('tanggal_lahir').value =
+                            data.tanggal_lahir ?
+                            data.tanggal_lahir.split('T')[0] :
                             '';
                         document.getElementById('email').value = data.email || '';
                         document.getElementById('no_hp').value = data.no_hp || '';
