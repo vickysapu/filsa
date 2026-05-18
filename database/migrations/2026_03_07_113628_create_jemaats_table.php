@@ -19,13 +19,14 @@ return new class extends Migration {
             $table->string('tempat_lahir');
             $table->date('tanggal_lahir');
             $table->string('alamat');
-            $table->string('no_hp', 20);
+            $table->string('no_hp');
             $table->string('email');
             $table->enum('status_pernikahan', ['belum menikah', 'menikah', 'janda', 'duda']);
             $table->string('pekerjaan');
             $table->string('pendidikan');
             $table->boolean('status_jemaat');
             $table->string('foto')->nullable();
+            $table->string('priority')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

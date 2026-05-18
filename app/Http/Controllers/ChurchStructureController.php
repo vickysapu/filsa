@@ -76,7 +76,8 @@ class ChurchStructureController extends Controller
         $branchId = $this->getBranchId();
         $validated = $request->validate([
             'position_name' => 'required|string|max:100',
-            'position_level' => ['required', Rule::in(['gembala', 'pengurus', 'pelayan', 'staff', 'lainnya'])],
+            'position_level' => 'required',
+            'priority' => ['nullable', Rule::in(['primer', 'sekunder', 'none'])],
             'jemaat_id' => 'nullable|exists:jemaats,id',
             'parent_id' => 'nullable|exists:church_structures,id',
             'description' => 'nullable|string|max:500',
@@ -94,6 +95,14 @@ class ChurchStructureController extends Controller
             ChurchStructure::when($branchId, fn($q) => $q->where('branch_id', $branchId))
                 ->where('parent_id', $validated['parent_id'] ?? null)
                 ->max('sort_order') ?? 0;
+
+        if (!empty($validated['jemaat_id'])) {
+
+            Jemaat::where('id', $validated['jemaat_id'])
+                ->update([
+                    'priority' => $validated['priority'] ?? 'none'
+                ]);
+        }
 
         ChurchStructure::create([
             'branch_id' => $branchId,
@@ -154,7 +163,8 @@ class ChurchStructureController extends Controller
 
         $validated = $request->validate([
             'position_name' => 'required|string|max:100',
-            'position_level' => ['required', Rule::in(['gembala', 'pengurus', 'pelayan', 'staff', 'lainnya'])],
+            'position_level' => 'required',
+            'priority' => ['nullable', Rule::in(['primer', 'sekunder', 'none'])],
             'jemaat_id' => 'nullable|exists:jemaats,id',
             'parent_id' => 'nullable|exists:church_structures,id',
             'description' => 'nullable|string|max:500',
@@ -166,6 +176,14 @@ class ChurchStructureController extends Controller
             if ($parent && ($parent->branch_id !== $branchId || $this->isDescendant($parent->id, $churchStructure->id))) {
                 abort(403, 'Tidak dapat memindahkan ke child sendiri atau branch berbeda');
             }
+        }
+
+        if (!empty($validated['jemaat_id'])) {
+
+            Jemaat::where('id', $validated['jemaat_id'])
+                ->update([
+                    'priority' => $validated['priority'] ?? 'none'
+                ]);
         }
 
         $churchStructure->update([
@@ -243,7 +261,7 @@ class ChurchStructureController extends Controller
                     'parent_id' => $item->parent_id,
                     'position_name' => $item->position_name,
                     'position_level' => $item->position_level,
-                    'jemaat' => $item->jemaat ? ['id' => $item->jemaat->id, 'nama_lengkap' => $item->jemaat->nama_lengkap] : null,
+                    'jemaat' => $item->jemaat ? ['id' => $item->jemaat->id, 'nama_lengkap' => $item->jemaat->nama_lengkap, 'priority' => $item->jemaat->priority ?? 'none',] : null,
                     'description' => $item->description,
                     'is_active' => $item->is_active,
                     'children' => $buildTree($children),

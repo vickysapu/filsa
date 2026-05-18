@@ -16,13 +16,12 @@ class Jemaat extends Model
     public $incrementing = false;
     protected $keyType = 'string';
 
-    protected $fillable = ['branch_id', 'NIK', 'nama_lengkap', 'jenis_kelamin', 'tempat_lahir', 'tanggal_lahir', 'alamat', 'no_hp', 'email', 'status_pernikahan', 'pekerjaan', 'pendidikan', 'status_jemaat', 'foto'];
+    protected $fillable = ['branch_id', 'NIK', 'nama_lengkap', 'jenis_kelamin', 'tempat_lahir', 'tanggal_lahir', 'alamat', 'no_hp', 'email', 'status_pernikahan', 'pekerjaan', 'pendidikan', 'status_jemaat', 'foto', 'priority'];
 
     protected $casts = [
         'NIK' => 'integer',
         'jenis_kelamin' => 'boolean',
         'tanggal_lahir' => 'date',
-        'no_hp' => 'integer',
         'tanggal_bergabung' => 'date',
         'status_jemaat' => 'boolean',
     ];
