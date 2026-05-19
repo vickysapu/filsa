@@ -38,17 +38,17 @@
                 <form id="formFilter" class="row g-3">
                     <div class="col-md-2">
                         <label class="form-label small text-muted-custom">Dari Tanggal</label>
-                        <input type="date" id="tanggal_start" name="tanggal_start" class="form-control"
+                        <input type="date" id="tanggal_start" name="tanggal_start" class="form-control form-control-custom"
                             value="{{ request('tanggal_start') }}">
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label small text-muted-custom">Sampai Tanggal</label>
+                        <label class="form-label small text-muted-custom form-control-custom">Sampai Tanggal</label>
                         <input type="date" id="tanggal_end" name="tanggal_end" class="form-control"
                             value="{{ request('tanggal_end') }}">
                     </div>
                     <div class="col-md-2">
                         <label class="form-label small text-muted-custom">Status</label>
-                        <select id="status" name="status" class="form-select">
+                        <select id="status" name="status" class="form-select  form-select-custom-dark">
                             <option value="">Semua Status</option>
                             <option value="draft" {{ request('status') == 'draft' ? 'selected' : '' }}>Draft</option>
                             <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Aktif</option>
@@ -60,7 +60,7 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label small text-muted-custom">Cari</label>
-                        <input type="text" id="search" name="search" class="form-control"
+                        <input type="text" id="search" name="search" class="form-control form-control-custom"
                             value="{{ request('search') }}" placeholder="Nama pelayanan, lokasi...">
                     </div>
                     <div class="col-md-2 d-flex align-items-end">

@@ -11,6 +11,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use App\Models\User;
+use App\Notifications\UnifiedNotification;
+use Illuminate\Support\Facades\Notification;
 
 class PelayananController extends Controller
 {
@@ -179,6 +182,17 @@ class PelayananController extends Controller
 
             DB::commit();
 
+            // Kirim Notifikasi Jadwal Baru
+            $this->sendNotificationToAuthorizedUsers(
+                $targetBranchId,
+                'Jadwal Pelayanan Baru',
+                "Jadwal pelayanan '{$pelayanan->nama_pelayanan}' telah ditambahkan untuk tanggal " . \Carbon\Carbon::parse($pelayanan->tanggal)->translatedFormat('d F Y'),
+                route('admin.pelayanan.index'),
+                'ri-calendar-event-line',
+                'text-success',
+                'PELAYANAN'
+            );
+
             return response()->json([
                 'success' => true,
                 'message' => "Jadwal berhasil dibuat dengan {$pelayanan->details()->count()} petugas.",
@@ -299,7 +313,6 @@ class PelayananController extends Controller
                 'branch_id' => $targetBranchId,
             ]);
 
-            // Hapus detail lama
             $pelayanan->details()->delete();
 
             $details = [];
@@ -326,6 +339,16 @@ class PelayananController extends Controller
             PelayananDetail::insert($details);
 
             DB::commit();
+
+            $this->sendNotificationToAuthorizedUsers(
+                $targetBranchId,
+                'Jadwal Pelayanan Diperbarui',
+                "Jadwal pelayanan '{$pelayanan->nama_pelayanan}' telah diperbarui.",
+                route('admin.pelayanan.index'),
+                'ri-edit-line',
+                'text-warning',
+                'PELAYANAN'
+            );
 
             return response()->json([
                 'success' => true,
@@ -355,7 +378,20 @@ class PelayananController extends Controller
             abort(403);
         }
 
+        $namaPelayanan = $pelayanan->nama_pelayanan;
+        $targetBranchId = $pelayanan->branch_id;
+
         $pelayanan->delete();
+
+        $this->sendNotificationToAuthorizedUsers(
+            $targetBranchId,
+            'Jadwal Pelayanan Dihapus',
+            "Jadwal pelayanan '{$namaPelayanan}' telah dihapus dari sistem.",
+            route('admin.pelayanan.index'),
+            'ri-delete-bin-line',
+            'text-danger',
+            'PELAYANAN'
+        );
 
         if ($request->ajax()) {
             return response()->json([
@@ -376,7 +412,6 @@ class PelayananController extends Controller
             abort(403, 'Akses ditolak');
         }
 
-        // Load semua relasi yang dibutuhkan oleh view
         $pelayanan->load(['details.jemaat', 'details.kategori', 'creator']);
 
         if ($request->ajax() || $request->input('ajax') == 1) {
@@ -414,5 +449,33 @@ class PelayananController extends Controller
         }
 
         return view('features.pelayanan.show', compact('pelayanan'));
+    }
+
+    private function sendNotificationToAuthorizedUsers($branchId, $title, $message, $url, $icon, $color, $source)
+    {
+        $query = User::where('is_active', true)->with('roles.permissions');
+
+        if ($branchId) {
+            $query->where(function($q) use ($branchId) {
+                $q->where('branch_id', $branchId)
+                  ->orWhereHas('roles', function($r) {
+                      $r->where('name', 'administrator') 
+                        ->orWhere('name', 'Super Admin'); 
+                  });
+            });
+        }
+
+        $users = $query->get();
+
+        $authorizedUsers = $users->filter(function ($user) {
+            return $user->hasPermission('pelayanan.view'); 
+        });
+
+        if ($authorizedUsers->isNotEmpty()) {
+            Notification::send(
+                $authorizedUsers, 
+                new UnifiedNotification($title, $message, $url, $icon, $color, $source)
+            );
+        }
     }
 }

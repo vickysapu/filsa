@@ -13,7 +13,7 @@ class FinancialReport extends Model
     public $incrementing = false;
     protected $keyType = 'string';
 
-        protected static function boot()
+    protected static function boot()
     {
         parent::boot();
 
@@ -32,8 +32,8 @@ class FinancialReport extends Model
         'submitted_at' => 'datetime',
         'approved_at' => 'datetime',
         'opening_balance' => 'decimal:2',
-        'total_income'    => 'decimal:2',
-        'total_expense'   => 'decimal:2',
+        'total_income' => 'decimal:2',
+        'total_expense' => 'decimal:2',
         'closing_balance' => 'decimal:2',
     ];
 
@@ -46,6 +46,11 @@ class FinancialReport extends Model
     public function submittedToBranch()
     {
         return $this->belongsTo(Branch::class, 'submitted_to');
+    }
+
+    public function show($id)
+    {
+        $transaction = FinancialTransaction::findOrFail($id);
     }
 
     public function approver()

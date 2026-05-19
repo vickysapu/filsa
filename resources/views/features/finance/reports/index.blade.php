@@ -13,19 +13,19 @@
                     <i class="ri-building-line me-1"></i> {{ auth()->user()->roles->first()?->branch->name ?? '' }}
                 </p>
             </div>
-            @can('finance.report.create')
+            @if (auth()->user()->hasPermission('finance.report.create'))
                 <a href="{{ route('admin.finance.reports.create') }}" class="btn btn-custom">
                     <i class="ri-add-line me-1"></i> Buat Laporan Baru
                 </a>
-            @endcan
+            @endif
         </div>
 
         <!-- Tab Navigation -->
         <div class="nav-tabs-custom mb-4" role="tablist">
-            <a href="{{ route('admin.finance.reports.index', array_merge(request()->query(), ['scope' => 'internal'])) }}"
+            {{-- <a href="{{ route('admin.finance.reports.index', array_merge(request()->query(), ['scope' => 'internal'])) }}"
                 class="nav-tab-item {{ request('scope', 'internal') === 'internal' ? 'active' : '' }}" role="tab">
                 <i class="ri-file-list-3-line me-2"></i>Laporan Saya
-            </a>
+            </a> --}}
             <a href="{{ route('admin.finance.reports.index', array_merge(request()->query(), ['scope' => 'external'])) }}"
                 class="nav-tab-item {{ request('scope') === 'external' ? 'active' : '' }}" role="tab">
                 <i class="ri-send-plane-line me-2"></i>Laporan Terkirim
@@ -71,6 +71,7 @@
                         <input type="number" id="filterYear" class="form-control form-control-custom" placeholder="Tahun"
                             value="{{ request('year') }}" min="2020" max="2030" onchange="applyFilters()">
                     </div>
+ 
                     <div class="col-6 col-md-3">
                         <button type="button" class="btn btn-outline-custom w-100" onclick="resetFilters()">
                             <i class="ri-refresh-line me-1"></i> Reset
@@ -165,23 +166,23 @@
                                                 class="btn-action btn-action-primary" title="Edit">
                                                 <i class="ri-pencil-line"></i>
                                             </a>
-                                            @can('finance.report.submit')
+                                            @if (auth()->user()->hasPermission('finance.report.submit'))
                                                 <button type="button" class="btn-action btn-action-warning"
                                                     onclick="openSubmitModal('{{ $report->id }}')" title="Kirim">
                                                     <i class="ri-send-plane-line"></i>
                                                 </button>
-                                            @endcan
+                                            @endif
                                             <button type="button" class="btn-action btn-action-danger"
                                                 onclick="deleteReport('{{ $report->id }}')" title="Hapus">
                                                 <i class="ri-delete-bin-line"></i>
                                             </button>
                                         @endif
-                                        @can('finance.report.export')
+                                        @if (auth()->user()->hasPermission('finance.report.export'))
                                             <a href="{{ route('admin.finance.export.annual-report', $report) }}"
                                                 class="btn-action btn-action-success" title="Export Excel">
                                                 <i class="ri-file-excel-2-line"></i>
                                             </a>
-                                        @endcan
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -194,12 +195,12 @@
                                         </div>
                                         <h6 class="fw-semibold mb-2">Tidak ada laporan</h6>
                                         <p class="text-muted-custom small mb-0">
-                                            @can('finance.report.create')
+                                            @if (auth()->user()->hasPermission('finance.report.create'))
                                                 <a href="{{ route('admin.finance.reports.create') }}"
                                                     class="text-primary text-decoration-none">Buat laporan pertama Anda</a>
                                             @else
                                                 Hubungi admin untuk akses pembuatan laporan
-                                            @endcan
+                                            @endif
                                         </p>
                                     </div>
                                 </td>
@@ -232,27 +233,25 @@
                 <div class="modal-body p-4">
                     <div class="alert-info-custom mb-4">
                         <i class="ri-information-line me-2"></i>
-                        <span class="small">Laporan akan dikirim ke cabang/pusat tujuan untuk direview. Pastikan data
-                            sudah benar.</span>
+                        <span class="small">Laporan akan dikirim ke cabang/pusat tujuan untuk direview. Pastikan data sudah benar.</span>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold text-muted-custom">Kirim ke Cabang / Pusat <span
-                                class="text-danger">*</span></label>
+                        <label class="form-label small fw-semibold text-muted-custom">Kirim ke Cabang / Pusat <span class="text-danger">*</span></label>
                         <select id="submitTo" class="form-select form-select-custom" required>
                             <option value="">— Pilih Tujuan —</option>
-                            @foreach (\App\Models\Branch::where('id', '!=', auth()->user()->roles->first()?->branch_id)->where('is_active', true)->orderBy('name')->get() as $branch)
+                            @foreach (\App\Models\Branch::where('id', '!=', auth()->user()?->roles?->first()?->branch_id)->where('is_active', true)->orderBy('name')->get() as $branch)
                                 <option value="{{ $branch->id }}">{{ $branch->name }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div>
                         <label class="form-label small fw-semibold text-muted-custom">Catatan (opsional)</label>
-                        <textarea id="submitNotes" class="form-control form-control-custom textarea-custom" rows="3"
-                            placeholder="Catatan untuk penerima..."></textarea>
+                        <textarea id="submitNotes" class="form-control form-control-custom textarea-custom" rows="3" placeholder="Catatan untuk penerima..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer border-top border-custom py-3 px-4">
                     <button type="button" class="btn btn-outline-custom" data-bs-dismiss="modal">Batal</button>
+                    <!-- Pastikan type="button" agar tidak trigger form submit default -->
                     <button type="button" class="btn btn-custom" onclick="doSubmit()">
                         <i class="ri-send-plane-line me-1"></i> Kirim
                     </button>
@@ -674,30 +673,48 @@
             window.doSubmit = function() {
                 const to = document.getElementById('submitTo').value;
                 const notes = document.getElementById('submitNotes').value;
+                const btn = document.querySelector('#submitModal .btn-custom');
 
                 if (!to) {
                     showToast('error', 'Peringatan', 'Pilih cabang tujuan terlebih dahulu');
                     return;
                 }
 
-                const btn = document.querySelector('#submitModal .btn-custom');
                 if (btn) {
                     btn.disabled = true;
                     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Mengirim...';
                 }
 
+                if (!currentReportId) {
+                    showToast('error', 'Error', 'ID Laporan tidak ditemukan');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="ri-send-plane-line me-1"></i> Kirim';
+                    }
+                    return;
+                }
+
                 fetch(`/admin/finance/reports/${currentReportId}/submit`, {
-                        method: 'POST',
+                        method: 'POST', // Paksa POST
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
                         },
                         body: JSON.stringify({
                             submitted_to: to,
                             notes: notes
                         })
                     })
-                    .then(r => r.json())
+                    .then(r => {
+                        if (!r.ok) {
+                            return r.text().then(text => {
+                                throw new Error(`Server Error: ${r.status} - ${text.substring(0, 100)}`);
+                            });
+                        }
+                        return r.json();
+                    })
                     .then(res => {
                         if (res.success) {
                             showToast('success', 'Berhasil', res.message);
@@ -707,7 +724,10 @@
                             showToast('error', 'Gagal', res.message || 'Gagal mengirim laporan');
                         }
                     })
-                    .catch(() => showToast('error', 'Error', 'Terjadi kesalahan saat mengirim'))
+                    .catch((err) => {
+                        console.error(err);
+                        showToast('error', 'Error', 'Terjadi kesalahan saat mengirim: ' + err.message);
+                    })
                     .finally(() => {
                         if (btn) {
                             btn.disabled = false;

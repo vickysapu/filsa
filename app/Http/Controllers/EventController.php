@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use App\Models\User;
+use App\Notifications\UnifiedNotification;
+use Illuminate\Support\Facades\Notification;
 
 class EventController extends Controller
 {
@@ -147,7 +150,7 @@ class EventController extends Controller
                 }
             }
 
-            Event::create([
+            $event = Event::create([
                 'branch_id' => $branchId,
                 'nama_event' => $validated['nama_event'],
                 'slug' => $this->generateUniqueSlug($validated['nama_event']),
@@ -170,6 +173,17 @@ class EventController extends Controller
                 'show_in_website' => $request->has('show_in_website'),
                 'created_by' => Auth::id(),
             ]);
+
+            // Kirim Notifikasi Event Baru
+            $this->sendNotificationToAuthorizedUsers(
+                $branchId,
+                'Event Baru Dibuat',
+                "Event '{$event->nama_event}' telah ditambahkan.",
+                route('admin.event.index'),
+                'ri-calendar-event-line',
+                'text-success',
+                'EVENT'
+            );
 
             return response()->json(['success' => true, 'message' => 'Event berhasil dibuat']);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -322,6 +336,17 @@ class EventController extends Controller
 
             $event->update($updateData);
 
+            // Kirim Notifikasi Update Event
+            $this->sendNotificationToAuthorizedUsers(
+                $targetBranchId,
+                'Event Diperbarui',
+                "Event '{$event->nama_event}' telah diperbarui informasinya.",
+                route('admin.event.index'),
+                'ri-edit-line',
+                'text-warning',
+                'EVENT'
+            );
+
             return response()->json(['success' => true, 'message' => 'Event berhasil diupdate!']);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json(
@@ -348,6 +373,10 @@ class EventController extends Controller
         }
 
         try {
+            // Simpan info sebelum hapus
+            $namaEvent = $event->nama_event;
+            $targetBranchId = $event->branch_id;
+
             if ($event->gambar_featured) {
                 Storage::disk('public')->delete($event->gambar_featured);
             }
@@ -359,10 +388,49 @@ class EventController extends Controller
 
             $event->delete();
 
+            // Kirim Notifikasi Hapus Event
+            $this->sendNotificationToAuthorizedUsers(
+                $targetBranchId,
+                'Event Dihapus',
+                "Event '{$namaEvent}' telah dihapus dari sistem.",
+                route('admin.event.index'),
+                'ri-delete-bin-line',
+                'text-danger',
+                'EVENT'
+            );
+
             return response()->json(['success' => true, 'message' => 'Event berhasil dihapus!']);
         } catch (\Exception $e) {
             Log::error('Event Delete Error: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Gagal menghapus data'], 500);
+        }
+    }
+
+    private function sendNotificationToAuthorizedUsers($branchId, $title, $message, $url, $icon, $color, $source)
+    {
+        $query = User::where('is_active', true)->with('roles.permissions');
+
+        if ($branchId) {
+            $query->where(function($q) use ($branchId) {
+                $q->where('branch_id', $branchId)
+                  ->orWhereHas('roles', function($r) {
+                      $r->where('name', 'administrator') 
+                        ->orWhere('name', 'Super Admin'); 
+                  });
+            });
+        }
+
+        $users = $query->get();
+
+        $authorizedUsers = $users->filter(function ($user) {
+            return $user->hasPermission('event.view'); 
+        });
+
+        if ($authorizedUsers->isNotEmpty()) {
+            Notification::send(
+                $authorizedUsers, 
+                new UnifiedNotification($title, $message, $url, $icon, $color, $source)
+            );
         }
     }
 

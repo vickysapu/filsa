@@ -3,7 +3,6 @@
 
 @push('styles')
     <style>
-        /* ── Status Pills ── */
         .status-pill {
             display: inline-flex;
             align-items: center;
@@ -39,7 +38,6 @@
             color: #991b1b;
         }
 
-        /* ── Summary Cards ── */
         .sum-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -74,7 +72,6 @@
             line-height: 1.2;
         }
 
-        /* ── Timeline ── */
         .timeline {
             position: relative;
             padding-left: 32px;
@@ -151,7 +148,6 @@
             font-size: .88rem;
         }
 
-        /* ── Detail Table ── */
         .section-title {
             font-weight: 700;
             font-size: .78rem;
@@ -168,7 +164,6 @@
 @section('content')
     <div class="lux-container lux-py-5">
 
-        {{-- ── Header ── --}}
         <div class="lux-flex lux-flex-between lux-mb-5">
             <div>
                 <h1 class="lux-text-2xl lux-text-bold">
@@ -180,7 +175,7 @@
                     @else
                         Tahun {{ $report->report_year }}
                     @endif
-                    &bull; <strong>{{ $report->branch->name }}</strong>
+                    &bull; <strong>{{ $report->branch?->name ?? '—' }}</strong>
                     @if ($report->period_start && $report->period_end)
                         &bull; {{ $report->period_start->format('d M Y') }} – {{ $report->period_end->format('d M Y') }}
                     @endif
@@ -200,7 +195,6 @@
             </div>
         </div>
 
-        {{-- ── Alert Rejected ── --}}
         @if ($report->status === 'rejected' && $report->rejection_reason)
             <div class="lux-alert lux-alert-danger lux-mb-4" style="border-left:4px solid var(--danger)">
                 <strong><i class="ri-close-circle-line"></i> Laporan Ditolak</strong>
@@ -223,7 +217,6 @@
             </div>
         @endif
 
-        {{-- ── Summary Cards ── --}}
         <div class="lux-card lux-mb-4">
             <div class="sum-grid">
                 <div class="sum-card">
@@ -246,7 +239,6 @@
             </div>
         </div>
 
-        {{-- ── Rincian Pemasukan ── --}}
         @php $incomeCats = ['PP','IURAN_PEJABAT','DANA_MISI','PENERIMAAN_LAIN','BUNGA_BANK']; @endphp
         <div class="lux-card lux-mb-4">
             <div class="section-title">PENERIMAAN DANA</div>
@@ -279,7 +271,8 @@
                     @endif
                     <tr style="background:var(--bg-hover); font-weight:700">
                         <td>TOTAL PENERIMAAN</td>
-                        <td class="lux-text-end lux-text-success">+ Rp {{ number_format($report->total_income, 0, ',', '.') }}
+                        <td class="lux-text-end lux-text-success">+ Rp
+                            {{ number_format($report->total_income, 0, ',', '.') }}
                         </td>
                         <td></td>
                     </tr>
@@ -287,7 +280,6 @@
             </table>
         </div>
 
-        {{-- ── Rincian Pengeluaran per Bidang ── --}}
         @php
             $expenseGroups = [
                 'BIAYA MAJELIS DAERAH' => [
@@ -363,18 +355,16 @@
             @endif
         @endforeach
 
-        {{-- ── Timeline Riwayat Pengiriman ── --}}
         @if ($report->forwards->isNotEmpty() || $report->submitted_at)
             <div class="lux-card lux-mb-4">
                 <div class="section-title lux-mb-4">RIWAYAT PENGIRIMAN & REVIEW</div>
 
                 <div class="timeline lux-mt-4">
-                    {{-- Entry pertama: dibuat --}}
                     <div class="tl-item">
                         <div class="tl-dot submit"><i class="ri-file-add-line"></i></div>
                         <div class="tl-body">
                             <div class="tl-route">📄 Laporan Dibuat</div>
-                            <div class="lux-text-sm">oleh <strong>{{ $report->branch->name }}</strong></div>
+                            <div class="lux-text-sm">oleh <strong>{{ $report->branch?->name ?? '—' }}</strong></div>
                             <div class="tl-meta">{{ $report->created_at->format('d M Y, H:i') }}</div>
                         </div>
                     </div>
@@ -394,10 +384,10 @@
                             </div>
                             <div class="tl-body"
                                 style="
-                    @if ($fwd->action === 'approve') border-color:#6ee7b7; background:#f0fdf4;
-                    @elseif($fwd->action === 'reject') border-color:#fca5a5; background:#fff5f5;
-                    @elseif($fwd->action === 'forward') border-color:#a78bfa; background:#faf5ff; @endif
-                ">
+                                    @if ($fwd->action === 'approve') border-color:#6ee7b7; background:#f0fdf4;
+                                    @elseif($fwd->action === 'reject') border-color:#fca5a5; background:#fff5f5;
+                                    @elseif($fwd->action === 'forward') border-color:#a78bfa; background:#faf5ff; @endif
+                                ">
                                 <div class="tl-route">
                                     @if ($fwd->action === 'submit')
                                         📤 Dikirim
@@ -409,9 +399,9 @@
                                         ❌ Ditolak
                                     @endif
                                     :
-                                    <span style="font-weight:400">{{ $fwd->fromBranch->name }}</span>
+                                    <span style="font-weight:400">{{ $fwd->fromBranch?->name ?? '—' }}</span>
                                     →
-                                    <strong>{{ $fwd->toBranch->name }}</strong>
+                                    <strong>{{ $fwd->toBranch?->name ?? '—' }}</strong>
                                 </div>
                                 @if ($fwd->notes)
                                     <div class="lux-text-sm lux-mt-1" style="color:var(--text-muted)">
@@ -429,13 +419,12 @@
             </div>
         @endif
 
-        {{-- ── Info Tambahan ── --}}
         <div class="lux-card lux-mb-5">
             <div class="section-title lux-mb-3">INFORMASI LAPORAN</div>
             <div class="lux-grid lux-grid-3 lux-mt-3">
                 <div>
                     <small class="lux-text-muted">Cabang</small>
-                    <div class="lux-text-bold">{{ $report->branch->name }}</div>
+                    <div class="lux-text-bold">{{ $report->branch?->name ?? '—' }}</div>
                 </div>
                 <div>
                     <small class="lux-text-muted">Periode</small>
@@ -448,7 +437,7 @@
                 @if ($report->submittedToBranch)
                     <div>
                         <small class="lux-text-muted">Pemegang Saat Ini</small>
-                        <div class="lux-text-bold">{{ $report->submittedToBranch->name }}</div>
+                        <div class="lux-text-bold">{{ $report->submittedToBranch?->name ?? '—' }}</div>
                     </div>
                 @endif
                 @if ($report->submitted_at)
@@ -467,7 +456,6 @@
             </div>
         </div>
 
-        {{-- ── Action Buttons ── --}}
         <div class="lux-flex lux-gap-2 lux-mt-4" style="flex-wrap:wrap">
             <a href="{{ route('admin.finance.reports.index') }}" class="lux-btn lux-btn-ghost">
                 <i class="ri-arrow-left-line"></i> Kembali
@@ -506,16 +494,15 @@
                 @endif
             @endif
 
-            @can('finance.report.export')
-                <a href="{{ route('admin.finance.export.annual-report', $report) }}"
+            @if ($report?->id && auth()->user()->hasPermission('finance.report.export'))
+                <a href="{{ route('admin.finance.export.annual-report', ['report' => $report->id]) }}"
                     class="lux-btn lux-btn-outline lux-text-success">
                     <i class="ri-file-excel-2-line"></i> Export Excel
                 </a>
-            @endcan
+            @endif
         </div>
     </div>
 
-    {{-- ── Modal Submit ── --}}
     <div class="lux-modal-overlay" id="submitModal">
         <div class="lux-modal lux-modal-sm">
             <div class="lux-modal-header">
@@ -550,7 +537,6 @@
         </div>
     </div>
 
-    {{-- ── Modal Reject ── --}}
     <div class="lux-modal-overlay" id="rejectModal">
         <div class="lux-modal lux-modal-sm">
             <div class="lux-modal-header">
@@ -573,7 +559,6 @@
         </div>
     </div>
 
-    {{-- ── Modal Forward ── --}}
     <div class="lux-modal-overlay" id="forwardModal">
         <div class="lux-modal lux-modal-sm">
             <div class="lux-modal-header">

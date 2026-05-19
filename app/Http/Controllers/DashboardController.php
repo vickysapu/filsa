@@ -2,36 +2,46 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Event;
+use App\Models\Jemaat;
 use App\Models\LoginActivities;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        $user = auth()->user();
-        
-        if ($user->last_login_at === null || $user->last_login_at->diffInMinutes(now()) > 5) {
-            $user->update(['last_login_at' => now()]);
-        }
-        
-        $recentLogins = LoginActivities::where('user_id', $user->id)
-            ->orderBy('attempted_at', 'desc')
-            ->limit(5)
-            ->get();
-        
+        $user = Auth::user();
+
         $stats = [
-            'total_users' => User::count(),
-            'active_users' => User::where('is_active', true)->count(),
-            'recent_logins' => LoginActivities::where('success', true)
-                ->where('attempted_at', '>=', now()->subDays(7))
-                ->count(),
-            'failed_logins' => LoginActivities::where('success', false)
-                ->where('attempted_at', '>=', now()->subDays(7))
-                ->count(),
+            'total_jemaat' => Jemaat::count(),
+            'saldo_kas' => 150000000, 
+            'total_event' => Event::count(),
+            'event_bulan_ini' => Event::whereMonth('tanggal_mulai', now()->month)->count(),
+            'total_doa' => 12, 
+            'doa_urgent' => 3,
         ];
-        
-        return view('dashboard', compact('user', 'recentLogins', 'stats'));
+
+        $upcoming_events = Event::where('tanggal_mulai', '>=', now())->orderBy('tanggal_mulai', 'asc')->take(4)->get();
+
+        $birthdays = Jemaat::whereMonth('tanggal_lahir', now()->month)
+            ->take(5)
+            ->get()
+            ->map(function ($jemaat) {
+                $jemaat->umur = now()->year - $jemaat->tanggal_lahir->year;
+                return $jemaat;
+            });
+
+        // $prayer_requests = \App\Models\PrayerRequest::latest()->take(4)->get();
+        $prayer_requests = []; 
+
+        $recentLogins = LoginActivities::where('user_id', $user->id)
+            ->latest()
+            ->take(5)
+            ->get();
+
+        return view('dashboard', compact('user', 'stats', 'upcoming_events', 'birthdays', 'prayer_requests', 'recentLogins'));
     }
 }

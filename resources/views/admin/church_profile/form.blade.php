@@ -51,28 +51,8 @@
                                     placeholder="Contoh: Melayani dengan Kasih">
                             </div>
                             <div class="col-12">
-                                <label class="form-label">Alamat Lengkap</label>
-                                <textarea name="address" class="form-control" rows="2">{{ old('address', $churchProfile->address ?? '') }}</textarea>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Kota</label>
-                                <input type="text" name="city" class="form-control"
-                                    value="{{ old('city', $churchProfile->city ?? '') }}">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Provinsi</label>
-                                <input type="text" name="province" class="form-control"
-                                    value="{{ old('province', $churchProfile->province ?? '') }}">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Kode Pos</label>
-                                <input type="text" name="postal_code" class="form-control"
-                                    value="{{ old('postal_code', $churchProfile->postal_code ?? '') }}">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Negara</label>
-                                <input type="text" name="country" class="form-control"
-                                    value="{{ old('country', $churchProfile->country ?? 'Indonesia') }}">
+                                <label class="form-label">Alamat Lengkap *</label>
+                                <textarea name="address" class="form-control" rows="3" required>{{ old('address', $churchProfile->address ?? '') }}</textarea>
                             </div>
                             @if (!$churchProfile?->branch_id)
                                 <div class="col-md-6">
@@ -107,63 +87,6 @@
                             <label class="form-label">Misi</label>
                             <textarea name="mission" class="form-control rich-text" rows="3">{{ old('mission', $churchProfile->mission ?? '') }}</textarea>
                         </div>
-                        <div class="mb-0">
-                            <label class="form-label">Nilai-Nilai (Values)</label>
-                            <div id="valuesContainer">
-                                @php $values = old('values', $churchProfile->values ?? []); @endphp
-                                @forelse($values as $index => $value)
-                                    <div class="input-group mb-2">
-                                        <input type="text" name="values[{{ $index }}][label]"
-                                            class="form-control" placeholder="Nama nilai"
-                                            value="{{ $value['label'] ?? '' }}" required>
-                                        <input type="text" name="values[{{ $index }}][description]"
-                                            class="form-control" placeholder="Deskripsi singkat"
-                                            value="{{ $value['description'] ?? '' }}">
-                                        <button type="button" class="btn btn-outline-danger"
-                                            onclick="removeValue(this)">×</button>
-                                    </div>
-                                @empty
-                                    <div class="input-group mb-2">
-                                        <input type="text" name="values[0][label]" class="form-control"
-                                            placeholder="Nama nilai" required>
-                                        <input type="text" name="values[0][description]" class="form-control"
-                                            placeholder="Deskripsi singkat">
-                                        <button type="button" class="btn btn-outline-danger"
-                                            onclick="removeValue(this)">×</button>
-                                    </div>
-                                @endforelse
-                            </div>
-                            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="addValue()">
-                                <i class="ri-add-line"></i> Tambah Nilai
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card card-custom mb-4">
-                    <div class="card-header"><i class="ri-calendar-line me-1"></i>Jadwal Ibadah</div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label class="form-label">Ibadah Minggu</label>
-                                <input type="time" name="service_time_sunday" class="form-control"
-                                    value="{{ old('service_time_sunday', $churchProfile->service_time_sunday ?? '') }}">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Ibadah Rabu</label>
-                                <input type="time" name="service_time_wednesday" class="form-control"
-                                    value="{{ old('service_time_wednesday', $churchProfile->service_time_wednesday ?? '') }}">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Ibadah Jumat</label>
-                                <input type="time" name="service_time_friday" class="form-control"
-                                    value="{{ old('service_time_friday', $churchProfile->service_time_friday ?? '') }}">
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Catatan Tambahan</label>
-                                <textarea name="service_note" class="form-control" rows="2" maxlength="500">{{ old('service_note', $churchProfile->service_note ?? '') }}</textarea>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -181,29 +104,9 @@
                                 </div>
                             @endif
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Galeri Foto</label>
-                            <input type="file" name="gallery_images[]" class="form-control" multiple
-                                accept="image/*">
-                            @if (isset($churchProfile) && $churchProfile->gallery_images)
-                                <div class="d-flex flex-wrap gap-2 mt-2" id="galleryPreview">
-                                    @foreach ($churchProfile->gallery_images as $img)
-                                        <div class="position-relative">
-                                            <img src="{{ Storage::url($img) }}" class="rounded"
-                                                style="width:80px;height:60px;object-fit:cover">
-                                            <button type="button"
-                                                class="btn btn-sm btn-danger position-absolute top-0 end-0 p-0"
-                                                style="width:20px;height:20px;border-radius:50%"
-                                                onclick="removeGalleryImage('{{ $img }}')">×</button>
-                                        </div>
-                                    @endforeach
-                                </div>
-                            @endif
-                        </div>
                         <div class="mb-0">
                             <label class="form-label">Dokumen</label>
-                            <input type="file" name="documents[]" class="form-control" multiple
-                                accept=".pdf,.doc,.docx">
+                            <input type="file" name="documents[]" class="form-control" multiple accept=".pdf,.doc,.docx">
                             @if (isset($churchProfile) && $churchProfile->documents)
                                 <div class="mt-2">
                                     @foreach ($churchProfile->documents as $doc)
@@ -289,27 +192,6 @@
                     </div>
                 </div>
 
-                <div class="card card-custom mb-4">
-                    <div class="card-header"><i class="ri-seo-line me-1"></i>SEO</div>
-                    <div class="card-body">
-                        <div class="mb-2">
-                            <label class="form-label small">Meta Title</label>
-                            <input type="text" name="meta_title" class="form-control form-control-sm" maxlength="255"
-                                value="{{ old('meta_title', $churchProfile->meta_title ?? '') }}">
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label small">Meta Description</label>
-                            <textarea name="meta_description" class="form-control form-control-sm" rows="2" maxlength="500">{{ old('meta_description', $churchProfile->meta_description ?? '') }}</textarea>
-                        </div>
-                        <div class="mb-0">
-                            <label class="form-label small">Keywords (pisahkan dengan koma)</label>
-                            <input type="text" name="meta_keywords[]" class="form-control form-control-sm"
-                                value="{{ old('meta_keywords', $churchProfile->meta_keywords ?? []) ? implode(', ', $churchProfile->meta_keywords) : '' }}"
-                                placeholder="gereja, ibadah, komunitas">
-                        </div>
-                    </div>
-                </div>
-
                 <div class="card card-custom">
                     <div class="card-body">
                         <div class="form-check form-switch mb-3">
@@ -335,56 +217,10 @@
             font-family: inherit;
             min-height: 120px;
         }
-
-        #valuesContainer .input-group {
-            transition: all 0.2s;
-        }
-
-        #valuesContainer .input-group:hover {
-            background: rgba(0, 0, 0, 0.02);
-            border-radius: 4px;
-        }
     </style>
 
     <script>
         const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-
-        const addValue = () => {
-            const container = document.getElementById('valuesContainer');
-            const index = container.children.length;
-            const div = document.createElement('div');
-            div.className = 'input-group mb-2';
-            div.innerHTML = `
-                <input type="text" name="values[${index}][label]" class="form-control" placeholder="Nama nilai" required>
-                <input type="text" name="values[${index}][description]" class="form-control" placeholder="Deskripsi singkat">
-                <button type="button" class="btn btn-outline-danger" onclick="removeValue(this)">×</button>
-            `;
-            container.appendChild(div);
-        };
-
-        const removeValue = (btn) => btn.closest('.input-group').remove();
-
-        const removeGalleryImage = async (path) => {
-            if (!confirm('Hapus gambar ini?')) return;
-            const id = '{{ $churchProfile->id ?? '' }}';
-            if (!id) return;
-            try {
-                const res = await fetch(`/admin/church-profile/${id}/remove-gallery`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        image_path: path
-                    })
-                });
-                const result = await res.json();
-                if (result.success) location.reload();
-            } catch (e) {
-                alert('Gagal menghapus');
-            }
-        };
 
         const removeDocument = async (path) => {
             if (!confirm('Hapus dokumen ini?')) return;

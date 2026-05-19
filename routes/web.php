@@ -37,6 +37,49 @@ use App\Http\Controllers\TransactionCategoryController;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\NotificationController;
+use Illuminate\Support\Facades\Auth;
+
+Route::middleware('auth')->group(function () {
+    Route::get('/api/notifications', function () {
+        $user = Auth::user();
+        if (!$user) return response()->json([]);
+
+        $notifications = $user->notifications()
+            ->whereNull('read_at')
+            ->limit(10)
+            ->get()
+            ->map(function ($notif) {
+                return [
+                    'id' => $notif->id,
+                    'title' => $notif->data['title'] ?? 'Notifikasi',
+                    'message' => $notif->data['message'] ?? '',
+                    'url' => $notif->data['url'] ?? '#',
+                    'feature' => $notif->data['feature'] ?? 'UMUM',
+                    'icon' => $notif->data['icon'] ?? 'ri-notification-3-line',
+                    'color' => $notif->data['color'] ?? 'text-muted',
+                    'created_at' => $notif->created_at->diffForHumans(),
+                ];
+            });
+
+        return response()->json($notifications);
+    });
+
+    Route::post('/api/notifications/{id}/read', function ($id) {
+        $user = Auth::user();
+        $notification = $user->notifications()->find($id);
+        if ($notification) {
+            $notification->markAsRead();
+        }
+        return response()->json(['success' => true]);
+    });
+
+    Route::post('/api/notifications/read-all', function () {
+        $user = Auth::user();
+        $user->unreadNotifications->markAsRead();
+        return response()->json(['success' => true]);
+    });
+});
 
 Route::get('/', [AuthController::class, 'showLogin'])->name('public.home');
 Route::get('/tentang-kami', [HomeController::class, 'about'])->name('public.about');
@@ -50,6 +93,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])
     ->name('logout')
     ->middleware(['auth', 'security.fingerprint']);
+
 // Profile Routes - User dapat mengelola akun sendiri
 Route::prefix('profile')
     ->name('profile.')
@@ -98,7 +142,6 @@ Route::prefix('admin')
                 Route::get('/', [BranchController::class, 'index'])->name('index');
             });
 
-        // ===== ROUTE JEMAAT =====
         Route::prefix('jemaat')
             ->name('jemaat.')
             ->middleware(['auth', 'permission:jemaat.view'])
@@ -185,18 +228,25 @@ Route::prefix('admin')
                         Route::middleware('permission:finance.transaction.view')->group(function () {
                             Route::get('/', [FinancialTransactionController::class, 'index'])->name('index');
                             Route::get('/create', [FinancialTransactionController::class, 'create'])->name('create');
-                            Route::get('/{transaction}', [FinancialTransactionController::class, 'show'])->name('show');
+                        });
+
+                        Route::middleware('permission:finance.transaction.create')->group(function () {
+                            Route::post('/store', [FinancialTransactionController::class, 'store'])->name('store');
+                        });
+
+                        Route::middleware('permission:finance.transaction.view')->group(function () {
+                            Route::get('/show/{transaction}', [FinancialTransactionController::class, 'show'])->name('show');
                             Route::get('/{transaction}/edit', [FinancialTransactionController::class, 'edit'])->name('edit');
                         });
-                        Route::middleware('permission:finance.transaction.create')->group(function () {
-                            Route::post('/', [FinancialTransactionController::class, 'store'])->name('store');
-                        });
+
                         Route::middleware('permission:finance.transaction.edit')->group(function () {
                             Route::put('/{transaction}', [FinancialTransactionController::class, 'update'])->name('update');
                         });
+
                         Route::middleware('permission:finance.transaction.delete')->group(function () {
                             Route::delete('/{transaction}', [FinancialTransactionController::class, 'destroy'])->name('destroy');
                         });
+
                         Route::middleware('permission:finance.transaction.approve')->group(function () {
                             Route::post('/{transaction}/approve', [FinancialTransactionController::class, 'approve'])->name('approve');
                         });
@@ -241,6 +291,7 @@ Route::prefix('admin')
 
                         Route::middleware('permission:finance.report.consolidate')->group(function () {
                             Route::post('/consolidate', [FinancialReportController::class, 'consolidateReports'])->name('consolidate');
+
                         });
                     });
 
