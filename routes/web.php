@@ -203,6 +203,7 @@ Route::prefix('admin')
             });
 
             Route::prefix('reports')->name('reports.')->group(function () {
+                
                 Route::middleware('permission:finance.report.consolidate')->group(function () {
                     Route::post('/consolidate', [FinancialReportController::class, 'consolidateReports'])->name('consolidate');
                     Route::post('/pusat-download', [FinancialReportController::class, 'pusatDownload'])->name('pusatDownload');
@@ -248,7 +249,7 @@ Route::prefix('admin')
                     Route::get('/transactions', [FinancialExportController::class, 'exportTransactions'])->name('transactions');
                     Route::get('/monthly-income', [FinancialExportController::class, 'exportMonthlyIncome'])->name('monthly-income');
                     Route::get('/annual-report/{report}', [FinancialExportController::class, 'exportAnnualReport'])->name('annual-report');
-                    Route::post('/consolidated', [FinancialExportController::class, 'exportConsolidatedAnnual'])->name('consolidated');
+                    Route::post('/exports/consolidated', [FinancialExportController::class, 'exportConsolidatedAnnual'])->name('export.consolidated');
                 });
             });
         });
@@ -467,7 +468,3 @@ Route::prefix('data-portal')->name('data-portal.')->middleware(['throttle:60,1']
 
     Route::post('/logout', [DataAccessPortalController::class, 'logout'])->name('logout');
 });
-
-Route::post('/test-post-simple', fn() => 'ok')->name('test.post.simple');
-
-Route::get('/test-bottom-route', fn() => 'bottom-ok')->name('test.bottom');
