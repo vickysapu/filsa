@@ -202,6 +202,12 @@ Route::prefix('admin')
                 });
             });
 
+            Route::prefix('export')->name('export.')->group(function () {
+                Route::middleware('permission:finance.report.export')->group(function () {
+                    Route::post('/consolidated', [FinancialExportController::class, 'exportConsolidatedAnnual'])->name('consolidated');
+                });
+            });
+
             Route::prefix('reports')->name('reports.')->group(function () {
                 
                 Route::middleware('permission:finance.report.consolidate')->group(function () {
@@ -249,7 +255,6 @@ Route::prefix('admin')
                     Route::get('/transactions', [FinancialExportController::class, 'exportTransactions'])->name('transactions');
                     Route::get('/monthly-income', [FinancialExportController::class, 'exportMonthlyIncome'])->name('monthly-income');
                     Route::get('/annual-report/{report}', [FinancialExportController::class, 'exportAnnualReport'])->name('annual-report');
-                    Route::post('/exports/consolidated', [FinancialExportController::class, 'exportConsolidatedAnnual'])->name('export.consolidated');
                 });
             });
         });
