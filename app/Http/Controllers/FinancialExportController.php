@@ -92,7 +92,7 @@ class FinancialExportController extends Controller
         $sheet->setTitle('Laporan Keuangan');
         
         // Set default font
-        $sheet->getDefaultStyle()->getFont()->setName('Calibri')->setSize(10);
+        $spreadsheet->getDefaultStyle()->getFont()->setName('Calibri')->setSize(10);
 
         // === HEADER ===
         $sheet->mergeCells('A1:G1');
@@ -316,7 +316,7 @@ class FinancialExportController extends Controller
         $sheet->setTitle('Laporan Konsolidasi');
         
         // Set default font
-        $sheet->getDefaultStyle()->getFont()->setName('Calibri')->setSize(10);
+        $spreadsheet->getDefaultStyle()->getFont()->setName('Calibri')->setSize(10);
 
         // === HEADER ===
         $sheet->mergeCells('A1:G1');
@@ -688,7 +688,7 @@ class FinancialExportController extends Controller
     {
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('KONSOLIDASI UTAMA');
-        $sheet->getDefaultStyle()->getFont()->setName('Calibri')->setSize(9);
+        $spreadsheet->getDefaultStyle()->getFont()->setName('Calibri')->setSize(9);
 
         // === HEADER ===
         $sheet->mergeCells('A1:F1');
@@ -858,7 +858,7 @@ class FinancialExportController extends Controller
     {
         $sheet = $spreadsheet->createSheet();
         $sheet->setTitle('DAFTAR PEMASUKAN');
-        $sheet->getDefaultStyle()->getFont()->setName('Calibri')->setSize(8);
+        $spreadsheet->getDefaultStyle()->getFont()->setName('Calibri')->setSize(8);
 
         // Header
         $sheet->mergeCells('A1:Z1');
@@ -1017,7 +1017,7 @@ class FinancialExportController extends Controller
     {
         $sheet = $spreadsheet->createSheet();
         $sheet->setTitle('RINCIAN TRANSAKSI');
-        $sheet->getDefaultStyle()->getFont()->setName('Calibri')->setSize(8);
+        $spreadsheet->getDefaultStyle()->getFont()->setName('Calibri')->setSize(8);
 
         $row = 1;
         
@@ -1105,7 +1105,7 @@ class FinancialExportController extends Controller
     {
         $sheet = $spreadsheet->createSheet();
         $sheet->setTitle('REKAP CABANG');
-        $sheet->getDefaultStyle()->getFont()->setName('Calibri')->setSize(9);
+        $spreadsheet->getDefaultStyle()->getFont()->setName('Calibri')->setSize(9);
 
         // Header
         $sheet->mergeCells('A1:G1');
