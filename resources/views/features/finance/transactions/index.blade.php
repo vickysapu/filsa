@@ -5,7 +5,6 @@
 @section('content')
     <div class="page-wrapper">
 
-        <!-- Page Header -->
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
             <div>
                 <h1 class="h3 mb-1 fw-bold">Transaksi Keuangan</h1>
@@ -13,11 +12,11 @@
                     <i class="ri-building-line me-1"></i> {{ auth()->user()->roles->first()?->branch->name ?? '' }}
                 </p>
             </div>
-            @can('finance.transaction.create')
+            @if (auth()->user()->hasPermission('finance.transaction.create'))
                 <button type="button" class="btn btn-custom" onclick="openTransactionModal()">
                     <i class="ri-add-line me-1"></i> Tambah Transaksi
                 </button>
-            @endcan
+            @endif
         </div>
 
         <!-- Filter Card -->
@@ -134,24 +133,54 @@
                                 <td class="py-3 px-4">
                                     <div class="d-flex gap-1 justify-content-center">
                                         @if (!$tx->approved_at)
-                                            @can('finance.transaction.edit')
-                                                <button type="button" class="btn-action btn-action-primary"
-                                                    onclick="editTransaction('{{ $tx->id }}')" title="Edit">
-                                                    <i class="ri-pencil-line"></i>
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm btn-primary dropdown-toggle" type="button"
+                                                    data-bs-toggle="dropdown" data-bs-display="static"
+                                                    aria-expanded="false">
+                                                    Aksi
                                                 </button>
-                                            @endcan
-                                            @can('finance.transaction.delete')
-                                                <button type="button" class="btn-action btn-action-danger"
-                                                    onclick="deleteTransaction('{{ $tx->id }}')" title="Hapus">
-                                                    <i class="ri-delete-bin-line"></i>
-                                                </button>
-                                            @endcan
-                                            @can('finance.transaction.approve')
-                                                <button type="button" class="btn-action btn-action-success"
-                                                    onclick="approveTransaction('{{ $tx->id }}')" title="Setujui">
-                                                    <i class="ri-check-line"></i>
-                                                </button>
-                                            @endcan
+
+                                                <ul class="dropdown-menu dropdown-menu-end">
+                                                    @if (auth()->user()->hasPermission('finance.transaction.edit'))
+                                                        <li>
+                                                            <button class="dropdown-item"
+                                                                onclick="editTransaction('{{ $tx->id }}')">
+                                                                <i class="ri-pencil-line me-2"></i> Edit
+                                                            </button>
+                                                        </li>
+                                                    @endif
+
+                                                    @if (auth()->user()->hasPermission('finance.transaction.view'))
+                                                        <li>
+                                                            <button class="dropdown-item"
+                                                                onclick="showTransaction('{{ $tx->id }}')">
+                                                                <i class="ri-eye-line me-2"></i> Lihat
+                                                            </button>
+                                                        </li>
+                                                    @endif
+
+                                                    @if (auth()->user()->hasPermission('finance.transaction.approve'))
+                                                        <li>
+                                                            <button class="dropdown-item text-success"
+                                                                onclick="approveTransaction('{{ $tx->id }}')">
+                                                                <i class="ri-check-line me-2"></i> Setujui
+                                                            </button>
+                                                        </li>
+                                                    @endif
+
+                                                    @if (auth()->user()->hasPermission('finance.transaction.delete'))
+                                                        <li>
+                                                            <hr class="dropdown-divider">
+                                                        </li>
+                                                        <li>
+                                                            <button class="dropdown-item text-danger"
+                                                                onclick="deleteTransaction('{{ $tx->id }}')">
+                                                                <i class="ri-delete-bin-line me-2"></i> Hapus
+                                                            </button>
+                                                        </li>
+                                                    @endif
+                                                </ul>
+                                            </div>
                                         @endif
                                     </div>
                                 </td>
@@ -292,6 +321,11 @@
                 opacity: 1;
                 transform: translateY(0);
             }
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            overflow-y: visible;
         }
 
         /* ===== FORM ELEMENTS ===== */
@@ -630,9 +664,15 @@
                 e.preventDefault();
 
                 const id = document.getElementById('transactionId').value;
-                const url = id ? `/admin/finance/transactions/${id}` :
-                    '{{ route('admin.finance.transactions.store') }}';
-                const method = id ? 'PUT' : 'POST';
+
+                let url, method;
+                if (id) {
+                    url = `/admin/finance/transactions/${id}`;
+                    method = 'PUT';
+                } else {
+                    url = "{{ route('admin.finance.transactions.store') }}";
+                    method = 'POST';
+                }
 
                 if (btnSubmit) {
                     btnSubmit.disabled = true;
@@ -659,11 +699,17 @@
                         method: method,
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': data._token
+                            'X-CSRF-TOKEN': data._token,
+                            'Accept': 'application/json'
                         },
                         body: JSON.stringify(data)
                     })
-                    .then(r => r.json())
+                    .then(r => {
+                        if (!r.ok) {
+                            throw new Error(`HTTP error! status: ${r.status}`);
+                        }
+                        return r.json();
+                    })
                     .then(json => {
                         if (json.success) {
                             showToast('success', 'Berhasil', json.message);
@@ -673,7 +719,11 @@
                             showToast('error', 'Gagal', json.message || 'Validasi gagal');
                         }
                     })
-                    .catch(() => showToast('error', 'Error', 'Terjadi kesalahan saat menyimpan'))
+                    .catch((err) => {
+                        console.error(err);
+                        showToast('error', 'Error',
+                            'Terjadi kesalahan saat menyimpan. Cek console untuk detail.');
+                    })
                     .finally(() => {
                         if (btnSubmit) {
                             btnSubmit.disabled = false;
@@ -684,7 +734,17 @@
 
             // ===== EDIT TRANSACTION =====
             window.editTransaction = function(id) {
-                fetch(`/admin/finance/transactions/${id}`)
+                fetch(`/admin/finance/transactions/${id}/edit`)
+                    .then(r => r.json())
+                    .then(tx => {
+                        if (tx.success) openTransactionModal(tx.data);
+                        else showToast('error', 'Error', 'Gagal memuat data transaksi');
+                    })
+                    .catch(() => showToast('error', 'Error', 'Terjadi kesalahan jaringan'));
+            }
+
+            window.showTransaction = function(id) {
+                fetch(`/admin/finance/transactions/show/${id}`)
                     .then(r => r.json())
                     .then(tx => {
                         if (tx.success) openTransactionModal(tx.data);

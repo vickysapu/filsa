@@ -43,7 +43,7 @@ class BranchController extends Controller
     public function destroy(Branch $branch)
     {
         if ($branch->is_headquarter) {
-            return response()->json(['success' => false, 'message' => 'Kantor Pusat tidak dapat dihapus.'], 403);
+            return response()->json(['success' => false, 'message' => 'Administrator tidak dapat dihapus.'], 403);
         }
 
         $currentUser = Auth::user();
@@ -66,7 +66,7 @@ class BranchController extends Controller
             return response()->json(
                 [
                     'success' => false,
-                    'message' => 'Kantor Pusat tidak dapat dinonaktifkan.',
+                    'message' => 'Administrator tidak dapat dinonaktifkan.',
                 ],
                 403,
             );

@@ -4,11 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Branch;
 use App\Models\Jemaat;
+use App\Models\User;
+use App\Notifications\UnifiedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Notification;
 
 class JemaatController extends Controller
 {
@@ -153,7 +156,7 @@ class JemaatController extends Controller
 
             $branchId = $isSuperAdmin ? $validated['branch_id'] : $this->getBranchId();
 
-            Jemaat::create([
+            $jemaat = Jemaat::create([
                 'branch_id' => $branchId,
                 'NIK' => $validated['NIK'],
                 'nama_lengkap' => $validated['nama_lengkap'],
@@ -169,6 +172,17 @@ class JemaatController extends Controller
                 'status_jemaat' => $validated['status_jemaat'] ?? true,
                 'foto' => $fotoPath,
             ]);
+
+            // Kirim Notifikasi
+            $this->sendNotificationToAuthorizedUsers(
+                $branchId,
+                'Data Jemaat Baru',
+                "Jemaat atas nama {$jemaat->nama_lengkap} telah ditambahkan.",
+                route('admin.jemaat.index'),
+                'ri-user-add-line',
+                'text-success',
+                'JEMAAT'
+            );
 
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json(
@@ -207,7 +221,6 @@ class JemaatController extends Controller
             return back()->with('error', 'Gagal menyimpan data. Silakan coba lagi.');
         }
     }
-
     public function show(Jemaat $jemaat)
     {
         $branchId = $this->getBranchId();
@@ -300,6 +313,20 @@ class JemaatController extends Controller
 
             $jemaat->update($updateData);
 
+            // Kirim Notifikasi Update
+            // Menggunakan branch_id dari data jemaat yang sudah diupdate (atau sebelumnya jika branch berubah)
+            $targetBranchId = $isSuperAdmin && isset($validated['branch_id']) ? $validated['branch_id'] : $jemaat->branch_id;
+            
+            $this->sendNotificationToAuthorizedUsers(
+                $targetBranchId,
+                'Data Jemaat Diperbarui',
+                "Data jemaat atas nama {$jemaat->nama_lengkap} telah diperbarui.",
+                route('admin.jemaat.index'),
+                'ri-edit-line',
+                'text-warning',
+                'JEMAAT'
+            );
+
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => true,
@@ -336,40 +363,36 @@ class JemaatController extends Controller
         }
     }
 
-    public function destroy(Jemaat $jemaat)
-    {
-        $branchId = $this->getBranchId();
-        $isSuperAdmin = $this->isSuperAdmin();
-
-        if (!$isSuperAdmin && $branchId && $jemaat->branch_id !== $branchId) {
-            return response()->json(['message' => 'Akses ditolak'], 403);
-        }
-
-        try {
-            if ($jemaat->foto && Storage::disk('public')->exists($jemaat->foto)) {
-                Storage::disk('public')->delete($jemaat->foto);
-            }
-
-            $jemaat->delete();
-
-            return response()->json([
-                'success' => true,
-                'message' => '🗑️ Data jemaat berhasil dihapus!',
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Jemaat Delete Error: ' . $e->getMessage());
-            return response()->json(
-                [
-                    'success' => false,
-                    'message' => 'Gagal menghapus data.',
-                ],
-                500,
-            );
-        }
-    }
-
     public function export()
     {
-        return back()->with('info', '📥 Fitur export akan segera hadir!');
+        return back()->with('info', 'Fitur export akan segera hadir!');
+    }
+
+    private function sendNotificationToAuthorizedUsers($branchId, $title, $message, $url, $icon, $color, $source)
+    {
+        $query = User::where('is_active', true)->with('roles.permissions');
+
+        if ($branchId) {
+            $query->where(function($q) use ($branchId) {
+                $q->where('branch_id', $branchId)
+                  ->orWhereHas('roles', function($r) {
+                      $r->where('name', 'administrator') 
+                        ->orWhere('name', 'Super Admin'); 
+                  });
+            });
+        }
+
+        $users = $query->get();
+
+        $authorizedUsers = $users->filter(function ($user) {
+            return $user->hasPermission('jemaat.view'); 
+        });
+
+        if ($authorizedUsers->isNotEmpty()) {
+            Notification::send(
+                $authorizedUsers, 
+                new UnifiedNotification($title, $message, $url, $icon, $color, $source)
+            );
+        }
     }
 }

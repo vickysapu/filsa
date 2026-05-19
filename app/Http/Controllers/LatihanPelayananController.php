@@ -8,6 +8,9 @@ use App\Models\Pelayanan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use App\Models\User;
+use App\Notifications\UnifiedNotification;
+use Illuminate\Support\Facades\Notification;
 
 class LatihanPelayananController extends Controller
 {
@@ -103,7 +106,7 @@ class LatihanPelayananController extends Controller
         $targetBranchId = $isSuperAdmin ? $validated['branch_id'] ?? $branchId : $branchId;
 
         try {
-            LatihanPelayanan::create([
+            $latihan = LatihanPelayanan::create([
                 'branch_id' => $targetBranchId,
                 'pelayanan_id' => $validated['pelayanan_id'],
                 'nama_latihan' => $validated['nama_latihan'],
@@ -114,6 +117,17 @@ class LatihanPelayananController extends Controller
                 'status' => $validated['status'] ?? 'active',
                 'created_by' => Auth::id(),
             ]);
+
+            // Kirim Notifikasi Jadwal Latihan Baru
+            $this->sendNotificationToAuthorizedUsers(
+                $targetBranchId,
+                'Jadwal Latihan Baru',
+                "Jadwal latihan '{$latihan->nama_latihan}' telah ditambahkan.",
+                route('admin.latihan-pelayanan.index'),
+                'ri-music-2-line', // Ikon musik/latihan
+                'text-success',
+                'LATIHAN'
+            );
 
             return response()->json([
                 'success' => true,
@@ -146,7 +160,6 @@ class LatihanPelayananController extends Controller
         }
         $pelayanans = $pelayananQuery->get();
 
-        // Format tanggal dan waktu secara eksplisit untuk input HTML
         $latihanData = $latihan->toArray();
         $latihanData['tanggal'] = $latihan->tanggal ? \Carbon\Carbon::parse($latihan->tanggal)->format('Y-m-d') : '';
         $latihanData['waktu'] = $latihan->waktu ? \Carbon\Carbon::parse($latihan->waktu)->format('H:i') : '';
@@ -198,6 +211,17 @@ class LatihanPelayananController extends Controller
                 'status' => $validated['status'],
             ]);
 
+            // Kirim Notifikasi Update Jadwal Latihan
+            $this->sendNotificationToAuthorizedUsers(
+                $targetBranchId,
+                'Jadwal Latihan Diperbarui',
+                "Jadwal latihan '{$latihan->nama_latihan}' telah diperbarui.",
+                route('admin.latihan-pelayanan.index'),
+                'ri-edit-line',
+                'text-warning',
+                'LATIHAN'
+            );
+
             return response()->json([
                 'success' => true,
                 'message' => 'Jadwal latihan berhasil diperbarui.',
@@ -224,7 +248,20 @@ class LatihanPelayananController extends Controller
         }
 
         try {
+            $namaLatihan = $latihan->nama_latihan;
+            $targetBranchId = $latihan->branch_id;
+
             $latihan->delete();
+
+            $this->sendNotificationToAuthorizedUsers(
+                $targetBranchId,
+                'Jadwal Latihan Dihapus',
+                "Jadwal latihan '{$namaLatihan}' telah dihapus dari sistem.",
+                route('admin.latihan-pelayanan.index'),
+                'ri-delete-bin-line',
+                'text-danger',
+                'LATIHAN'
+            );
 
             return response()->json([
                 'success' => true,
@@ -238,6 +275,34 @@ class LatihanPelayananController extends Controller
                     'message' => 'Gagal menghapus data.',
                 ],
                 500,
+            );
+        }
+    }
+    
+    private function sendNotificationToAuthorizedUsers($branchId, $title, $message, $url, $icon, $color, $source)
+    {
+        $query = User::where('is_active', true)->with('roles.permissions');
+
+        if ($branchId) {
+            $query->where(function($q) use ($branchId) {
+                $q->where('branch_id', $branchId)
+                  ->orWhereHas('roles', function($r) {
+                      $r->where('name', 'administrator') 
+                        ->orWhere('name', 'Super Admin'); 
+                  });
+            });
+        }
+
+        $users = $query->get();
+
+        $authorizedUsers = $users->filter(function ($user) {
+            return $user->hasPermission('latihan.view') || $user->hasPermission('pelayanan.view'); 
+        });
+
+        if ($authorizedUsers->isNotEmpty()) {
+            Notification::send(
+                $authorizedUsers, 
+                new UnifiedNotification($title, $message, $url, $icon, $color, $source)
             );
         }
     }

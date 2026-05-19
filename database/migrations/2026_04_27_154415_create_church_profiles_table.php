@@ -14,10 +14,6 @@ return new class extends Migration {
             $table->string('church_name', 255);
             $table->string('tagline', 255)->nullable();
             $table->text('address')->nullable();
-            $table->string('city', 100)->nullable();
-            $table->string('province', 100)->nullable();
-            $table->string('postal_code', 20)->nullable();
-            $table->string('country', 100)->default('Indonesia');
 
             $table->string('phone', 50)->nullable();
             $table->string('whatsapp', 50)->nullable();
@@ -27,10 +23,8 @@ return new class extends Migration {
             $table->text('history')->nullable();
             $table->text('vision')->nullable();
             $table->text('mission')->nullable();
-            $table->json('values')->nullable();
 
             $table->string('logo_path', 500)->nullable();
-            $table->json('gallery_images')->nullable();
             $table->json('documents')->nullable();
 
             $table->string('facebook', 255)->nullable();
@@ -38,18 +32,9 @@ return new class extends Migration {
             $table->string('youtube', 255)->nullable();
             $table->string('tiktok', 255)->nullable();
 
-            $table->string('meta_title', 255)->nullable();
-            $table->text('meta_description', 500)->nullable();
-            $table->json('meta_keywords')->nullable();
-
-            $table->string('map_embed_code', 1000)->nullable();
+            $table->string('map_embed_code', 2000)->nullable();
             $table->string('map_latitude', 50)->nullable();
             $table->string('map_longitude', 50)->nullable();
-
-            $table->time('service_time_sunday')->nullable();
-            $table->time('service_time_wednesday')->nullable();
-            $table->time('service_time_friday')->nullable();
-            $table->text('service_note')->nullable();
 
             $table->boolean('is_published')->default(false);
             $table->timestamp('published_at')->nullable();

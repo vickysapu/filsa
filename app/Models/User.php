@@ -8,7 +8,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Relations\MorphMany; 
+use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Notifications\DatabaseNotificationCollection;
 
+/**
+ * @property-read DatabaseNotificationCollection $notifications
+ * @method static DatabaseNotificationCollection notifications()
+ */
 class User extends Authenticatable
 {
     use HasFactory, Notifiable;
@@ -35,6 +42,12 @@ class User extends Authenticatable
                 $model->{$model->getKeyName()} = Str::uuid();
             }
         });
+    }
+
+        public function notifications(): MorphMany
+    {
+        return $this->morphMany(DatabaseNotification::class, 'notifiable')
+                    ->orderBy('created_at', 'desc');
     }
 
     public function branch(): BelongsTo

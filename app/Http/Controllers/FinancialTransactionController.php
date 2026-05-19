@@ -1,5 +1,8 @@
 <?php
 namespace App\Http\Controllers;
+
+use App\Models\Branch;
+use App\Models\FinancialReport;
 use App\Models\FinancialTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -36,7 +39,7 @@ class FinancialTransactionController extends Controller
     {
         $branchId = $this->getUserBranchId();
         $categories = $this->getCategories();
-        
+
         // ✅ PASTIKAN $groups DIBANGUN DENGAN BENAR
         $groups = [
             'income' => [
@@ -97,7 +100,7 @@ class FinancialTransactionController extends Controller
         }
 
         $transactions = $query->paginate(20);
-        
+
         return view('features.finance.transactions.index', compact('transactions', 'categories', 'groups'));
     }
 
@@ -140,6 +143,81 @@ class FinancialTransactionController extends Controller
             DB::rollBack();
             return response()->json(['success' => false, 'message' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
         }
+    }
+
+    public function show(FinancialTransaction $transaction)
+    {
+        $userBranchId = Auth::user()?->roles->first()?->branch_id;
+
+        if ($userBranchId && $transaction->branch_id !== $userBranchId) {
+            abort(403);
+        }
+
+        $transaction->load([
+            'branch',
+            'category',   
+            'creator',    
+            'approver',   
+        ]);
+
+        return view('features.finance.transactions.show', [
+            'transaction' => $transaction,
+        ]);
+    }
+    
+    private function getReportCategories()
+    {
+        return [
+            'SALDO_AWAL' => ['name' => 'SALDO AWAL', 'group' => 'balance'],
+            'PP' => ['name' => 'PERSEPULUHAN', 'group' => 'income'],
+            'IURAN_PEJABAT' => ['name' => 'IURAN PEJABAT', 'group' => 'income'],
+            'DANA_MISI' => ['name' => 'DANA MISI DAN PENDIDIKAN', 'group' => 'income'],
+            'PENERIMAAN_LAIN' => ['name' => 'PENERIMAAN LAIN-LAIN', 'group' => 'income'],
+            'BUNGA_BANK' => ['name' => 'BUNGA BANK', 'group' => 'income'],
+            'SETORAN_PP_MP' => ['name' => 'Setoran Persepuluhan ke MP', 'group' => 'expense_majelis'],
+            'SETORAN_IURAN_MP' => ['name' => 'Setoran Iuran Pejabat ke MP', 'group' => 'expense_majelis'],
+            'BIAYA_MIKERIA' => ['name' => 'Biaya Misi, Mikeria, Upgrading', 'group' => 'expense_majelis'],
+            'BIAYA_PASKAH_NATAL' => ['name' => 'Biaya Paskah, HUT, Natal', 'group' => 'expense_majelis'],
+            'BIAYA_RAPAT' => ['name' => 'Biaya Rapat', 'group' => 'expense_majelis'],
+            'BIAYA_KURIKULUM' => ['name' => 'Biaya Kurikulum dan Kerja Dinas', 'group' => 'expense_majelis'],
+            'BIAYA_SEKRETARIAT' => ['name' => 'Biaya Sekretariat', 'group' => 'expense_majelis'],
+            'BIAYA_LAIN_MAJELIS' => ['name' => 'Biaya Lain-lain Majelis', 'group' => 'expense_majelis'],
+            'BIAYA_ADMIN_BANK' => ['name' => 'Biaya Administrasi Bank', 'group' => 'expense_majelis'],
+            'BIAYA_BUKU_PENATALAYANAN' => ['name' => 'Biaya Pembelian Buku Penatalayanan', 'group' => 'expense_penatalayanan'],
+            'BIAYA_PENATALAYANAN_LAIN' => ['name' => 'Biaya Lain-lain Penatalayanan', 'group' => 'expense_penatalayanan'],
+            'BIAYA_SEKOLAH_MINGGU' => ['name' => 'Biaya Program Sekolah Minggu', 'group' => 'expense_penggembalaan'],
+            'BIAYA_PEMUDA' => ['name' => 'Biaya Program Pemuda', 'group' => 'expense_penggembalaan'],
+            'BIAYA_WANITA' => ['name' => 'Biaya Program Wanita', 'group' => 'expense_penggembalaan'],
+            'BIAYA_CAMP_SEMINAR' => ['name' => 'Biaya Camp, Seminar Hamba-hamba Tuhan', 'group' => 'expense_penggembalaan'],
+            'SETORAN_DANA_MISI_MP' => ['name' => 'Setoran Dana Misi dan Pendidikan ke MP', 'group' => 'expense_misi'],
+            'BIAYA_MISI_SEMINAR' => ['name' => 'Biaya Misi, Seminar Misi MD', 'group' => 'expense_misi'],
+            'BIAYA_PENDIDIKAN_MD' => ['name' => 'Biaya Pendidikan MD', 'group' => 'expense_misi'],
+            'BANTUAN_SAKIT' => ['name' => 'Bantuan Sakit (Termasuk BPJS)', 'group' => 'expense_pelayanan'],
+            'BANTUAN_DUKACITA' => ['name' => 'Bantuan Dukacita', 'group' => 'expense_pelayanan'],
+            'BANTUAN_PEMBANGUNAN' => ['name' => 'Bantuan Pembangunan Gereja', 'group' => 'expense_pelayanan'],
+            'BANTUAN_BENCANA' => ['name' => 'Bantuan Bencana Alam', 'group' => 'expense_pelayanan'],
+            'BIAYA_MULTIMEDIA' => ['name' => 'Biaya Bidang dan Multi Media', 'group' => 'expense_pelayanan'],
+        ];
+    }
+
+    public function edit(FinancialTransaction $transaction)
+    {
+        $branchId = $this->getUserBranchId();
+
+        if ($branchId && $transaction->branch_id != $branchId) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
+        }
+
+        if ($transaction->approved_at) {
+            return response()->json(['success' => false, 'message' => 'Transaksi yang sudah disetujui tidak dapat diedit.'], 400);
+        }
+
+        $transaction->transaction_date = $transaction->transaction_date?->format('Y-m-d');
+
+        return response()->json([
+            'success' => true,
+            'data' => $transaction,
+        ]);
     }
 
     public function update(Request $request, FinancialTransaction $transaction)

@@ -12,17 +12,16 @@ class BranchSeeder extends Seeder
     {
         $headquarter = Branch::create([
             'id' => Str::uuid(),
-            'name' => 'Kantor Pusat',
-            'code' => 'PUSAT',
+            'name' => 'Administrator',
+            'code' => 'ADMINISTRATOR',
             'is_headquarter' => true,
             'is_active' => '1'
         ]);
 
         $branches = [
-            ['name' => 'Cabang Jakarta', 'code' => 'JKT', 'active' => '0'],
-            ['name' => 'Cabang Bandung', 'code' => 'BDG', 'active' => '0'],
-            ['name' => 'Cabang Surabaya', 'code' => 'SBY', 'active' => '0'],
-            ['name' => 'Cabang Semarang', 'code' => 'SMG', 'active' => '0'],
+            ['name' => 'Filadelfia Muara Sari', 'code' => 'FMS', 'active' => '1'],
+            ['name' => 'Filadelfia Kopo', 'code' => 'FKP', 'active' => '1'],
+            ['name' => 'Filadelfia Pusat Jabar', 'code' => 'SPJ', 'active' => '1'],
         ];
 
         foreach ($branches as $branch) {
