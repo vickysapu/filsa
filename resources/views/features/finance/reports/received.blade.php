@@ -254,34 +254,40 @@
     <div class="modal fade" id="exportModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content modal-content-custom">
-                <form action="{{ route('admin.finance.export.consolidated') }}" method="POST">
+                <form action="{{ route('admin.finance.export.consolidated') }}" method="POST" id="exportConsolidatedForm">
                     @csrf
-                    <input type="hidden" name="_token_nav" value="{{ session('page_token_' . md5('admin/finance/export/consolidated')) }}">
+                    
                     <div class="modal-header border-bottom border-custom">
                         <h5 class="modal-title fw-semibold">
                             <i class="ri-file-excel-2-line me-2 text-success"></i>Export Konsolidasi
                         </h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
+                    
                     <div class="modal-body p-4">
                         <div class="mb-3">
-                            <label class="form-label small fw-semibold text-muted-custom">Tahun</label>
+                            <label class="form-label small fw-semibold text-muted-custom">Tahun <span class="text-danger">*</span></label>
                             <input type="number" name="year" class="form-control form-control-custom"
-                                value="{{ date('Y') }}" min="2020" max="2030" required>
+                                value="{{ old('year', date('Y')) }}" min="2020" max="2030" required>
                         </div>
+                        
                         <div class="mb-3">
                             <label class="form-label small fw-semibold text-muted-custom">Bulan (Opsional)</label>
                             <select name="month" class="form-select form-select-custom">
                                 <option value="">Semua Bulan (Tahunan)</option>
                                 @for ($m = 1; $m <= 12; $m++)
-                                    <option value="{{ $m }}">{{ \Carbon\Carbon::create()->month($m)->format('F') }}</option>
+                                    <option value="{{ $m }}" {{ old('month') == $m ? 'selected' : '' }}>
+                                        {{ \Carbon\Carbon::create()->month($m)->format('F') }}
+                                    </option>
                                 @endfor
                             </select>
                         </div>
+                        
                         <div class="alert alert-info-custom small p-2">
                             <i class="ri-information-line me-1"></i> Data yang diexport adalah laporan yang sudah disetujui (Approved).
                         </div>
                     </div>
+                    
                     <div class="modal-footer border-top border-custom py-3 px-4">
                         <button type="button" class="btn btn-outline-custom" data-bs-dismiss="modal">Batal</button>
                         <button type="submit" class="btn btn-success-custom">
@@ -292,7 +298,6 @@
             </div>
         </div>
     </div>
-
     <style>
         .page-wrapper { animation: fadeIn 0.4s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -374,32 +379,6 @@
                         box.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
                 }
-            }
-
-            // HAPUS INI SEMUA
-            const exportForm = document.querySelector('#exportModal form');
-            if (exportForm) {
-                exportForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    const btn = this.querySelector('button[type="submit"]');
-                    if (btn) {
-                        btn.disabled = true;
-                        btn.innerHTML = '...';
-                    }
-                    setTimeout(() => {
-                        this.submit();
-                    }, 100);
-                });
-            }
-            const exportModalEl = document.getElementById('exportModal');
-            if (exportModalEl) {
-                exportModalEl.addEventListener('hidden.bs.modal', function() {
-                    const btn = exportForm?.querySelector('button[type="submit"]');
-                    if (btn) {
-                        btn.disabled = false;
-                        btn.innerHTML = '<i class="ri-download-line me-1"></i> Download';
-                    }
-                });
             }
 
             window.runConsolidate = function() {
