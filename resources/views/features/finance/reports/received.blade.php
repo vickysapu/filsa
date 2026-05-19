@@ -255,8 +255,8 @@
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content modal-content-custom">
                 <form action="{{ route('admin.finance.export.consolidated') }}" method="POST">
-                    @method("POST")
                     @csrf
+                    <input type="hidden" name="_token_nav" value="{{ session('page_token_' . md5('admin/finance/export/consolidated')) }}">
                     <div class="modal-header border-bottom border-custom">
                         <h5 class="modal-title fw-semibold">
                             <i class="ri-file-excel-2-line me-2 text-success"></i>Export Konsolidasi
@@ -376,17 +376,21 @@
                 }
             }
 
+            // HAPUS INI SEMUA
             const exportForm = document.querySelector('#exportModal form');
             if (exportForm) {
                 exportForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
                     const btn = this.querySelector('button[type="submit"]');
                     if (btn) {
                         btn.disabled = true;
-                        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Memproses...';
+                        btn.innerHTML = '...';
                     }
+                    setTimeout(() => {
+                        this.submit();
+                    }, 100);
                 });
             }
-
             const exportModalEl = document.getElementById('exportModal');
             if (exportModalEl) {
                 exportModalEl.addEventListener('hidden.bs.modal', function() {
