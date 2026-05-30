@@ -22,6 +22,16 @@
         </div>
     @endif
 
+    @if ($errors->any())
+        <div class="alert alert-danger">
+            <ul class="mb-0">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <div class="card card-custom">
         <div class="card-header d-flex justify-content-between align-items-center">
             <span><i class="ri-list-check me-1"></i>Daftar Profile</span>

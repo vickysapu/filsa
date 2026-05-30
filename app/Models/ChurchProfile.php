@@ -6,10 +6,22 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ChurchProfile extends Model
 {
     use HasFactory, SoftDeletes;
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (empty($model->{$model->getKeyName()})) {
+                $model->{$model->getKeyName()} = (string) Str::uuid();
+            }
+        });
+    }
 
     protected $primaryKey = 'id';
     protected $keyType = 'string';
@@ -17,14 +29,7 @@ class ChurchProfile extends Model
 
     protected $fillable = ['branch_id', 'church_name', 'tagline', 'address', 'city', 'province', 'postal_code', 'country', 'phone', 'whatsapp', 'email', 'website', 'history', 'vision', 'mission', 'values', 'logo_path', 'gallery_images', 'documents', 'facebook', 'instagram', 'youtube', 'tiktok', 'meta_title', 'meta_description', 'meta_keywords', 'map_embed_code', 'map_latitude', 'map_longitude', 'service_time_sunday', 'service_time_wednesday', 'service_time_friday', 'service_note', 'is_published', 'published_at'];
 
-    protected $casts = [
-        'values' => 'array',
-        'gallery_images' => 'array',
-        'documents' => 'array',
-        'meta_keywords' => 'array',
-        'is_published' => 'boolean',
-        'published_at' => 'datetime',
-    ];
+    protected $casts = ['values' => 'array', 'gallery_images' => 'array', 'documents' => 'array', 'meta_keywords' => 'array', 'is_published' => 'boolean', 'published_at' => 'datetime',];
 
     public function branch()
     {

@@ -154,24 +154,38 @@ Route::prefix('admin')
             ->name('church_profile.')
             ->middleware(['auth', 'permission:church_profile.view'])
             ->group(function () {
-                Route::get('/', [ChurchProfileController::class, 'index'])->name('index');
-                Route::get('/{churchProfile}/preview', [ChurchProfileController::class, 'preview'])->name('preview');
-                Route::post('/{churchProfile}/toggle-publish', [ChurchProfileController::class, 'togglePublish'])->name('toggle-publish');
 
+                Route::get('/', [ChurchProfileController::class, 'index'])->name('index');
+
+                // CREATE
                 Route::middleware(['permission:church_profile.create'])->group(function () {
                     Route::get('/create', [ChurchProfileController::class, 'create'])->name('create');
                     Route::post('/', [ChurchProfileController::class, 'store'])->name('store');
                 });
 
+                // EDIT
                 Route::middleware(['permission:church_profile.edit'])->group(function () {
                     Route::get('/{churchProfile}/edit', [ChurchProfileController::class, 'edit'])->name('edit');
                     Route::put('/{churchProfile}', [ChurchProfileController::class, 'update'])->name('update');
-                    Route::post('/{churchProfile}/remove-gallery', [ChurchProfileController::class, 'removeGalleryImage'])->name('remove-gallery');
-                    Route::post('/{churchProfile}/remove-document', [ChurchProfileController::class, 'removeDocument'])->name('remove-document');
+
+                    Route::post('/{churchProfile}/remove-gallery', [ChurchProfileController::class, 'removeGalleryImage'])
+                        ->name('remove-gallery');
+
+                    Route::post('/{churchProfile}/remove-document', [ChurchProfileController::class, 'removeDocument'])
+                        ->name('remove-document');
                 });
 
+                // PREVIEW & PUBLISH
+                Route::get('/{churchProfile}/preview', [ChurchProfileController::class, 'preview'])
+                    ->name('preview');
+
+                Route::post('/{churchProfile}/toggle-publish', [ChurchProfileController::class, 'togglePublish'])
+                    ->name('toggle-publish');
+
+                // DELETE
                 Route::middleware(['permission:church_profile.delete'])->group(function () {
-                    Route::delete('/{churchProfile}', [ChurchProfileController::class, 'destroy'])->name('destroy');
+                    Route::delete('/{churchProfile}', [ChurchProfileController::class, 'destroy'])
+                        ->name('destroy');
                 });
             });
 
