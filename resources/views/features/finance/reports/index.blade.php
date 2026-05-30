@@ -178,7 +178,7 @@
                                             </button>
                                         @endif
                                         @if (auth()->user()->hasPermission('finance.report.export'))
-                                            <a href="{{ route('admin.finance.export.annual-report', $report) }}"
+                                            <a href="{{ route('admin.finance.export.annual-report', ['year_start' => $report->report_year, 'year_end' => $report->report_year]) }}" 
                                                 class="btn-action btn-action-success" title="Export Excel">
                                                 <i class="ri-file-excel-2-line"></i>
                                             </a>

@@ -503,9 +503,11 @@ class FinancialReportController extends Controller
         if ($request->status) {
             $query->where('status', $request->status);
         }
+
         if ($request->year) {
             $query->where('report_year', $request->year);
         }
+
         if ($request->type) {
             $query->where('report_type', $request->type);
         }
@@ -515,12 +517,18 @@ class FinancialReportController extends Controller
             ->orderBy('name')
             ->get();
 
+        $exportTokenKey = 'page_token_' . md5('admin/finance/export/consolidated');
+
+        if (!$request->session()->has($exportTokenKey)) {
+            $request->session()->put($exportTokenKey, bin2hex(random_bytes(16)));
+        }
+
         return view('features.finance.reports.received', [
             'reports' => $query->paginate(20),
             'availableBranches' => $availableBranches,
         ]);
     }
-
+    
     public function generateFromTransactions(Request $request)
     {
         if ($request->isMethod('post') && $request->header('Content-Type') === 'application/json') {
