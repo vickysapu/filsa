@@ -232,17 +232,42 @@ Route::prefix('admin')
                     Route::put('/{report}', [FinancialReportController::class, 'update'])->name('update');
                 });
 
-                Route::middleware('permission:finance.report.delete')->group(function () {
-                    Route::delete('/{report}', [FinancialReportController::class, 'destroy'])->name('destroy');
+        Route::prefix('church-profile')
+            ->name('church_profile.')
+            ->middleware(['auth', 'permission:church_profile.view'])
+            ->group(function () {
+
+                Route::get('/', [ChurchProfileController::class, 'index'])->name('index');
+
+                // CREATE
+                Route::middleware(['permission:church_profile.create'])->group(function () {
+                    Route::get('/create', [ChurchProfileController::class, 'create'])->name('create');
+                    Route::post('/', [ChurchProfileController::class, 'store'])->name('store');
                 });
 
-                Route::middleware('permission:finance.report.submit')->group(function () {
-                    Route::post('/{report}/submit', [FinancialReportController::class, 'submit'])->name('submit');
+                // EDIT
+                Route::middleware(['permission:church_profile.edit'])->group(function () {
+                    Route::get('/{churchProfile}/edit', [ChurchProfileController::class, 'edit'])->name('edit');
+                    Route::put('/{churchProfile}', [ChurchProfileController::class, 'update'])->name('update');
+
+                    Route::post('/{churchProfile}/remove-gallery', [ChurchProfileController::class, 'removeGalleryImage'])
+                        ->name('remove-gallery');
+
+                    Route::post('/{churchProfile}/remove-document', [ChurchProfileController::class, 'removeDocument'])
+                        ->name('remove-document');
                 });
 
-                Route::middleware('permission:finance.report.approve')->group(function () {
-                    Route::post('/{report}/approve', [FinancialReportController::class, 'approve'])->name('approve');
-                    Route::post('/{report}/reject', [FinancialReportController::class, 'reject'])->name('reject');
+                // PREVIEW & PUBLISH
+                Route::get('/{churchProfile}/preview', [ChurchProfileController::class, 'preview'])
+                    ->name('preview');
+
+                Route::post('/{churchProfile}/toggle-publish', [ChurchProfileController::class, 'togglePublish'])
+                    ->name('toggle-publish');
+
+                // DELETE
+                Route::middleware(['permission:church_profile.delete'])->group(function () {
+                    Route::delete('/{churchProfile}', [ChurchProfileController::class, 'destroy'])
+                        ->name('destroy');
                 });
 
                 Route::middleware('permission:finance.report.forward')->group(function () {
