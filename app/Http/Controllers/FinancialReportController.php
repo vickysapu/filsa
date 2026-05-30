@@ -11,6 +11,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use App\Models\User;
 
 class FinancialReportController extends Controller
 {
@@ -82,7 +88,7 @@ class FinancialReportController extends Controller
     public function index(Request $request)
     {
         $query = FinancialReport::with(['branch', 'submittedToBranch', 'approver'])
-            ->when( Auth::user()?->roles->first()?->branch_id, fn($q) => $q->where('branch_id',  Auth::user()?->roles->first()?->branch_id))
+            ->when(Auth::user()?->roles->first()?->branch_id, fn($q) => $q->where('branch_id', Auth::user()?->roles->first()?->branch_id))
             ->orderBy('report_year', 'desc')
             ->orderBy('report_month', 'desc')
             ->orderBy('created_at', 'desc');
@@ -103,7 +109,9 @@ class FinancialReportController extends Controller
             $query->whereNotNull('submitted_to');
         }
 
-        $pendingCount = FinancialReport::where('submitted_to',  Auth::user()?->roles->first()?->branch_id)->where('status', 'submitted')->count();
+        $pendingCount = FinancialReport::where('submitted_to', Auth::user()?->roles->first()?->branch_id)
+            ->where('status', 'submitted')
+            ->count();
 
         return view('features.finance.reports.index', [
             'reports' => $query->paginate(20),
@@ -178,19 +186,25 @@ class FinancialReportController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Laporan berhasil dibuat',
-            'redirect' => route('admin.finance.reports.show', $report)
+            'redirect' => route('admin.finance.reports.show', $report),
         ]);
     }
 
     private function normalizeNumber($value)
     {
-        if (is_null($value)) return 0;
+        if (is_null($value)) {
+            return 0;
+        }
 
-        if (is_int($value) || is_float($value)) return (float) $value;
+        if (is_int($value) || is_float($value)) {
+            return (float) $value;
+        }
 
         $value = trim($value);
 
-        if ($value === '') return 0;
+        if ($value === '') {
+            return 0;
+        }
 
         $value = preg_replace('/[^\d,.\-]/', '', $value);
 
@@ -222,9 +236,15 @@ class FinancialReportController extends Controller
 
     public function show(FinancialReport $report)
     {
-        $canView = $report->branch_id ===  Auth::user()?->roles->first()?->branch_id || $report->submitted_to ===  Auth::user()?->roles->first()?->branch_id || $report->forwards()->where('to_branch_id',  Auth::user()?->roles->first()?->branch_id)->exists();
+        $canView =
+            $report->branch_id === Auth::user()?->roles->first()?->branch_id ||
+            $report->submitted_to === Auth::user()?->roles->first()?->branch_id ||
+            $report
+                ->forwards()
+                ->where('to_branch_id', Auth::user()?->roles->first()?->branch_id)
+                ->exists();
 
-        if ( Auth::user()?->roles->first()?->branch_id && !$canView) {
+        if (Auth::user()?->roles->first()?->branch_id && !$canView) {
             abort(403);
         }
 
@@ -242,7 +262,7 @@ class FinancialReportController extends Controller
 
     public function edit(FinancialReport $report)
     {
-        if ( Auth::user()?->roles->first()?->branch_id && $report->branch_id !==  Auth::user()?->roles->first()?->branch_id) {
+        if (Auth::user()?->roles->first()?->branch_id && $report->branch_id !== Auth::user()?->roles->first()?->branch_id) {
             abort(403);
         }
 
@@ -262,7 +282,7 @@ class FinancialReportController extends Controller
 
     public function update(Request $request, FinancialReport $report)
     {
-        if ( Auth::user()?->roles->first()?->branch_id && $report->branch_id !==  Auth::user()?->roles->first()?->branch_id) {
+        if (Auth::user()?->roles->first()?->branch_id && $report->branch_id !== Auth::user()?->roles->first()?->branch_id) {
             abort(403);
         }
         if ($report->status !== 'draft') {
@@ -305,7 +325,7 @@ class FinancialReportController extends Controller
 
     public function destroy(FinancialReport $report)
     {
-        if ( Auth::user()?->roles->first()?->branch_id && $report->branch_id !==  Auth::user()?->roles->first()?->branch_id) {
+        if (Auth::user()?->roles->first()?->branch_id && $report->branch_id !== Auth::user()?->roles->first()?->branch_id) {
             abort(403);
         }
         if ($report->status !== 'draft') {
@@ -318,7 +338,7 @@ class FinancialReportController extends Controller
 
     public function submit(FinancialReport $report, Request $request)
     {
-        if ( Auth::user()?->roles->first()?->branch_id && $report->branch_id !==  Auth::user()?->roles->first()?->branch_id) {
+        if (Auth::user()?->roles->first()?->branch_id && $report->branch_id !== Auth::user()?->roles->first()?->branch_id) {
             abort(403);
         }
         if ($report->status !== 'draft') {
@@ -381,7 +401,7 @@ class FinancialReportController extends Controller
         try {
             FinancialReportForward::create([
                 'financial_report_id' => $report->id,
-                'from_branch_id' =>  Auth::user()?->roles->first()?->branch_id,
+                'from_branch_id' => Auth::user()?->roles->first()?->branch_id,
                 'to_branch_id' => $validated['to_branch_id'],
                 'forwarded_by' => Auth::id(),
                 'forwarded_at' => now(),
@@ -406,7 +426,7 @@ class FinancialReportController extends Controller
     {
         $currentHolder = $this->getCurrentHolder($report);
 
-        if ($currentHolder !==  Auth::user()?->roles->first()?->branch_id) {
+        if ($currentHolder !== Auth::user()?->roles->first()?->branch_id) {
             return response()->json(['success' => false, 'message' => 'Anda tidak berhak menyetujui laporan ini'], 403);
         }
 
@@ -424,7 +444,7 @@ class FinancialReportController extends Controller
 
             FinancialReportForward::create([
                 'financial_report_id' => $report->id,
-                'from_branch_id' =>  Auth::user()?->roles->first()?->branch_id,
+                'from_branch_id' => Auth::user()?->roles->first()?->branch_id,
                 'to_branch_id' => $report->branch_id,
                 'forwarded_by' => Auth::id(),
                 'forwarded_at' => now(),
@@ -443,7 +463,7 @@ class FinancialReportController extends Controller
     public function reject(FinancialReport $report, Request $request)
     {
         $currentHolder = $this->getCurrentHolder($report);
-        if ($currentHolder !==  Auth::user()?->roles->first()?->branch_id) {
+        if ($currentHolder !== Auth::user()?->roles->first()?->branch_id) {
             return response()->json(['success' => false, 'message' => 'Anda tidak berhak menolak laporan ini'], 403);
         }
         if (!in_array($report->status, ['submitted', 'reviewed'])) {
@@ -459,7 +479,7 @@ class FinancialReportController extends Controller
 
             FinancialReportForward::create([
                 'financial_report_id' => $report->id,
-                'from_branch_id' =>  Auth::user()?->roles->first()?->branch_id,
+                'from_branch_id' => Auth::user()?->roles->first()?->branch_id,
                 'to_branch_id' => $report->branch_id,
                 'forwarded_by' => Auth::id(),
                 'forwarded_at' => now(),
@@ -477,7 +497,7 @@ class FinancialReportController extends Controller
     public function receivedReports(Request $request)
     {
         $query = FinancialReport::with(['branch', 'submittedToBranch', 'approver', 'forwards'])
-            ->where('submitted_to',  Auth::user()?->roles->first()?->branch_id)
+            ->where('submitted_to', Auth::user()?->roles->first()?->branch_id)
             ->orderBy('updated_at', 'desc');
 
         if ($request->status) {
@@ -490,7 +510,10 @@ class FinancialReportController extends Controller
             $query->where('report_type', $request->type);
         }
 
-        $availableBranches = Branch::where('is_active', true)->where('id', '!=',  Auth::user()?->roles->first()?->branch_id)->orderBy('name')->get();
+        $availableBranches = Branch::where('is_active', true)
+            ->where('id', '!=', Auth::user()?->roles->first()?->branch_id)
+            ->orderBy('name')
+            ->get();
 
         return view('features.finance.reports.received', [
             'reports' => $query->paginate(20),
@@ -542,7 +565,7 @@ class FinancialReportController extends Controller
             'biaya_multimedia' => 'BIAYA_MULTIMEDIA',
         ];
 
-        $transactions = FinancialTransaction::where('branch_id',  Auth::user()?->roles->first()?->branch_id)
+        $transactions = FinancialTransaction::where('branch_id', Auth::user()?->roles->first()?->branch_id)
             ->whereBetween('transaction_date', [$start, $end])
             ->whereNotNull('approved_at')
             ->get();
@@ -555,7 +578,11 @@ class FinancialReportController extends Controller
             }
         }
 
-        $prevReport = FinancialReport::where('branch_id',  Auth::user()?->roles->first()?->branch_id)->where('period_end', '<', $start)->where('status', 'approved')->latest('period_end')->first();
+        $prevReport = FinancialReport::where('branch_id', Auth::user()?->roles->first()?->branch_id)
+            ->where('period_end', '<', $start)
+            ->where('status', 'approved')
+            ->latest('period_end')
+            ->first();
         $opening = $prevReport ? $prevReport->closing_balance : 0;
 
         $categories = $this->getReportCategories();
@@ -583,7 +610,10 @@ class FinancialReportController extends Controller
 
     public function consolidateReports(Request $request)
     {
-        $query = FinancialReport::with('details', 'branch')->where('submitted_to',  Auth::user()?->roles->first()?->branch_id)->where('status', 'approved')->where('report_year', $request->year);
+        $query = FinancialReport::with('details', 'branch')
+            ->where('submitted_to', Auth::user()?->roles->first()?->branch_id)
+            ->where('status', 'approved')
+            ->where('report_year', $request->year);
 
         if ($request->month) {
             $query->where('report_month', $request->month);
@@ -622,6 +652,175 @@ class FinancialReportController extends Controller
         ]);
     }
 
+    public function pusatDownload(Request $request)
+    {
+        // Validasi input
+        $validated = $request->validate([
+            'year' => 'required|integer',
+            'month' => 'nullable|integer',
+        ]);
+
+        $year = $validated['year'];
+        $month = $validated['month'];
+
+        // 1. Ambil Data Laporan yang Sudah Approved
+        $query = FinancialReport::with(['details', 'branch', 'creator'])
+            ->where('status', 'approved')
+            ->where('report_year', $year);
+
+        if ($month) {
+            $query->where('report_month', $month);
+        }
+
+        $reports = $query->get();
+
+        // 2. Siapkan Struktur Data Excel
+        // Kita akan membuat list BARIS berdasarkan BRANCH (satu baris per branch)
+        // Dan KOLOM berdasarkan BULAN (Jan - Des)
+        
+        $branches = Branch::where('is_active', true)->orderBy('name')->get();
+        $months = $month ? [$month] : range(1, 12);
+        
+        // Mapping nama bulan
+        $monthNames = [
+            1 => 'JANUARI', 2 => 'FEBRUARI', 3 => 'MARET', 4 => 'APRIL', 5 => 'MEI', 6 => 'JUNI',
+            7 => 'JULI', 8 => 'AGUSTUS', 9 => 'SEPTEMBER', 10 => 'OKTOBER', 11 => 'NOVEMBER', 12 => 'DESEMBER'
+        ];
+
+        // 3. Buat Spreadsheet
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle("Konsolidasi $year");
+
+        // --- STYLE ---
+        $styleHeader = [
+            'font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => '000000']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'D9E1F2']] // Warna biru muda mirip contoh
+        ];
+        
+        $styleTextLeft = [
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT],
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
+        ];
+
+        $styleNumber = [
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_RIGHT],
+            'numberFormat' => ['formatCode' => '#,##0'],
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
+        ];
+        
+        $styleTitle = [
+            'font' => ['bold' => true, 'size' => 14],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        ];
+
+        // --- HEADER TITLE ---
+        $sheet->mergeCells("A1:Z1"); // Merge lebar asumsi
+        $sheet->setCellValue("A1", "DAFTAR PEMASUKAN KAS MDF IV JABAR $year");
+        $sheet->getStyle("A1")->applyFromArray($styleTitle);
+
+        // --- HEADER KOLOM (NO, NAMA, JAN-JUDUL, JAN-SUB, FEB-JUDUL, FEB-SUB...) ---
+        $rowHeader1 = 3;
+        $rowHeader2 = 4;
+        
+        $sheet->setCellValue("A$rowHeader1", "NO.");
+        $sheet->setCellValue("B$rowHeader1", "NAMA");
+        $sheet->mergeCells("A$rowHeader1:A$rowHeader2");
+        $sheet->mergeCells("B$rowHeader1:B$rowHeader2");
+        
+        $currentColIndex = 3; // Mulai dari C
+        foreach ($months as $m) {
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($currentColIndex);
+            $nextColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($currentColIndex + 1);
+            
+            $monthName = $monthNames[$m] ?? "Bulan $m";
+            
+            // Baris 1: Nama Bulan (Merge 2 kolom)
+            $sheet->mergeCells("$colLetter$rowHeader1:$nextColLetter$rowHeader1");
+            $sheet->setCellValue("$colLetter$rowHeader1", $monthName);
+            
+            // Baris 2: JUMLAH | KET.
+            $sheet->setCellValue("$colLetter$rowHeader2", "JUMLAH");
+            $sheet->setCellValue("$nextColLetter$rowHeader2", "KET.");
+            
+            $currentColIndex += 2;
+        }
+        
+        // Terapkan Style Header
+        $lastColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($currentColIndex - 1);
+        $sheet->getStyle("A$rowHeader1:$lastColLetter$rowHeader2")->applyFromArray($styleHeader);
+
+        // --- ISI DATA (BARIS PER BRANCH) ---
+        $rowCounter = 5;
+        $no = 1;
+
+        foreach ($branches as $branch) {
+            // LOGIKA "SATU NAMA PER BRANCH":
+            // Cari User/Pendeta pertama di branch ini. Jika tidak ada, pakai Nama Branch.
+            $representativeName = $branch->name;
+            $pic = User::whereHas('roles', function($q) use($branch) {
+                $q->where('branch_id', $branch->id);
+            })->first();
+            
+            if ($pic) {
+                // Bisa disesuaikan format namanya, misal "Pdt " . $pic->name
+                $representativeName = $pic->name; 
+            }
+
+            $sheet->setCellValue("A$rowCounter", $no++);
+            $sheet->setCellValue("B$rowCounter", $representativeName);
+            
+            $colIdx = 3;
+            foreach ($months as $m) {
+                // Cari laporan approved untuk branch ini di bulan & tahun tsb
+                $report = $reports->firstWhere(function($r) use ($branch, $m) {
+                    return $r->branch_id == $branch->id && $r->report_month == $m;
+                });
+
+                $totalIncome = $report ? $report->total_income : 0;
+                
+                // Catatan (KET): Bisa diisi kosong, atau info status jika perlu
+                $ket = ""; 
+
+                $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIdx);
+                $nextColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIdx + 1);
+                
+                $sheet->setCellValue($colLetter, $totalIncome);
+                $sheet->setCellValue($nextColLetter, $ket);
+                
+                $colIdx += 2;
+            }
+            $rowCounter++;
+        }
+        
+        // Terapkan Style Body
+        $lastRow = $rowCounter - 1;
+        $sheet->getStyle("A5:$lastColLetter$lastRow")->applyFromArray($styleTextLeft);
+        
+        // Style Number untuk kolom Jumlah (C, E, G, ...)
+        for ($i = 3; $i < $currentColIndex; $i += 2) {
+            $c = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i);
+            $sheet->getStyle("$c5:$c$lastRow")->applyFromArray($styleNumber);
+        }
+
+        // Auto Size Column (Opsional, bisa lambat jika data banyak)
+        foreach (range('A', $lastColLetter) as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Download
+        $filename = "Konsolidasi_Pemasukan_Jabar_$year.xlsx";
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+        
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit();
+    }
+    
     private function getCurrentHolder(FinancialReport $report): ?string
     {
         $lastForward = $report->forwards()->latest('forwarded_at')->first();

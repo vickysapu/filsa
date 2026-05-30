@@ -57,4 +57,9 @@ class FinancialTransaction extends Model
     {
         return $query->whereNotNull('approved_at');
     }
+
+    public function report()
+    {
+        return $this->belongsTo(FinancialReport::class, 'financial_report_id');
+    }
 }

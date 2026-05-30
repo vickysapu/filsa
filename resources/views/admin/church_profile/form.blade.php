@@ -538,56 +538,10 @@
             font-family: inherit;
             min-height: 120px;
         }
-
-        #valuesContainer .input-group {
-            transition: all 0.2s;
-        }
-
-        #valuesContainer .input-group:hover {
-            background: rgba(0, 0, 0, 0.02);
-            border-radius: 4px;
-        }
     </style>
 
     <script>
         const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-
-        const addValue = () => {
-            const container = document.getElementById('valuesContainer');
-            const index = container.children.length;
-            const div = document.createElement('div');
-            div.className = 'input-group mb-2';
-            div.innerHTML = `
-                <input type="text" name="values[${index}][label]" class="form-control" placeholder="Nama nilai" required>
-                <input type="text" name="values[${index}][description]" class="form-control" placeholder="Deskripsi singkat">
-                <button type="button" class="btn btn-outline-danger" onclick="removeValue(this)">×</button>
-            `;
-            container.appendChild(div);
-        };
-
-        const removeValue = (btn) => btn.closest('.input-group').remove();
-
-        const removeGalleryImage = async (path) => {
-            if (!confirm('Hapus gambar ini?')) return;
-            const id = '{{ $churchProfile->id ?? '' }}';
-            if (!id) return;
-            try {
-                const res = await fetch(`/admin/church-profile/${id}/remove-gallery`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        image_path: path
-                    })
-                });
-                const result = await res.json();
-                if (result.success) location.reload();
-            } catch (e) {
-                alert('Gagal menghapus');
-            }
-        };
 
         const removeDocument = async (path) => {
             if (!confirm('Hapus dokumen ini?')) return;

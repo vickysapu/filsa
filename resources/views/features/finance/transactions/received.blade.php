@@ -284,12 +284,12 @@
                                             </button>
                                         @endif
 
-                                        @can('finance.report.export')
+                                        @if (auth()->user()->hasPermission('finance.report.export'))
                                             <a href="{{ route('admin.finance.export.annual-report', $report) }}"
                                                 class="btn-action btn-action-success" title="Export Excel">
                                                 <i class="ri-file-excel-2-line"></i>
                                             </a>
-                                        @endcan
+                                        @endif
                                     </div>
                                 </td>
                             </tr>

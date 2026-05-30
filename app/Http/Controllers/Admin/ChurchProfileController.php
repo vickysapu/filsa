@@ -17,23 +17,26 @@ class ChurchProfileController extends Controller
         return Auth::user()?->roles->first()?->branch_id;
     }
 
+    protected function isSuperAdmin()
+    {
+        $user = Auth::user();
+        return $user && ($user->hasRole('administrator') || ($user->branch && $user->branch->is_headquarter));
+    }
+
     public function index(Request $request)
     {
         $branchId = $this->getBranchId();
+        $isSuperAdmin = $this->isSuperAdmin();
 
-        $query = ChurchProfile::query()->with('branch');
+        $churchProfile = ChurchProfile::when($branchId && !$isSuperAdmin, function ($q) use ($branchId) {
+            return $q->where('branch_id', $branchId);
+        })->first();
 
-        if ($branchId) {
-            $query->where('branch_id', $branchId);
+        if (!$churchProfile) {
+            return redirect()->route('admin.church_profile.create');
         }
 
-        if ($request->search) {
-            $query->where('church_name', 'like', "%{$request->search}%");
-        }
-
-        $profiles = $query->latest()->paginate(15);
-
-        return view('admin.church_profile.index', compact('profiles'));
+        return view('admin.church_profile.index', compact('churchProfile'));
     }
 
     public function create()
@@ -44,8 +47,9 @@ class ChurchProfileController extends Controller
             : Branch::orderBy('name')->get();
 
         return view('admin.church_profile.form', [
-            'churchProfile' => null, 
-            'branches' => $branches
+            'churchProfile' => null,
+            'branches' => $branches,
+            'defaultBranchId' => $defaultBranchId,
         ]);
     }
 
@@ -54,6 +58,12 @@ class ChurchProfileController extends Controller
         $this->normalizeChurchProfileRequest($request);
 
         $branchId = $this->getBranchId();
+        $isSuperAdmin = $this->isSuperAdmin();
+
+        $existing = ChurchProfile::when($branchId && !$isSuperAdmin, fn($q) => $q->where('branch_id', $branchId))->first();
+        if ($existing) {
+            return back()->with('error', 'Profile gereja sudah ada. Silakan edit data yang tersedia.');
+        }
 
         $validated = $request->validate($this->churchProfileRules());
 
@@ -95,12 +105,13 @@ class ChurchProfileController extends Controller
     public function edit(ChurchProfile $churchProfile)
     {
         $branchId = $this->getBranchId();
+        $isSuperAdmin = $this->isSuperAdmin();
 
-        if ($branchId && $churchProfile->branch_id !== $branchId) {
-            abort(403);
+        if (!$isSuperAdmin && $branchId && $churchProfile->branch_id !== $branchId) {
+            abort(403, 'Akses ditolak');
         }
 
-        $branches = $branchId ? Branch::where('id', $branchId)->get() : Branch::orderBy('name')->get();
+        $branches = $isSuperAdmin ? Branch::orderBy('name')->get() : collect();
 
         return view('admin.church_profile.form', compact('churchProfile', 'branches'));
     }
@@ -110,9 +121,10 @@ class ChurchProfileController extends Controller
         $this->normalizeChurchProfileRequest($request);
 
         $branchId = $this->getBranchId();
+        $isSuperAdmin = $this->isSuperAdmin();
 
-        if ($branchId && $churchProfile->branch_id !== $branchId) {
-            abort(403);
+        if (!$isSuperAdmin && $branchId && $churchProfile->branch_id !== $branchId) {
+            abort(403, 'Akses ditolak');
         }
 
         $validated = $request->validate($this->churchProfileRules());
@@ -177,11 +189,7 @@ class ChurchProfileController extends Controller
             'branch_id' => 'nullable|uuid|exists:branches,id',
             'church_name' => 'required|string|max:255',
             'tagline' => 'nullable|string|max:255',
-            'address' => 'nullable|string|max:1000',
-            'city' => 'nullable|string|max:100',
-            'province' => 'nullable|string|max:100',
-            'postal_code' => 'nullable|string|max:20',
-            'country' => 'nullable|string|max:100',
+            'address' => 'required|string|max:1000',
             'phone' => 'nullable|string|max:50',
             'whatsapp' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:255',
@@ -189,12 +197,7 @@ class ChurchProfileController extends Controller
             'history' => 'nullable|string',
             'vision' => 'nullable|string',
             'mission' => 'nullable|string',
-            'values' => 'nullable|array',
-            'values.*.label' => 'required_with:values|string|max:100',
-            'values.*.description' => 'nullable|string|max:500',
             'logo' => 'nullable|image|mimes:jpg,png,jpeg,webp|max:5120',
-            'gallery_images' => 'nullable|array',
-            'gallery_images.*' => 'image|mimes:jpg,png,jpeg,webp|max:5120',
             'documents' => 'nullable|array',
             'documents.*' => 'file|mimes:pdf,doc,docx|max:10240',
             'facebook' => 'nullable|url|max:255',
@@ -208,10 +211,6 @@ class ChurchProfileController extends Controller
             'map_embed_code' => 'nullable|string|max:2000',
             'map_latitude' => 'nullable|numeric',
             'map_longitude' => 'nullable|numeric',
-            'service_time_sunday' => 'nullable|date_format:H:i',
-            'service_time_wednesday' => 'nullable|date_format:H:i',
-            'service_time_friday' => 'nullable|date_format:H:i',
-            'service_note' => 'nullable|string|max:500',
             'is_published' => 'boolean',
         ];
     }
@@ -239,72 +238,51 @@ class ChurchProfileController extends Controller
     public function destroy(ChurchProfile $churchProfile)
     {
         $branchId = $this->getBranchId();
+        $isSuperAdmin = $this->isSuperAdmin();
 
-        if ($branchId && $churchProfile->branch_id !== $branchId) {
-            abort(403);
+        if (!$isSuperAdmin && $branchId && $churchProfile->branch_id !== $branchId) {
+            abort(403, 'Akses ditolak');
         }
 
-        if ($churchProfile->logo_path) {
+        if ($churchProfile->logo_path && Storage::disk('public')->exists($churchProfile->logo_path)) {
             Storage::disk('public')->delete($churchProfile->logo_path);
-        }
-
-        if ($churchProfile->gallery_images) {
-            foreach ($churchProfile->gallery_images as $img) {
-                Storage::disk('public')->delete($img);
-            }
         }
 
         if ($churchProfile->documents) {
             foreach ($churchProfile->documents as $doc) {
-                Storage::disk('public')->delete($doc);
+                if (Storage::disk('public')->exists($doc)) {
+                    Storage::disk('public')->delete($doc);
+                }
             }
         }
 
         $churchProfile->delete();
 
-        return response()->json(['success' => true, 'message' => 'Profile gereja berhasil dihapus']);
-    }
-
-    public function removeGalleryImage(Request $request, ChurchProfile $churchProfile)
-    {
-        $branchId = $this->getBranchId();
-
-        if ($branchId && $churchProfile->branch_id !== $branchId) {
-            abort(403);
+        if (request()->ajax() || request()->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Profile gereja berhasil dihapus']);
         }
 
-        $request->validate(['image_path' => 'required|string']);
-
-        $galleryImages = $churchProfile->gallery_images ?? [];
-        $imagePath = $request->image_path;
-
-        if (($key = array_search($imagePath, $galleryImages)) !== false) {
-            unset($galleryImages[$key]);
-            Storage::disk('public')->delete($imagePath);
-
-            $churchProfile->update(['gallery_images' => array_values($galleryImages)]);
-        }
-
-        return response()->json(['success' => true, 'message' => 'Gambar berhasil dihapus']);
+        return redirect()->route('admin.church_profile.index')->with('success', 'Profile gereja berhasil dihapus!');
     }
 
     public function removeDocument(Request $request, ChurchProfile $churchProfile)
     {
         $branchId = $this->getBranchId();
+        $isSuperAdmin = $this->isSuperAdmin();
 
-        if ($branchId && $churchProfile->branch_id !== $branchId) {
-            abort(403);
+        if (!$isSuperAdmin && $branchId && $churchProfile->branch_id !== $branchId) {
+            abort(403, 'Akses ditolak');
         }
 
         $request->validate(['doc_path' => 'required|string']);
-
-        $documents = $churchProfile->documents ?? [];
         $docPath = $request->doc_path;
 
+        $documents = $churchProfile->documents ?? [];
         if (($key = array_search($docPath, $documents)) !== false) {
             unset($documents[$key]);
-            Storage::disk('public')->delete($docPath);
-
+            if (Storage::disk('public')->exists($docPath)) {
+                Storage::disk('public')->delete($docPath);
+            }
             $churchProfile->update(['documents' => array_values($documents)]);
         }
 
@@ -314,9 +292,10 @@ class ChurchProfileController extends Controller
     public function preview(ChurchProfile $churchProfile)
     {
         $branchId = $this->getBranchId();
+        $isSuperAdmin = $this->isSuperAdmin();
 
-        if ($branchId && $churchProfile->branch_id !== $branchId) {
-            abort(403);
+        if (!$isSuperAdmin && $branchId && $churchProfile->branch_id !== $branchId) {
+            abort(403, 'Akses ditolak');
         }
 
         return view('admin.church_profile.preview', compact('churchProfile'));
@@ -325,9 +304,10 @@ class ChurchProfileController extends Controller
     public function togglePublish(ChurchProfile $churchProfile)
     {
         $branchId = $this->getBranchId();
+        $isSuperAdmin = $this->isSuperAdmin();
 
-        if ($branchId && $churchProfile->branch_id !== $branchId) {
-            abort(403);
+        if (!$isSuperAdmin && $branchId && $churchProfile->branch_id !== $branchId) {
+            abort(403, 'Akses ditolak');
         }
 
         $churchProfile->update([

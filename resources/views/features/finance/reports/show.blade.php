@@ -27,7 +27,7 @@
                     @else
                         {{ $report->report_year }}
                     @endif
-                    &bull; {{ $report->branch->name }}
+                    &bull; {{ $report->branch?->name ?? '-' }}
                 </p>
             </div>
             <div class="text-md-end">
@@ -36,7 +36,7 @@
                 </span>
                 @if ($report->submitted_to && $report->submittedToBranch)
                     <div class="text-muted-custom small mt-1">
-                        <i class="ri-arrow-right-line me-1"></i> Dikirim ke: {{ $report->submittedToBranch->name }}
+                        <i class="ri-arrow-right-line me-1"></i> Dikirim ke: {{ $report->submittedToBranch?->name ?? '-' }}
                     </div>
                 @endif
             </div>
@@ -234,7 +234,7 @@
                             <i class="ri-calendar-line text-primary"></i>
                             <div>
                                 <p class="text-muted-custom small mb-1">Dibuat Pada</p>
-                                <p class="fw-semibold mb-0">{{ $report->created_at->format('d F Y H:i') }}</p>
+                                <p class="fw-semibold mb-0">{{ $report->created_at?->format('d F Y H:i') ?? '-' }}</p>
                             </div>
                         </div>
                     </div>
@@ -243,7 +243,7 @@
                             <i class="ri-building-line text-primary"></i>
                             <div>
                                 <p class="text-muted-custom small mb-1">Dibuat Oleh</p>
-                                <p class="fw-semibold mb-0">{{ $report->branch->name }}</p>
+                                <p class="fw-semibold mb-0">{{ $report->branch?->name ?? '-' }}</p>
                             </div>
                         </div>
                     </div>
@@ -253,7 +253,7 @@
                                 <i class="ri-send-plane-line text-primary"></i>
                                 <div>
                                     <p class="text-muted-custom small mb-1">Dikirim Pada</p>
-                                    <p class="fw-semibold mb-0">{{ $report->submitted_at->format('d F Y H:i') }}</p>
+                                    <p class="fw-semibold mb-0">{{ $report->submitted_at?->format('d F Y H:i') ?? '-' }}</p>
                                 </div>
                             </div>
                         </div>
@@ -265,7 +265,7 @@
                                 <div>
                                     <p class="text-muted-custom small mb-1">Disetujui Oleh</p>
                                     <p class="fw-semibold mb-0">{{ $report->approver?->name ?: '-' }}</p><small
-                                        class="text-muted-custom">{{ $report->approved_at->format('d F Y H:i') }}</small>
+                                        class="text-muted-custom">{{ $report->approved_at?->format('d F Y H:i') ?? '-' }}</small>
                                 </div>
                             </div>
                         </div>
