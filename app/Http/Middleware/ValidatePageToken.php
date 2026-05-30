@@ -19,7 +19,7 @@ class ValidatePageToken
             return redirect()->route('login');
         }
 
-        if ($request->ajax() || $request->expectsJson()) {
+        if ($request->ajax() || $request->expectsJson() || $request->isMethod('post') || $request->isMethod('put') || $request->isMethod('delete')) {
             return $next($request);
         }
 

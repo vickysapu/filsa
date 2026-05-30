@@ -657,9 +657,14 @@
     <div class="admin-wrapper">
         <!-- SIDEBAR -->
         <aside class="sidebar" id="sidebar">
+            @php
+                $branchId = auth()->user()->branch_id;
+                $query = $branchId ? \App\Models\ChurchProfile::where('branch_id', $branchId)->first() : null;
+                $namaGereja = $query ? $query->church_name : 'Filadelfia';
+            @endphp
             <div class="sidebar-brand">
                 <i class="ri-church-line"></i>
-                FILADELFIA<span>MUSA</span>
+                {{ $namaGereja }}
             </div>
 
             <nav class="sidebar-nav">
