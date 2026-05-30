@@ -158,26 +158,44 @@ Route::prefix('admin')
             });
         });
 
-        Route::prefix('church-profile')->name('church_profile.')->middleware(['auth', 'permission:church_profile.view'])->group(function () {
-            Route::get('/', [ChurchProfileController::class, 'index'])->name('index');
-            Route::get('/preview', [ChurchProfileController::class, 'preview'])->name('preview');
-            Route::post('/toggle-publish', [ChurchProfileController::class, 'togglePublish'])->name('toggle-publish');
+        Route::prefix('church-profile')
+            ->name('church_profile.')
+            ->middleware(['auth', 'permission:church_profile.view'])
+            ->group(function () {
 
-            Route::middleware(['permission:church_profile.create'])->group(function () {
-                Route::get('/create', [ChurchProfileController::class, 'create'])->name('create');
-                Route::post('/', [ChurchProfileController::class, 'store'])->name('store');
-            });
+                Route::get('/', [ChurchProfileController::class, 'index'])->name('index');
 
-            Route::middleware(['permission:church_profile.edit'])->group(function () {
-                Route::get('/{churchProfile}/edit', [ChurchProfileController::class, 'edit'])->name('edit');
-                Route::put('/{churchProfile}', [ChurchProfileController::class, 'update'])->name('update');
-                Route::post('/{churchProfile}/remove-document', [ChurchProfileController::class, 'removeDocument'])->name('remove-document');
-            });
+                // CREATE
+                Route::middleware(['permission:church_profile.create'])->group(function () {
+                    Route::get('/create', [ChurchProfileController::class, 'create'])->name('create');
+                    Route::post('/', [ChurchProfileController::class, 'store'])->name('store');
+                });
 
-            Route::middleware(['permission:church_profile.delete'])->group(function () {
-                Route::delete('/{churchProfile}', [ChurchProfileController::class, 'destroy'])->name('destroy');
+                // EDIT
+                Route::middleware(['permission:church_profile.edit'])->group(function () {
+                    Route::get('/{churchProfile}/edit', [ChurchProfileController::class, 'edit'])->name('edit');
+                    Route::put('/{churchProfile}', [ChurchProfileController::class, 'update'])->name('update');
+
+                    Route::post('/{churchProfile}/remove-gallery', [ChurchProfileController::class, 'removeGalleryImage'])
+                        ->name('remove-gallery');
+
+                    Route::post('/{churchProfile}/remove-document', [ChurchProfileController::class, 'removeDocument'])
+                        ->name('remove-document');
+                });
+
+                // PREVIEW & PUBLISH
+                Route::get('/{churchProfile}/preview', [ChurchProfileController::class, 'preview'])
+                    ->name('preview');
+
+                Route::post('/{churchProfile}/toggle-publish', [ChurchProfileController::class, 'togglePublish'])
+                    ->name('toggle-publish');
+
+                // DELETE
+                Route::middleware(['permission:church_profile.delete'])->group(function () {
+                    Route::delete('/{churchProfile}', [ChurchProfileController::class, 'destroy'])
+                        ->name('destroy');
+                });
             });
-        });
 
         Route::prefix('finance')->name('finance.')->middleware(['page.token'])->group(function () {
 
