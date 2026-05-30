@@ -52,87 +52,38 @@
                         <h5 class="fw-bold">{{ $churchProfile->church_name }}</h5>
                         <p class="text-muted">{{ $churchProfile->tagline ?: '-' }}</p>
 
-    @if ($errors->any())
-        <div class="alert alert-danger">
-            <ul class="mb-0">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
+                        <div class="d-flex justify-content-center gap-2 mb-3">
+                            @foreach ($churchProfile->social_links as $platform => $url)
+                                <a href="{{ $url }}" target="_blank" class="btn btn-sm btn-light">
+                                    <i class="ri-{{ $platform }}-line"></i>
+                                </a>
+                            @endforeach
+                        </div>
 
-    <div class="card card-custom">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <span><i class="ri-list-check me-1"></i>Daftar Profile</span>
-            <form class="d-flex gap-2" method="GET">
-                <input type="text" name="search" class="form-control form-control-sm" placeholder="Cari nama gereja..."
-                    value="{{ request('search') }}" style="width:250px">
-                <button type="submit" class="btn btn-sm btn-custom">Cari</button>
-            </form>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0 align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th width="60">Logo</th>
-                            <th>Nama Gereja</th>
-                            <th>Tagline</th>
-                            <th>Kontak</th>
-                            <th width="100">Status</th>
-                            <th width="180" class="text-end">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($profiles as $profile)
-                            <tr>
-                                <td>
-                                    <img src="{{ $profile->logo_url }}" alt="Logo" class="rounded"
-                                        style="width:50px;height:50px;object-fit:cover">
-                                </td>
-                                <td>
-                                    <div class="fw-500">{{ $profile->church_name }}</div>
-                                    <small class="text-muted">{{ $profile->city ?? '-' }},
-                                        {{ $profile->province ?? '' }}</small>
-                                </td>
-                                <td>{{ Str::limit($profile->tagline, 40) ?: '-' }}</td>
-                                <td>
-                                    <small class="d-block">{{ $profile->phone ?: '-' }}</small>
-                                    <small class="text-muted">{{ $profile->email ?: '-' }}</small>
-                                </td>
-                                <td>
-                                    @if ($profile->is_published)
-                                        <span class="badge bg-success-subtle text-success">Published</span>
-                                    @else
-                                        <span class="badge bg-secondary-subtle text-secondary">Draft</span>
-                                    @endif
-                                </td>
-                                <td class="text-end">
-                                    <a href="{{ route('admin.church_profile.preview', $profile) }}"
-                                        class="btn btn-sm btn-light" title="Preview"><i class="ri-eye-line"></i></a>
-                                    <a href="{{ route('admin.church_profile.edit', $profile) }}"
-                                        class="btn btn-sm btn-light" title="Edit"><i class="ri-pencil-line"></i></a>
-                                    <button class="btn btn-sm btn-light text-danger"
-                                        onclick="deleteProfile('{{ $profile->id }}', '{{ addslashes($profile->church_name) }}')"
-                                        title="Hapus"><i class="ri-delete-bin-line"></i></button>
-                                    <button class="btn btn-sm {{ $profile->is_published ? 'btn-warning' : 'btn-success' }}"
-                                        onclick="togglePublish('{{ $profile->id }}')"
-                                        title="{{ $profile->is_published ? 'Unpublish' : 'Publish' }}">
-                                        <i class="ri-{{ $profile->is_published ? 'eye-off' : 'eye' }}-line"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="text-center py-5 text-muted">
-                                    <i class="ri-building-line fs-1 d-block mb-3"></i>
-                                    Belum ada data profile gereja
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                        <div class="text-start small">
+                            <p class="mb-1"><i class="ri-map-pin-line"></i> {{ $churchProfile->address ?: '-' }}</p>
+                            @if ($churchProfile->phone)
+                                <p class="mb-1"><i class="ri-phone-line"></i> {{ $churchProfile->phone }}</p>
+                            @endif
+                            @if ($churchProfile->email)
+                                <p class="mb-1"><i class="ri-mail-line"></i> {{ $churchProfile->email }}</p>
+                            @endif
+                            @if ($churchProfile->website)
+                                <p class="mb-0"><i class="ri-global-line"></i> <a href="{{ $churchProfile->website }}"
+                                        target="_blank">{{ $churchProfile->website }}</a></p>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                @if ($churchProfile->map_embed_code)
+                    <div class="card card-custom mt-4">
+                        <div class="card-header"><i class="ri-map-pin-line me-1"></i>Lokasi</div>
+                        <div class="card-body">
+                            {!! $churchProfile->map_embed_code !!}
+                        </div>
+                    </div>
+                @endif
             </div>
 
             <div class="col-lg-8">
