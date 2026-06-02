@@ -150,10 +150,11 @@
                                 >
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Induk Posisi</label>
-                                <select name="parent_id" class="form-select" id="parent_id">
-                                    <option value="">Root / Tidak ada induk</option>
+                                <label class="form-label">Induk Posisi (Multi-select)</label>
+                                <select name="parent_id[]" class="form-select" id="parent_id" multiple>
+                                    <option value="">-- Pilih Posisi Induk --</option>
                                 </select>
+                                <small class="form-text text-muted d-block mt-1">Gunakan Ctrl+Click untuk memilih multiple</small>
                             </div>
                         </div>
                         <div class="mb-3 mt-3">
@@ -275,10 +276,11 @@
                                 >
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Induk Posisi</label>
-                                <select name="parent_id" id="edit_parent_id" class="form-select">
-                                    <option value="">Root / Tidak ada induk</option>
+                                <label class="form-label">Induk Posisi (Multi-select)</label>
+                                <select name="parent_id[]" id="edit_parent_id" class="form-select" multiple>
+                                    <option value="">-- Pilih Posisi Induk --</option>
                                 </select>
+                                <small class="form-text text-muted d-block mt-1">Gunakan Ctrl+Click untuk memilih multiple</small>
                             </div>
                         </div>
                         <div class="mb-3 mt-3">
@@ -454,6 +456,14 @@
             font-size: 0.75rem;
             color: #64748b;
             transition: all 0.2s;
+            pointer-events: auto;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .drop-zone:hover {
+            border-color: #3b82f6;
+            background: #eff6ff;
         }
 
         .drop-zone.active {
@@ -776,7 +786,16 @@
                     const data = await res.json();
                     structuresData = data.tree || [];
                     renderOrgChart(structuresData);
-                    renderAccordionStructure(structuresData);
+                    
+                    // Fetch flat data for accordion (tidak difilter duplicate)
+                    const flatRes = await fetch("{{ route('admin.church_structure.api.tree') }}?accordion=true", {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        }
+                    });
+                    const flatData = await flatRes.json();
+                    renderAccordionStructure(flatData.flat || [], flatData.roots || []);
                 } catch (e) {
                     chartContainer.innerHTML =
                         '<div class="empty-state"><i class="ri-error-warning-line fs-1"></i><p>Gagal memuat struktur</p><button class="btn btn-sm btn-custom mt-3" onclick="loadStructure()">Coba Lagi</button></div>';
@@ -934,7 +953,10 @@
                     if (
                         e.target.closest('.drop-zone') ||
                         e.target.closest('.btn-edit-node')
-                    ) return;
+                    ) {
+                        e.preventDefault();
+                        return;
+                    }
 
                     startX = e.clientX;
                     startY = e.clientY;
@@ -968,6 +990,7 @@
                 btnEdit.addEventListener('click', (e) => {
 
                     e.stopPropagation();
+                    e.preventDefault();
 
                     editStructure(item);
                 });
@@ -980,54 +1003,57 @@
                 dropZone.addEventListener('click', async (e) => {
 
                     e.stopPropagation();
-
-                    const modal = new bootstrap.Modal(
-                        document.getElementById('modalEdit')
-                    );
+                    e.preventDefault();
 
                     window.currentEditItem = null;
 
-                    // mode create child
+                    // Reset form
                     document.getElementById('formEdit').reset();
 
                     document.getElementById('edit_id').value = '';
-
                     document.getElementById('edit_position_name').value = '';
-
-                    document.getElementById('edit_position_level').value = '';
-
                     document.getElementById('edit_description').value = '';
-
                     document.getElementById('edit_is_active').checked = true;
 
-                    // parent otomatis = item yang dipilih
-                    await loadParentsOptions(
-                        'edit_parent_id',
-                        getItemId(item)
-                    );
-
-                    setTimeout(() => {
-                        initJemaatSelect('edit_jemaat_id', item.jemaat?.id);
-                    }, 150);
-
+                    // Reset priority
                     document.querySelectorAll('input[name="priority"]').forEach(r => {
                         r.checked = false;
                     });
+                    document.getElementById('edit_priority_none').checked = true;
 
-                    if (item.jemaat?.priority === 'primer') {
+                    // Load parent options first
+                    await loadParentsOptions(
+                        'edit_parent_id',
+                        [getItemId(item)]
+                    );
 
-                        document.getElementById('edit_priority_primary').checked = true;
+                    // Initialize form elements after loading parent options
+                    setTimeout(() => {
+                        // Initialize position level
+                        initPositionLevel({
+                            selectId: 'edit_position_level_select',
+                            customInputId: 'edit_position_level_custom',
+                            hiddenInputId: 'edit_position_level_hidden',
+                            currentValue: ''
+                        });
 
-                    } else if (item.jemaat?.priority === 'sekunder') {
+                        // Initialize jemaat select
+                        initJemaatSelect('edit_jemaat_id', null);
 
-                        document.getElementById('edit_priority_secondary').checked = true;
+                        // Initialize priority validation
+                        handlePriorityValidation('edit_jemaat_id', 'edit_');
 
-                    } else {
+                        // Show modal
+                        const modal = new bootstrap.Modal(
+                            document.getElementById('modalEdit')
+                        );
+                        modal.show();
+                    }, 200);
+                });
 
-                        document.getElementById('edit_priority_none').checked = true;
-                    }
-
-                    modal.show();
+                dropZone.addEventListener('mousedown', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
                 });
 
                 return node;
@@ -1036,6 +1062,46 @@
             const drawConnectors = (items) => {
                 chartContainer.querySelectorAll('.org-connector').forEach(c => c.remove());
 
+                // Helper function to draw a connector between two nodes
+                const drawConnector = (parentCenterX, parentBottomY, childCenterX, childTopY, color = '#3b82f6') => {
+                    const connector = document.createElement('div');
+                    connector.className = 'org-connector';
+
+                    const midY = parentBottomY + ((childTopY - parentBottomY) / 2);
+
+                    connector.innerHTML = `
+                        <div style="
+                            position:absolute;
+                            width:2px;
+                            background:${color};
+                            left:${parentCenterX}px;
+                            top:${parentBottomY}px;
+                            height:${midY - parentBottomY}px;
+                        "></div>
+
+                        <div style="
+                            position:absolute;
+                            height:2px;
+                            background:${color};
+                            left:${Math.min(parentCenterX, childCenterX)}px;
+                            top:${midY}px;
+                            width:${Math.abs(childCenterX - parentCenterX)}px;
+                        "></div>
+
+                        <div style="
+                            position:absolute;
+                            width:2px;
+                            background:${color};
+                            left:${childCenterX}px;
+                            top:${midY}px;
+                            height:${childTopY - midY}px;
+                        "></div>
+                    `;
+
+                    chartContainer.appendChild(connector);
+                };
+
+                // Hierarchical tree drawing
                 const draw = (nodes) => {
                     nodes.forEach(parent => {
 
@@ -1063,48 +1129,61 @@
                             const childCenterX = cNode.offsetLeft + (cNode.offsetWidth / 2);
                             const childTopY = cNode.offsetTop;
 
-                            const connector = document.createElement('div');
-                            connector.className = 'org-connector';
-
-                            const midY = parentBottomY + ((childTopY - parentBottomY) / 2);
-
-                            connector.innerHTML = `
-                                <div style="
-                                    position:absolute;
-                                    width:2px;
-                                    background:#3b82f6;
-                                    left:${parentCenterX}px;
-                                    top:${parentBottomY}px;
-                                    height:${midY - parentBottomY}px;
-                                "></div>
-
-                                <div style="
-                                    position:absolute;
-                                    height:2px;
-                                    background:#3b82f6;
-                                    left:${Math.min(parentCenterX, childCenterX)}px;
-                                    top:${midY}px;
-                                    width:${Math.abs(childCenterX - parentCenterX)}px;
-                                "></div>
-
-                                <div style="
-                                    position:absolute;
-                                    width:2px;
-                                    background:#3b82f6;
-                                    left:${childCenterX}px;
-                                    top:${midY}px;
-                                    height:${childTopY - midY}px;
-                                "></div>
-                            `;
-
-                            chartContainer.appendChild(connector);
+                            drawConnector(parentCenterX, parentBottomY, childCenterX, childTopY);
                         });
 
                         draw(parent.children);
                     });
                 };
 
+                // Draw the main tree structure
                 draw(items);
+
+                // Draw additional connectors for multiple parents
+                const drawMultiParentConnectors = (nodes) => {
+                    // Collect all nodes in a flat map
+                    const allNodes = {};
+                    const collectNodes = (nodeList) => {
+                        nodeList.forEach(node => {
+                            allNodes[getItemId(node)] = node;
+                            if (node.children && node.children.length > 0) {
+                                collectNodes(node.children);
+                            }
+                        });
+                    };
+                    collectNodes(nodes);
+
+                    // For each node, check if it has multiple parents
+                    Object.values(allNodes).forEach(node => {
+                        const nodeId = getItemId(node);
+                        const parentIds = node.parent_id;
+
+                        // Only process if there are multiple parents
+                        if (!Array.isArray(parentIds) || parentIds.length <= 1) {
+                            return;
+                        }
+
+                        const childNode = document.querySelector(`.org-node[data-id="${nodeId}"]`);
+                        if (!childNode) return;
+
+                        const childCenterX = childNode.offsetLeft + (childNode.offsetWidth / 2);
+                        const childTopY = childNode.offsetTop;
+
+                        // Draw connector from each parent (starting from the second one)
+                        parentIds.slice(1).forEach(parentId => {
+                            const parentNode = document.querySelector(`.org-node[data-id="${parentId}"]`);
+                            if (!parentNode) return;
+
+                            const parentCenterX = parentNode.offsetLeft + (parentNode.offsetWidth / 2);
+                            const parentBottomY = parentNode.offsetTop + parentNode.offsetHeight;
+
+                            // Use a different color for secondary parent connections
+                            drawConnector(parentCenterX, parentBottomY, childCenterX, childTopY, '#f59e0b');
+                        });
+                    });
+                };
+
+                drawMultiParentConnectors(items);
             };
 
             const onMouseMove = (e) => {
@@ -1264,12 +1343,9 @@
                 document.getElementById('edit_description').value = item.description || '';
                 document.getElementById('edit_is_active').checked = !!item.is_active;
 
-                // ambil parent id / uuid dengan aman
-                const selectedParent =
-                    item.parent_id ||
-                    item.parent?.id ||
-                    null;
-                loadParentsOptions('edit_parent_id', selectedParent)
+                // ambil parent id / uuid dengan aman - bisa array atau single value
+                const selectedParents = item.parent_id || null;
+                loadParentsOptions('edit_parent_id', selectedParents)
                     .then(() => {
 
                         setTimeout(() => {
@@ -1432,7 +1508,14 @@
                         nodes.forEach(n => {
 
                             const optionValue = String(getItemId(n));
-                            const selectedValue = selectedId ? String(selectedId) : '';
+                            
+                            // Handle both single selectedId and array of selectedIds
+                            let isSelected = false;
+                            if (Array.isArray(selectedId)) {
+                                isSelected = selectedId.includes(optionValue);
+                            } else if (selectedId) {
+                                isSelected = optionValue === String(selectedId);
+                            }
 
                             // disable dirinya sendiri + seluruh child
                             const disabled = invalidIds.includes(optionValue);
@@ -1440,7 +1523,7 @@
                             html += `
                                 <option 
                                     value="${optionValue}"
-                                    ${optionValue === selectedValue ? 'selected' : ''}
+                                    ${isSelected ? 'selected' : ''}
                                     ${disabled ? 'disabled' : ''}
                                 >
                                     ${prefix}${n.position_name}
@@ -1465,7 +1548,7 @@
                     if (select) {
 
                         select.innerHTML =
-                            '<option value="">Root / Tidak ada induk</option>' +
+                            '<option value="">-- Pilih Posisi Induk --</option>' +
                             build(data.tree || []);
                     }
 
@@ -1643,13 +1726,13 @@
                 return map[level] || 'bg-light text-dark';
             };
 
-            const renderAccordionStructure = (items) => {
+            const renderAccordionStructure = (allStructures, roots) => {
 
                 const container = document.getElementById(
                     'accordionStructureContainer'
                 );
 
-                if (!items || !items.length) {
+                if (!allStructures || !allStructures.length) {
 
                     container.innerHTML = `
                         <div class="text-center py-5 text-muted">
@@ -1660,15 +1743,21 @@
                     return;
                 }
 
-                const buildAccordion = (nodes, depth = 0) => {
+                // Create a map of structures by ID for easy lookup
+                const structureMap = {};
+                allStructures.forEach(s => {
+                    structureMap[s.id] = s;
+                });
 
-                    let html = `
-                        <div class="accordion structure-accordion">
-                    `;
+                const buildAccordion = (nodeIds, depth = 0) => {
 
-                    nodes.forEach(node => {
+                    let html = `<div class="accordion structure-accordion">`;
 
-                        const nodeId = `acc_${node.id}`;
+                    nodeIds.forEach(nodeId => {
+                        const node = structureMap[nodeId];
+                        if (!node) return;
+
+                        const nodeAccId = `acc_${node.id}`;
 
                         const initials = (
                                 node.jemaat?.nama_lengkap || '?'
@@ -1676,9 +1765,18 @@
                             .charAt(0)
                             .toUpperCase();
 
-                        const hasChildren =
-                            node.children &&
-                            node.children.length > 0;
+                        // Find all children of this node (children that have this node in their parent_id)
+                        const childrenIds = [];
+                        allStructures.forEach(s => {
+                            if (s.parent_id) {
+                                const parentIds = Array.isArray(s.parent_id) ? s.parent_id : [s.parent_id];
+                                if (parentIds.includes(node.id)) {
+                                    childrenIds.push(s.id);
+                                }
+                            }
+                        });
+
+                        const hasChildren = childrenIds.length > 0;
 
                         const priorityBadge =
                             node.jemaat?.priority === 'primer'
@@ -1704,7 +1802,7 @@
                                         class="accordion-button collapsed"
                                         type="button"
                                         data-bs-toggle="collapse"
-                                        data-bs-target="#${nodeId}"
+                                        data-bs-target="#${nodeAccId}"
                                     >
 
                                         <div class="structure-card">
@@ -1760,7 +1858,7 @@
                                 </h2>
 
                                 <div
-                                    id="${nodeId}"
+                                    id="${nodeAccId}"
                                     class="accordion-collapse collapse"
                                 >
 
@@ -1798,7 +1896,7 @@
                                             hasChildren
                                             ? `
                                                     <div class="structure-child">
-                                                        ${buildAccordion(node.children, depth + 1)}
+                                                        ${buildAccordion(childrenIds, depth + 1)}
                                                     </div>
                                                 `
                                             : `
@@ -1821,7 +1919,8 @@
                     return html;
                 };
 
-                container.innerHTML = buildAccordion(items);
+                // Build accordion starting from root nodes
+                container.innerHTML = buildAccordion(roots);
             };
 
 
