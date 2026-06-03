@@ -277,6 +277,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Induk Posisi (Multi-select)</label>
+                                <div id="currentParentsInfo" class="small text-primary mt-1"></div>
                                 <select name="parent_id[]" id="edit_parent_id" class="form-select" multiple>
                                     <option value="">-- Pilih Posisi Induk --</option>
                                 </select>
@@ -445,6 +446,23 @@
             z-index: 1;
         }
 
+        /* Multi-select styling untuk parent */
+        select[multiple] {
+            min-height: 120px;
+            padding: 8px !important;
+        }
+
+        select[multiple] option {
+            padding: 6px;
+            line-height: 1.5;
+        }
+
+        select[multiple] option:checked {
+            background: linear-gradient(#3b82f6, #3b82f6);
+            background-color: #3b82f6 !important;
+            color: white;
+        }
+
         .drop-zone {
             height: 35px;
             border: 2px dashed #94a3b8;
@@ -459,16 +477,22 @@
             pointer-events: auto;
             cursor: pointer;
             user-select: none;
+            background: transparent;
         }
 
         .drop-zone:hover {
             border-color: #3b82f6;
             background: #eff6ff;
+            color: #1d4ed8;
+            border-width: 2px;
         }
 
         .drop-zone.active {
-            border-color: #3b82f6;
-            background: #eff6ff;
+            border-color: #22c55e;
+            background: #f0fdf4;
+            color: #16a34a;
+            border-width: 2px;
+            box-shadow: 0 0 8px rgba(34, 197, 94, 0.3);
         }
 
         .empty-state {
@@ -1062,43 +1086,93 @@
             const drawConnectors = (items) => {
                 chartContainer.querySelectorAll('.org-connector').forEach(c => c.remove());
 
+                // Create SVG for better arrow rendering
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.style.position = 'absolute';
+                svg.style.top = '0';
+                svg.style.left = '0';
+                svg.style.width = '100%';
+                svg.style.height = '100%';
+                svg.style.pointerEvents = 'none';
+                svg.style.zIndex = '1';
+                
+                // Add marker definitions untuk arrows
+                const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+                
+                // Arrow marker untuk primary connection
+                const markerPrimary = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+                markerPrimary.setAttribute('id', 'arrowPrimary');
+                markerPrimary.setAttribute('markerWidth', '10');
+                markerPrimary.setAttribute('markerHeight', '10');
+                markerPrimary.setAttribute('refX', '9');
+                markerPrimary.setAttribute('refY', '3');
+                markerPrimary.setAttribute('orient', 'auto');
+                markerPrimary.setAttribute('markerUnits', 'strokeWidth');
+                const pathPrimary = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                pathPrimary.setAttribute('d', 'M0,0 L0,6 L9,3 z');
+                pathPrimary.setAttribute('fill', '#3b82f6');
+                markerPrimary.appendChild(pathPrimary);
+                
+                // Arrow marker untuk secondary connection
+                const markerSecondary = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+                markerSecondary.setAttribute('id', 'arrowSecondary');
+                markerSecondary.setAttribute('markerWidth', '10');
+                markerSecondary.setAttribute('markerHeight', '10');
+                markerSecondary.setAttribute('refX', '9');
+                markerSecondary.setAttribute('refY', '3');
+                markerSecondary.setAttribute('orient', 'auto');
+                markerSecondary.setAttribute('markerUnits', 'strokeWidth');
+                const pathSecondary = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                pathSecondary.setAttribute('d', 'M0,0 L0,6 L9,3 z');
+                pathSecondary.setAttribute('fill', '#f59e0b');
+                markerSecondary.appendChild(pathSecondary);
+                
+                defs.appendChild(markerPrimary);
+                defs.appendChild(markerSecondary);
+                svg.appendChild(defs);
+
                 // Helper function to draw a connector between two nodes
-                const drawConnector = (parentCenterX, parentBottomY, childCenterX, childTopY, color = '#3b82f6') => {
-                    const connector = document.createElement('div');
-                    connector.className = 'org-connector';
-
+                const drawConnector = (parentCenterX, parentBottomY, childCenterX, childTopY, isSecondary = false) => {
                     const midY = parentBottomY + ((childTopY - parentBottomY) / 2);
+                    
+                    const color = isSecondary ? '#f59e0b' : '#3b82f6';
+                    const strokeWidth = isSecondary ? '1.5' : '2';
+                    const markerName = isSecondary ? 'arrowSecondary' : 'arrowPrimary';
+                    const dashArray = isSecondary ? '5,5' : 'none';
 
-                    connector.innerHTML = `
-                        <div style="
-                            position:absolute;
-                            width:2px;
-                            background:${color};
-                            left:${parentCenterX}px;
-                            top:${parentBottomY}px;
-                            height:${midY - parentBottomY}px;
-                        "></div>
+                    // Vertical line from parent
+                    const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    path1.setAttribute('x1', parentCenterX);
+                    path1.setAttribute('y1', parentBottomY);
+                    path1.setAttribute('x2', parentCenterX);
+                    path1.setAttribute('y2', midY);
+                    path1.setAttribute('stroke', color);
+                    path1.setAttribute('stroke-width', strokeWidth);
+                    path1.setAttribute('stroke-dasharray', dashArray);
+                    svg.appendChild(path1);
 
-                        <div style="
-                            position:absolute;
-                            height:2px;
-                            background:${color};
-                            left:${Math.min(parentCenterX, childCenterX)}px;
-                            top:${midY}px;
-                            width:${Math.abs(childCenterX - parentCenterX)}px;
-                        "></div>
+                    // Horizontal line
+                    const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    path2.setAttribute('x1', Math.min(parentCenterX, childCenterX));
+                    path2.setAttribute('y1', midY);
+                    path2.setAttribute('x2', Math.max(parentCenterX, childCenterX));
+                    path2.setAttribute('y2', midY);
+                    path2.setAttribute('stroke', color);
+                    path2.setAttribute('stroke-width', strokeWidth);
+                    path2.setAttribute('stroke-dasharray', dashArray);
+                    svg.appendChild(path2);
 
-                        <div style="
-                            position:absolute;
-                            width:2px;
-                            background:${color};
-                            left:${childCenterX}px;
-                            top:${midY}px;
-                            height:${childTopY - midY}px;
-                        "></div>
-                    `;
-
-                    chartContainer.appendChild(connector);
+                    // Vertical line to child
+                    const path3 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    path3.setAttribute('x1', childCenterX);
+                    path3.setAttribute('y1', midY);
+                    path3.setAttribute('x2', childCenterX);
+                    path3.setAttribute('y2', childTopY);
+                    path3.setAttribute('stroke', color);
+                    path3.setAttribute('stroke-width', strokeWidth);
+                    path3.setAttribute('stroke-dasharray', dashArray);
+                    path3.setAttribute('marker-end', `url(#${markerName})`);
+                    svg.appendChild(path3);
                 };
 
                 // Hierarchical tree drawing
@@ -1177,11 +1251,14 @@
                             const parentCenterX = parentNode.offsetLeft + (parentNode.offsetWidth / 2);
                             const parentBottomY = parentNode.offsetTop + parentNode.offsetHeight;
 
-                            // Use a different color for secondary parent connections
-                            drawConnector(parentCenterX, parentBottomY, childCenterX, childTopY, '#f59e0b');
+                            // Use secondary connector style for additional parent connections
+                            drawConnector(parentCenterX, parentBottomY, childCenterX, childTopY, true);
                         });
                     });
                 };
+
+                // Append SVG to container
+                chartContainer.insertBefore(svg, chartContainer.firstChild);
 
                 drawMultiParentConnectors(items);
             };
@@ -1203,16 +1280,30 @@
                 draggedItem.node.style.left = newX + 'px';
                 draggedItem.node.style.top = newY + 'px';
 
+                // Hapus semua highlighting
                 document.querySelectorAll('.org-node').forEach(n => n.classList.remove('drop-hover'));
+                document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('active'));
 
                 const elements = document.elementsFromPoint(e.clientX, e.clientY);
 
-                const target = elements
-                    .map(el => el.closest('.org-node'))
-                    .find(el => el && el.dataset.id !== draggedItem.id);
+                // Cek drop-zone terlebih dahulu (prioritas utama)
+                const dropZone = elements.find(el => el.classList && el.classList.contains('drop-zone'));
+                if (dropZone && dropZone.dataset.parentId !== draggedItem.id) {
+                    dropZone.classList.add('active');
+                    // Highlight parent node juga
+                    const parentNode = document.querySelector(`.org-node[data-id="${dropZone.dataset.parentId}"]`);
+                    if (parentNode) {
+                        parentNode.classList.add('drop-hover');
+                    }
+                } else {
+                    // Fallback: highlight org-node
+                    const target = elements
+                        .map(el => el.closest('.org-node'))
+                        .find(el => el && el.dataset.id !== draggedItem.id);
 
-                if (target) {
-                    target.classList.add('drop-hover');
+                    if (target) {
+                        target.classList.add('drop-hover');
+                    }
                 }
             };
 
@@ -1226,21 +1317,38 @@
 
                 const elements = document.elementsFromPoint(e.clientX, e.clientY);
 
-                const dropTarget = elements
-                    .map(el => el.closest('.org-node'))
-                    .find(el => el && el.dataset.id !== draggedItem.id);
+                // Cek apakah drop zone sebagai prioritas utama
+                const dropZone = elements.find(el => el.classList && el.classList.contains('drop-zone'));
+                
+                let dropTarget = null;
+                let parentId = null;
 
-                if (isDragging && dropTarget) {
+                if (dropZone) {
+                    // Drop pada drop-zone
+                    parentId = dropZone.dataset.parentId;
+                    dropTarget = document.querySelector(`.org-node[data-id="${parentId}"]`);
+                } else {
+                    // Fallback: cari org-node terdekat
+                    dropTarget = elements
+                        .map(el => el.closest('.org-node'))
+                        .find(el => el && el.dataset.id !== draggedItem.id);
+                    
+                    if (dropTarget) {
+                        parentId = dropTarget.dataset.id;
+                    }
+                }
 
-                    if (isDescendant(draggedItem.id, dropTarget.dataset.id, structuresData)) {
-                        showToast('error', 'Tidak bisa memindahkan ke dalam bawahan sendiri');
+                if (isDragging && dropTarget && parentId) {
+
+                    if (isDescendant(draggedItem.id, parentId, structuresData)) {
+                        showToast('error', '❌ Tidak bisa dipindahkan ke child/descendant-nya sendiri');
 
                         loadStructure();
                         draggedItem = null;
                         return;
                     }
 
-                    reorderItem(draggedItem.id, dropTarget.dataset.id);
+                    reorderItem(draggedItem.id, parentId);
                 } else {
                     loadStructure();
                 }
@@ -1252,55 +1360,96 @@
                 }, 100);
             };
 
-            const isDescendant = (draggedId, targetId, nodes) => {
-
-                draggedId = String(draggedId);
-                targetId = String(targetId);
-
-                // cari node yang sedang dipindah
-                const findNode = (items, id) => {
-
+            // Helper function: dapatkan semua descendant IDs dari sebuah node
+            const getDescendantIds = (nodeId, nodes) => {
+                const descendants = new Set();
+                
+                const collectDescendants = (id, items) => {
                     for (const item of items) {
-
-                        if (String(item.id) === id) {
-                            return item;
+                        if (String(item.id) === String(id)) {
+                            if (item.children && item.children.length > 0) {
+                                item.children.forEach(child => {
+                                    descendants.add(String(child.id));
+                                    collectDescendants(String(child.id), items);
+                                });
+                            }
+                            return;
                         }
-
-                        if (item.children && item.children.length) {
-
-                            const found = findNode(item.children, id);
-
-                            if (found) return found;
-                        }
-                    }
-
-                    return null;
-                };
-
-                // cek apakah target ada di bawah node tersebut
-                const containsChild = (node, id) => {
-
-                    if (!node.children) return false;
-
-                    for (const child of node.children) {
-
-                        if (String(child.id) === id) {
-                            return true;
-                        }
-
-                        if (containsChild(child, id)) {
-                            return true;
+                        
+                        if (item.children && item.children.length > 0) {
+                            collectDescendants(id, item.children);
                         }
                     }
-
-                    return false;
                 };
+                
+                // Flatten dan cari di seluruh struktur
+                const flattenAll = (items) => {
+                    let all = [...items];
+                    items.forEach(item => {
+                        if (item.children && item.children.length > 0) {
+                            all = all.concat(flattenAll(item.children));
+                        }
+                    });
+                    return all;
+                };
+                
+                collectDescendants(nodeId, flattenAll(nodes));
+                return Array.from(descendants);
+            };
 
-                const draggedNode = findNode(nodes, draggedId);
+            // Helper function: cek apakah itemA adalah ancestor/parent dari itemB (handle multiple parents)
+            const isAncestorOf = (potentialAncestorId, targetId, allData) => {
+                potentialAncestorId = String(potentialAncestorId);
+                targetId = String(targetId);
+                
+                if (potentialAncestorId === targetId) return false;
+                
+                // Buat map dari semua items (handle multiple parents scenario)
+                const itemMap = new Map();
+                const allItems = [];
+                
+                const flattenItems = (items) => {
+                    items.forEach(item => {
+                        itemMap.set(String(item.id), item);
+                        allItems.push(item);
+                        if (item.children && item.children.length > 0) {
+                            flattenItems(item.children);
+                        }
+                    });
+                };
+                
+                flattenItems(allData);
+                
+                // Cari target dan check apakah potentialAncestor ada di parent chain-nya
+                const targetItem = itemMap.get(targetId);
+                if (!targetItem) return false;
+                
+                // Check direct parents (handle multiple parents)
+                if (targetItem.parent_id) {
+                    const parentIds = Array.isArray(targetItem.parent_id) 
+                        ? targetItem.parent_id 
+                        : [targetItem.parent_id];
+                    
+                    // Jika potentialAncestor adalah salah satu parent
+                    if (parentIds.includes(potentialAncestorId)) {
+                        return true;
+                    }
+                    
+                    // Recursive check: apakah potentialAncestor adalah ancestor dari parents
+                    for (const parentId of parentIds) {
+                        if (isAncestorOf(potentialAncestorId, parentId, allData)) {
+                            return true;
+                        }
+                    }
+                }
+                
+                return false;
+            };
 
-                if (!draggedNode) return false;
-
-                return containsChild(draggedNode, targetId);
+            const isDescendant = (draggedId, targetId, nodes) => {
+                // Gunakan isAncestorOf untuk handle multiple parents
+                // draggedId tidak boleh menjadi ancestor dari targetId
+                return isAncestorOf(draggedId, targetId, nodes);
             };
 
             const reorderItem = async (itemId, newParentId) => {
@@ -1315,7 +1464,7 @@
                         body: JSON.stringify({
                             items: [{
                                 id: itemId,
-                                parent_id: newParentId,
+                                parent_id: [newParentId],
                                 sort_order: 0
                             }]
                         })
@@ -1444,48 +1593,43 @@
                         return false;
                     };
 
-                    // ambil semua descendant dari current item
+                    // ambil semua descendant dari current item (handle multiple parents)
                     const getInvalidIds = (nodes, currentId) => {
 
-                        let invalidIds = [];
-
-                        const findCurrent = (node) => {
-
-                            if (String(getItemId(node)) === String(currentId)) {
-
-                                collectChildren(node);
-
-                                return true;
-                            }
-
-                            if (node.children) {
-
-                                for (const child of node.children) {
-
-                                    if (findCurrent(child)) {
-                                        return true;
-                                    }
+                        let invalidIds = new Set();
+                        
+                        // Buat map dari semua items
+                        const itemMap = new Map();
+                        const flattenItems = (items) => {
+                            items.forEach(item => {
+                                itemMap.set(String(getItemId(item)), item);
+                                if (item.children && item.children.length > 0) {
+                                    flattenItems(item.children);
                                 }
-                            }
-
-                            return false;
+                            });
                         };
+                        flattenItems(nodes);
 
-                        const collectChildren = (node) => {
+                        // Item itu sendiri tidak boleh dipilih
+                        invalidIds.add(String(currentId));
 
-                            invalidIds.push(String(getItemId(node)));
-
-                            if (node.children) {
-
-                                node.children.forEach(child => {
-                                    collectChildren(child);
+                        // Kumpulkan semua descendants
+                        const collectAllDescendants = (id) => {
+                            const item = itemMap.get(String(id));
+                            if (!item) return;
+                            
+                            if (item.children && item.children.length > 0) {
+                                item.children.forEach(child => {
+                                    const childId = String(getItemId(child));
+                                    invalidIds.add(childId);
+                                    collectAllDescendants(childId);
                                 });
                             }
                         };
 
-                        nodes.forEach(node => findCurrent(node));
+                        collectAllDescendants(currentId);
 
-                        return invalidIds;
+                        return Array.from(invalidIds);
                     };
 
                     let invalidIds = [];
@@ -1512,7 +1656,7 @@
                             // Handle both single selectedId and array of selectedIds
                             let isSelected = false;
                             if (Array.isArray(selectedId)) {
-                                isSelected = selectedId.includes(optionValue);
+                                isSelected = selectedId.some(id => String(id) === optionValue);
                             } else if (selectedId) {
                                 isSelected = optionValue === String(selectedId);
                             }
@@ -1526,6 +1670,7 @@
                                     ${isSelected ? 'selected' : ''}
                                     ${disabled ? 'disabled' : ''}
                                 >
+                                    ${isSelected ? '✓ ' : ''}
                                     ${prefix}${n.position_name}
                                     ${disabled ? ' (tidak valid)' : ''}
                                 </option>
@@ -1544,12 +1689,46 @@
                     };
 
                     const select = document.getElementById(selectId);
+                    const info = document.getElementById('currentParentsInfo');
 
                     if (select) {
 
                         select.innerHTML =
-                            '<option value="">-- Pilih Posisi Induk --</option>' +
+                            '<option value="">-- Tidak ada parent (Bisa dipilih multiple atau kosongkan) --</option>' +
                             build(data.tree || []);
+
+                        const selectedParents = selectedId
+                            ? (Array.isArray(selectedId) ? selectedId : [selectedId])
+                            : [];
+
+                        if (selectedParents.length > 0) {
+
+                            const parentNames = [];
+
+                            selectedParents.forEach(id => {
+
+                                const option = select.querySelector(`option[value="${id}"]`);
+
+                                if (option) {
+
+                                    option.selected = true;
+
+                                    parentNames.push(option.textContent.trim());
+                                }
+                            });
+
+                            if (info) {
+                                info.innerHTML =
+                                    `<strong>Parent saat ini:</strong> ${parentNames.join(', ')}`;
+                            }
+
+                        } else {
+
+                            if (info) {
+                                info.innerHTML =
+                                    '<span class="text-muted">Parent saat ini: Tidak ada</span>';
+                            }
+                        }
                     }
 
                     return true;
@@ -1600,6 +1779,22 @@
                 e.preventDefault();
 
                 const id = document.getElementById('edit_id').value;
+                
+                // Validasi: cek apakah parent yang dipilih adalah ancestor/descendant dari item ini
+                const parentSelects = document.getElementById('edit_parent_id');
+                if (parentSelects && id && id !== 'new-child') {
+                    const selectedParents = Array.from(parentSelects.selectedOptions).map(opt => opt.value).filter(v => v);
+                    
+                    // Check apakah item ini adalah ancestor dari salah satu selected parent
+                    const hasInvalidParent = selectedParents.some(parentId => {
+                        return isAncestorOf(String(id), String(parentId), structuresData);
+                    });
+                    
+                    if (hasInvalidParent) {
+                        showToast('error', '❌ Tidak boleh memindahkan ke child/descendant-nya sendiri');
+                        return;
+                    }
+                }
 
                 const btn = this.querySelector('button[type="submit"]');
 
@@ -1709,6 +1904,61 @@
                         customInputId: 'position_level_add_custom',
                         hiddenInputId: 'position_level_add_hidden'
                     });
+
+                }, 100);
+            });
+
+            document.getElementById('modalEdit').addEventListener('shown.bs.modal', async () => {
+
+                // await loadParentsOptions('edit_parent_id');
+
+                setTimeout(() => {
+
+                    initJemaatSelect(
+                        'edit_jemaat_id',
+                        window.currentEditItem?.jemaat?.id
+                    );
+
+                    handlePriorityValidation(
+                        'edit_jemaat_id',
+                        'edit_'
+                    );
+
+                    initPositionLevel({
+                        selectId: 'edit_position_level_select',
+                        customInputId: 'edit_position_level_custom',
+                        hiddenInputId: 'edit_position_level_hidden',
+                        currentValue: window.currentEditItem?.position_level
+                    });
+
+                    // Tambahkan handler untuk clear parent selection
+                    const editParentSelect = document.getElementById('edit_parent_id');
+                    if (editParentSelect) {
+                        // Add clear button next to label jika belum ada
+                        const label = editParentSelect.previousElementSibling;
+                        let clearBtn = document.getElementById('btnClearParentSelect');
+                        
+                        if (!clearBtn && label) {
+                            clearBtn = document.createElement('button');
+                            clearBtn.id = 'btnClearParentSelect';
+                            clearBtn.type = 'button';
+                            clearBtn.className = 'btn btn-sm btn-outline-secondary ms-2';
+                            clearBtn.innerHTML = '<i class="ri-close-line me-1"></i>Hapus Semua';
+                            clearBtn.onclick = (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                Array.from(editParentSelect.options).forEach(opt => {
+                                    opt.selected = false;
+                                });
+                                editParentSelect.focus();
+                                showToast('success', 'Seleksi parent dihapus');
+                            };
+                            
+                            if (label) {
+                                label.parentElement.insertBefore(clearBtn, label.nextSibling);
+                            }
+                        }
+                    }
 
                 }, 100);
             });
