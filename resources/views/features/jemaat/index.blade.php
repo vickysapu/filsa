@@ -12,8 +12,8 @@
 
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
             <div>
-                <h1 class="h3 mb-1 fw-bold">Data Jemaat</h1>
-                <p class="text-muted-custom mb-0">Kelola data anggota jemaat Gereja Filadelfia</p>
+                <h1 class="h3 mb-1 fw-bold" style="font-family: 'Playfair Display', Georgia, serif; letter-spacing: -0.01em;">Data Jemaat</h1>
+                <p class="text-muted-custom mb-0">Kelola data anggota dan pertumbuhan jemaat Gereja Filadelfia</p>
             </div>
             <button type="button" class="btn btn-custom btn-tambah-jemaat" data-bs-toggle="modal"
                 data-bs-target="#modalJemaatForm">
@@ -108,6 +108,25 @@
         </div>
 
         <div class="card-custom">
+            {{-- DataTable Toolbar --}}
+            <div class="dt-toolbar">
+                <div class="dt-entries">
+                    <label>Tampilkan</label>
+                    <select onchange="var p=new URLSearchParams(window.location.search);p.set('per_page',this.value);p.set('page',1);window.location.href='{{ url()->current() }}?'+p.toString()">
+                        @foreach([10,25,50,100] as $pp)
+                            <option value="{{ $pp }}" {{ request('per_page', 10) == $pp ? 'selected' : '' }}>{{ $pp }}</option>
+                        @endforeach
+                    </select>
+                    <label>entri</label>
+                </div>
+                <div class="dt-search">
+                    <div class="dt-search-wrap">
+                        <i class="ri-search-line"></i>
+                        <input type="text" placeholder="Cari nama, NIK, email..." value="{{ request('search') }}"
+                            onkeydown="if(event.key==='Enter'){var p=new URLSearchParams(window.location.search);p.set('search',this.value);p.set('page',1);window.location.href='{{ url()->current() }}?'+p.toString();}">
+                    </div>
+                </div>
+            </div>
             <div class="table-responsive">
                 <table class="table table-hover mb-0 align-middle" id="tabel-jemaat">
                     <thead class="bg-body-tertiary">
@@ -202,14 +221,18 @@
 
             @if ($jemaats->hasPages())
                 <div
-                    class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 p-4 border-top border-custom">
-                    <span class="text-muted-custom small">
-                        Menampilkan {{ $jemaats->firstItem() }} - {{ $jemaats->lastItem() }} dari {{ $jemaats->total() }}
+                    class="dt-footer">
+                    <span class="dt-info">
+                        Menampilkan {{ $jemaats->firstItem() }}–{{ $jemaats->lastItem() }} dari {{ $jemaats->total() }}
                         data
                     </span>
                     <div>
-                        {{ $jemaats->links('pagination::simple-bootstrap-4') }}
+                        {{ $jemaats->withQueryString()->links('pagination::simple-bootstrap-4') }}
                     </div>
+                </div>
+            @else
+                <div class="dt-footer">
+                    <span class="dt-info">Menampilkan {{ $jemaats->count() }} dari {{ $jemaats->total() }} data</span>
                 </div>
             @endif
         </div>
@@ -543,35 +566,37 @@
         }
 
         .avatar-placeholder {
-            background: var(--accent-blue);
-            color: white;
+            background: var(--zaitun-primary, #718F50);
+            color: #FBF8EE;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 600;
+            font-weight: 700;
             font-size: 1.1rem;
         }
 
         .badge-status-success {
-            background: rgba(34, 197, 94, 0.1);
-            color: #22c55e;
-            border: 1px solid rgba(34, 197, 94, 0.25);
-            padding: 0.4em 0.75em;
-            font-weight: 500;
-            font-size: 0.8rem;
+            background: rgba(169, 199, 125, 0.22);
+            color: #3A4C2E;
+            border: 1px solid rgba(169, 199, 125, 0.45);
+            padding: 0.4em 0.8em;
+            font-weight: 600;
+            font-size: 0.78rem;
             display: inline-flex;
             align-items: center;
+            border-radius: var(--radius-sm);
         }
 
         .badge-status-danger {
-            background: rgba(239, 68, 68, 0.1);
-            color: #ef4444;
-            border: 1px solid rgba(239, 68, 68, 0.25);
-            padding: 0.4em 0.75em;
-            font-weight: 500;
-            font-size: 0.8rem;
+            background: rgba(125, 72, 86, 0.15);
+            color: var(--zaitun-ripe, #7D4856);
+            border: 1px solid rgba(125, 72, 86, 0.35);
+            padding: 0.4em 0.8em;
+            font-weight: 600;
+            font-size: 0.78rem;
             display: inline-flex;
             align-items: center;
+            border-radius: var(--radius-sm);
         }
 
         .badge-secondary-custom {
@@ -579,8 +604,9 @@
             color: var(--text-secondary);
             border: 1px solid var(--border-color);
             padding: 0.35em 0.65em;
-            font-size: 0.75rem;
+            font-size: 0.74rem;
             font-weight: 500;
+            border-radius: var(--radius-sm);
         }
 
         .btn-action {
@@ -600,36 +626,39 @@
 
         .btn-action:hover {
             transform: translateY(-2px);
-            box-shadow: var(--shadow-sm);
+            box-shadow: var(--shadow-md);
         }
 
         .btn-action-info {
-            border-color: var(--accent-blue);
-            color: var(--accent-blue);
+            border-color: rgba(113, 143, 80, 0.4);
+            color: var(--zaitun-primary, #718F50);
         }
 
         .btn-action-info:hover {
-            background: var(--accent-blue);
-            color: white;
+            background: var(--zaitun-primary, #718F50);
+            border-color: var(--zaitun-primary, #718F50);
+            color: #FBF8EE;
         }
 
         .btn-action-primary {
-            border-color: var(--accent-blue);
-            color: var(--accent-blue);
+            border-color: rgba(113, 143, 80, 0.4);
+            color: var(--zaitun-primary, #718F50);
         }
 
         .btn-action-primary:hover {
-            background: var(--accent-blue);
-            color: white;
+            background: var(--zaitun-primary, #718F50);
+            border-color: var(--zaitun-primary, #718F50);
+            color: #FBF8EE;
         }
 
         .btn-action-danger {
-            border-color: #ef4444;
-            color: #ef4444;
+            border-color: rgba(125, 72, 86, 0.4);
+            color: var(--zaitun-ripe, #7D4856);
         }
 
         .btn-action-danger:hover {
-            background: #ef4444;
+            background: var(--zaitun-ripe, #7D4856);
+            border-color: var(--zaitun-ripe, #7D4856);
             color: white;
         }
 
@@ -646,8 +675,9 @@
 
         .form-control-custom:focus,
         .form-select-custom:focus {
-            border-color: var(--accent-blue);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+            border-color: var(--zaitun-primary, #718F50);
+            box-shadow: 0 0 0 3px rgba(113, 143, 80, 0.15);
+        }
             outline: none;
         }
 
@@ -695,7 +725,7 @@
         }
 
         .form-switch-custom .form-check-input-custom:checked {
-            background-color: var(--accent-blue);
+            background-color: var(--zaitun-primary, #718F50);
         }
 
         .textarea-custom {
@@ -733,9 +763,9 @@
         }
 
         .alert-custom-error {
-            background: rgba(239, 68, 68, 0.1);
-            border-left: 4px solid #ef4444;
-            color: #ef4444;
+            background: rgba(125, 72, 86, 0.1);
+            border-left: 4px solid var(--zaitun-ripe, #7D4856);
+            color: var(--zaitun-ripe, #7D4856);
             padding: 0.75rem 1rem;
             border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
         }
@@ -749,8 +779,8 @@
             width: 72px;
             height: 72px;
             border-radius: 50%;
-            background: rgba(239, 68, 68, 0.1);
-            color: #ef4444;
+            background: rgba(125, 72, 86, 0.12);
+            color: var(--zaitun-ripe, #7D4856);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -763,13 +793,13 @@
             height: 80px;
             border-radius: 50%;
             background: var(--bg-body);
-            color: var(--text-secondary);
+            color: var(--zaitun-young, #A9C77D);
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto;
             font-size: 2.5rem;
-            opacity: 0.5;
+            opacity: 0.7;
         }
 
         .pagination .page-link {
@@ -784,9 +814,9 @@
 
         .pagination .page-link:hover,
         .pagination .page-item.active .page-link {
-            background: var(--accent-blue);
-            border-color: var(--accent-blue);
-            color: white;
+            background: var(--zaitun-primary, #718F50);
+            border-color: var(--zaitun-primary, #718F50);
+            color: #FBF8EE;
         }
 
         .pagination .page-item.disabled .page-link {
@@ -800,6 +830,22 @@
 
         [data-theme="dark"] .avatar-table {
             border-color: var(--bg-sidebar);
+        }
+
+        /* Table header styling */
+        thead.bg-body-tertiary {
+            background-color: rgba(247, 245, 237, 0.7) !important;
+        }
+
+        [data-theme="dark"] thead.bg-body-tertiary {
+            background-color: rgba(30, 43, 34, 0.9) !important;
+        }
+
+        table.table thead th {
+            border-bottom: 2px solid var(--border-color) !important;
+            font-size: 0.72rem;
+            letter-spacing: 0.06em;
+            color: var(--text-secondary) !important;
         }
 
         @media (max-width: 768px) {

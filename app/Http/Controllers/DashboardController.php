@@ -24,7 +24,7 @@ class DashboardController extends Controller
             'doa_urgent' => 3,
         ];
 
-        $upcoming_events = Event::where('tanggal_mulai', '>=', now())->orderBy('tanggal_mulai', 'asc')->take(4)->get();
+        $upcoming_events = Event::with('kategori')->where('tanggal_mulai', '>=', now())->orderBy('tanggal_mulai', 'asc')->take(6)->get();
 
         $birthdays = Jemaat::whereMonth('tanggal_lahir', now()->month)
             ->take(5)

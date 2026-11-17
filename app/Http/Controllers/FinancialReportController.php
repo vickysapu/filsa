@@ -113,8 +113,11 @@ class FinancialReportController extends Controller
             ->where('status', 'submitted')
             ->count();
 
+        $perPage = (int) request()->get('per_page', 20);
+        $perPage = in_array($perPage, [10, 20, 25, 50, 100]) ? $perPage : 20;
+
         return view('features.finance.reports.index', [
-            'reports' => $query->paginate(20),
+            'reports' => $query->paginate($perPage)->withQueryString(),
             'pendingCount' => $pendingCount,
             'categories' => $this->getReportCategories(),
             'groups' => $this->getReportGroups(),

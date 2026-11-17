@@ -83,29 +83,43 @@
 
         <!-- Data Table -->
         <div class="card-custom">
+            {{-- DataTable Toolbar --}}
+            <div class="dt-toolbar">
+                <div class="dt-entries">
+                    <label>Tampilkan</label>
+                    <select onchange="var p=new URLSearchParams(window.location.search);p.set('per_page',this.value);p.set('page',1);window.location.href='{{ url()->current() }}?'+p.toString()">
+                        @foreach([10,25,50,100] as $pp)
+                            <option value="{{ $pp }}" {{ request('per_page', 10) == $pp ? 'selected' : '' }}>{{ $pp }}</option>
+                        @endforeach
+                    </select>
+                    <label>entri</label>
+                </div>
+                <div class="dt-search">
+                    <div class="dt-search-wrap">
+                        <i class="ri-search-line"></i>
+                        <input type="text" placeholder="Cari laporan..." value="{{ request('search') }}"
+                            onkeydown="if(event.key==='Enter'){var p=new URLSearchParams(window.location.search);p.set('search',this.value);p.set('page',1);window.location.href='{{ url()->current() }}?'+p.toString();}">
+                    </div>
+                </div>
+            </div>
             <div class="table-responsive">
                 <table class="table table-hover mb-0 align-middle">
                     <thead class="bg-body-tertiary">
                         <tr>
                             <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold">Periode</th>
                             <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold">Tipe</th>
-                            <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold text-end">
-                                Pemasukan</th>
-                            <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold text-end">
-                                Pengeluaran</th>
-                            <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold text-end">Saldo
-                                Akhir</th>
+                            <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold text-end">Pemasukan</th>
+                            <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold text-end">Pengeluaran</th>
+                            <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold text-end">Saldo Akhir</th>
                             <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold">Status</th>
-                            <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold">Tujuan / Dari
-                            </th>
-                            <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold text-center">
-                                Aksi</th>
+                            <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold">Tujuan / Dari</th>
+                            <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($reports as $report)
                             <tr class="border-bottom border-custom">
-                                <td class="py-3 px-4">
+                                <td class="py-3 px-4 date-cell">
                                     <div class="fw-semibold">
                                         @if ($report->report_type === 'monthly')
                                             {{ \Carbon\Carbon::create()->month($report->report_month)->year($report->report_year)->format('F Y') }}
@@ -123,19 +137,19 @@
                                         {{ $report->report_type === 'monthly' ? 'Bulanan' : 'Tahunan' }}
                                     </span>
                                 </td>
-                                <td class="py-3 px-4 text-end">
-                                    <span class="text-success fw-medium">
-                                        Rp {{ number_format((float) $report->total_income, 0, ',', '.') }}
+                                <td class="py-3 px-4 amount-cell text-end">
+                                    <span class="text-success fw-medium" style="white-space:nowrap">
+                                        Rp&nbsp;{{ number_format((float) $report->total_income, 0, ',', '.') }}
                                     </span>
                                 </td>
-                                <td class="py-3 px-4 text-end">
-                                    <span class="text-danger fw-medium">
-                                        Rp {{ number_format((float) $report->total_expense, 0, ',', '.') }}
+                                <td class="py-3 px-4 amount-cell text-end">
+                                    <span class="text-danger fw-medium" style="white-space:nowrap">
+                                        Rp&nbsp;{{ number_format((float) $report->total_expense, 0, ',', '.') }}
                                     </span>
                                 </td>
-                                <td class="py-3 px-4 text-end">
-                                    <span class="fw-bold text-primary">
-                                        Rp {{ number_format((float) $report->closing_balance, 0, ',', '.') }}
+                                <td class="py-3 px-4 amount-cell text-end">
+                                    <span class="fw-bold text-primary" style="white-space:nowrap">
+                                        Rp&nbsp;{{ number_format((float) $report->closing_balance, 0, ',', '.') }}
                                     </span>
                                 </td>
                                 <td class="py-3 px-4">
@@ -212,8 +226,17 @@
 
             <!-- Pagination -->
             @if ($reports->hasPages())
-                <div class="d-flex justify-content-center p-4 border-top border-custom">
-                    {{ $reports->withQueryString()->links('pagination::simple-bootstrap-4') }}
+                <div class="dt-footer">
+                    <span class="dt-info">
+                        Menampilkan {{ $reports->firstItem() }}–{{ $reports->lastItem() }} dari {{ $reports->total() }} data
+                    </span>
+                    <div>
+                        {{ $reports->withQueryString()->links('pagination::simple-bootstrap-4') }}
+                    </div>
+                </div>
+            @else
+                <div class="dt-footer">
+                    <span class="dt-info">Menampilkan {{ $reports->count() }} data</span>
                 </div>
             @endif
         </div>

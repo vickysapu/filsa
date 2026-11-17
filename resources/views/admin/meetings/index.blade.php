@@ -105,6 +105,25 @@ function getStatusBadgeClass($m)
 
         <!-- Data Table -->
         <div class="card-custom">
+            {{-- DataTable Toolbar --}}
+            <div class="dt-toolbar">
+                <div class="dt-entries">
+                    <label>Tampilkan</label>
+                    <select onchange="var p=new URLSearchParams(window.location.search);p.set('per_page',this.value);p.set('page',1);window.location.href='{{ url()->current() }}?'+p.toString()">
+                        @foreach([10,25,50,100] as $pp)
+                            <option value="{{ $pp }}" {{ request('per_page', 10) == $pp ? 'selected' : '' }}>{{ $pp }}</option>
+                        @endforeach
+                    </select>
+                    <label>entri</label>
+                </div>
+                <div class="dt-search">
+                    <div class="dt-search-wrap">
+                        <i class="ri-search-line"></i>
+                        <input type="text" placeholder="Cari nama meeting..." value="{{ request('search') }}"
+                            onkeydown="if(event.key==='Enter'){var p=new URLSearchParams(window.location.search);p.set('search',this.value);p.set('page',1);window.location.href='{{ url()->current() }}?'+p.toString();}">
+                    </div>
+                </div>
+            </div>
             <div class="table-responsive">
                 <table class="table table-hover mb-0 align-middle">
                     <thead class="bg-body-tertiary">
@@ -188,8 +207,17 @@ function getStatusBadgeClass($m)
 
             <!-- Pagination -->
             @if ($meetings->hasPages())
-                <div class="d-flex justify-content-center p-4 border-top border-custom" id="paginationContainer">
-                    {{ $meetings->links('pagination::simple-bootstrap-4') }}
+                <div class="dt-footer">
+                    <span class="dt-info">
+                        Menampilkan {{ $meetings->firstItem() }}–{{ $meetings->lastItem() }} dari {{ $meetings->total() }} data
+                    </span>
+                    <div>
+                        {{ $meetings->withQueryString()->links('pagination::simple-bootstrap-4') }}
+                    </div>
+                </div>
+            @else
+                <div class="dt-footer">
+                    <span class="dt-info">Menampilkan {{ $meetings->count() }} data</span>
                 </div>
             @endif
         </div>

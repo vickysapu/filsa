@@ -99,7 +99,9 @@ class FinancialTransactionController extends Controller
             ]);
         }
 
-        $transactions = $query->paginate(20);
+        $perPage = (int) $request->get('per_page', 20);
+        $perPage = in_array($perPage, [10, 20, 25, 50, 100]) ? $perPage : 20;
+        $transactions = $query->paginate($perPage)->withQueryString();
 
         return view('features.finance.transactions.index', compact('transactions', 'categories', 'groups'));
     }

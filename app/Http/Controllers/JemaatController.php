@@ -62,7 +62,9 @@ class JemaatController extends Controller
             $query->where('status_jemaat', (bool) $request->status_jemaat);
         }
 
-        $jemaats = $query->latest()->paginate(15)->withQueryString();
+        $perPage = (int) $request->get('per_page', 15);
+        $perPage = in_array($perPage, [10, 15, 25, 50, 100]) ? $perPage : 15;
+        $jemaats = $query->latest()->paginate($perPage)->withQueryString();
 
         if ($request->ajax()) {
             return view('features.jemaat._table', compact('jemaats', 'isSuperAdmin'))->render();
