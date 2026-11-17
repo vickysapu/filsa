@@ -1,0 +1,1330 @@
+@import 'bootstrap/scss/bootstrap';
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --bs-primary:        #d97706;
+    --bs-primary-rgb:    217, 119, 6;
+    --bs-link-color:     #d97706;
+    --bs-link-hover-color: #92400e;
+
+    --lux-primary:       #d97706;
+    --lux-primary-dark:  #92400e;
+    --lux-primary-light: #f59e0b;
+    --lux-primary-bg:    #fffbeb;
+
+    --lux-success:       #059669;
+    --lux-danger:        #dc2626;
+    --lux-warning:       #d97706;
+    --lux-info:          #0284c7;
+
+    --lux-radius:        6px;
+    --lux-radius-lg:     10px;
+    --lux-shadow:        0 10px 25px -5px rgba(0,0,0,0.1);
+}
+
+/* ── GLOBAL RESET & BASE ── */
+* { box-sizing: border-box; }
+body {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    background: #ffffff;
+    color: #111827;
+}
+
+/* ── MODAL – Mapping lux → bootstrap behavior ── */
+.lux-modal-overlay {
+    --bs-backdrop-bg:           rgba(15, 23, 42, 0.65);
+    --bs-backdrop-opacity:      1;
+    --bs-modal-width:           500px;
+    --bs-modal-border-radius:   var(--lux-radius-lg);
+    --bs-modal-box-shadow:      var(--lux-shadow);
+
+    position: fixed;
+    inset: 0;
+    z-index: 1060;              /* bootstrap default modal z-index */
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bs-backdrop-bg);
+    opacity: 0;
+    transition: opacity .15s linear;
+    pointer-events: none;
+}
+
+.lux-modal-overlay.show {
+    display: flex;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Modal dialog wrapper */
+.lux-modal {
+    position: relative;
+    width: 100%;
+    max-width: var(--bs-modal-width);
+    margin: 1.75rem auto;
+    pointer-events: auto;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid rgba(0,0,0,.2);
+    border-radius: var(--bs-modal-border-radius);
+    box-shadow: var(--bs-modal-box-shadow);
+    transform: translate(0, -50px);
+    transition: transform .3s ease-out;
+}
+
+.lux-modal-overlay.show .lux-modal {
+    transform: translate(0, 0);
+}
+
+/* Header, Body, Footer */
+.lux-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+    background: linear-gradient(to right, #f8fafc, #ffffff);
+}
+
+.lux-modal-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.lux-modal-close {
+    background: transparent;
+    border: none;
+    font-size: 1.6rem;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 50%;
+    line-height: 1;
+}
+
+.lux-modal-close:hover {
+    color: #dc2626;
+    background: #fee2e2;
+    transform: rotate(90deg);
+    transition: all 0.2s;
+}
+
+.lux-modal-body {
+    position: relative;
+    flex: 1 1 auto;
+    padding: 1.5rem;
+}
+
+.lux-modal-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    background: #f8fafc;
+}
+
+/* ── ANIMASI FADE (mirip bootstrap .fade) ── */
+.lux-modal-overlay.fade {
+    transition: opacity .15s linear;
+}
+.lux-modal-overlay.fade.show {
+    opacity: 1;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 576px) {
+    .lux-modal {
+        margin: 0.5rem;
+    }
+    .lux-modal-footer {
+        flex-direction: column-reverse;
+    }
+    .lux-modal-footer > * {
+        width: 100%;
+    }
+}
+
+/* ── BUTTONS tetap luxury tapi support bootstrap color vars ── */
+.lux-btn {
+    --bs-btn-padding-x:       1rem;
+    --bs-btn-padding-y:       0.5rem;
+    --bs-btn-font-weight:     500;
+    --bs-btn-border-radius:   var(--lux-radius);
+}
+
+.lux-btn-primary {
+    --bs-btn-color:           #fff;
+    --bs-btn-bg:              var(--lux-primary);
+    --bs-btn-border-color:    var(--lux-primary);
+    --bs-btn-hover-bg:        var(--lux-primary-dark);
+    --bs-btn-hover-border-color: var(--lux-primary-dark);
+}
+
+/* ... tambahkan variant lain sesuai kebutuhan (success, danger, dll) */
+
+/* ── FORM ── */
+.lux-input, .lux-textarea, .lux-select {
+    --bs-input-focus-border-color: var(--lux-primary);
+    --bs-input-focus-box-shadow: 0 0 0 0.25rem rgba(217,119,6,0.25);
+}
+
+/* ── BADGE, CARD, dll tetap pakai style luxury Anda ── */
+.lux-card {
+    border: 1px solid #e5e7eb;
+    border-radius: var(--lux-radius-lg);
+    background: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.lux-badge {
+    font-size: 0.75rem;
+    padding: 0.35em 0.65em;
+}
+
+/* =========================================
+   LUXURY CORE - CLEAN GOLD EDITION
+   Minimalist & Professional Design
+   ========================================= */
+
+/* 1. IMPORT FONT */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
+:root {
+    /* --- GOLD PALETTE (Subtle & Natural) --- */
+    --primary: #d97706;
+    --primary-light: #f59e0b;
+    --primary-dark: #92400e;
+    --primary-bg: #fffbeb;
+    
+    /* --- NEUTRAL --- */
+    --bg-body: #ffffff;
+    --bg-card: #ffffff;
+    --bg-sidebar: #1f2937;
+    --bg-hover: #f9fafb;
+    
+    --text-main: #111827;
+    --text-muted: #6b7280;
+    --text-light: #f9fafb;
+    
+    --border: #e5e7eb;
+    --border-light: #f3f4f6;
+    
+    /* --- STATUS COLORS --- */
+    --success: #059669;
+    --success-bg: #ecfdf5;
+    --warning: #d97706;
+    --warning-bg: #fffbeb;
+    --danger: #dc2626;
+    --danger-bg: #fef2f2;
+    --info: #0284c7;
+    --info-bg: #f0f9ff;
+    
+    /* --- DIMENSIONS --- */
+    --radius: 6px;
+    --radius-lg: 8px;
+    
+    /* --- TRANSITION --- */
+    --transition: all 0.2s ease;
+}
+
+/* =========================================
+   2. RESET & BASE
+   ========================================= */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: var(--bg-body);
+    color: var(--text-main);
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+a { text-decoration: none; color: inherit; }
+ul { list-style: none; }
+img { max-width: 100%; height: auto; }
+
+/* =========================================
+   3. LAYOUT UTILITIES
+   ========================================= */
+.lux-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+.lux-grid { display: grid; gap: 20px; }
+.lux-grid-2 { grid-template-columns: repeat(2, 1fr); }
+.lux-grid-3 { grid-template-columns: repeat(3, 1fr); }
+.lux-grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+@media (max-width: 1024px) { .lux-grid-4 { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 768px) { 
+    .lux-grid-2, .lux-grid-3, .lux-grid-4 { grid-template-columns: 1fr; } 
+}
+
+/* Spacing */
+.m-0 { margin: 0; } .p-0 { padding: 0; }
+.mt-1 { margin-top: 0.25rem; } .mt-2 { margin-top: 0.5rem; }
+.mt-3 { margin-top: 0.75rem; } .mt-4 { margin-top: 1rem; }
+.mt-5 { margin-top: 1.5rem; }
+.mb-1 { margin-bottom: 0.25rem; } .mb-2 { margin-bottom: 0.5rem; }
+.mb-3 { margin-bottom: 0.75rem; } .mb-4 { margin-bottom: 1rem; }
+.mb-5 { margin-bottom: 1.5rem; }
+.p-3 { padding: 0.75rem; } .p-4 { padding: 1rem; } .p-5 { padding: 1.5rem; }
+
+/* Flex */
+.flex { display: flex; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.flex-center { display: flex; justify-content: center; align-items: center; }
+.flex-wrap { flex-wrap: wrap; }
+.gap-1 { gap: 0.5rem; } .gap-2 { gap: 1rem; } .gap-3 { gap: 1.5rem; }
+
+/* Text */
+.text-center { text-align: center; }
+.text-bold { font-weight: 700; }
+.text-muted { color: var(--text-muted); }
+.text-primary { color: var(--primary); }
+.text-success { color: var(--success); }
+.text-danger { color: var(--danger); }
+.text-sm { font-size: 0.875rem; }
+.text-lg { font-size: 1.125rem; }
+.text-xl { font-size: 1.5rem; }
+.text-2xl { font-size: 1.875rem; }
+
+.text-gold {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+/* Display */
+.d-none { display: none; }
+.d-block { display: block; }
+
+/* =========================================
+   4. COMPONENT: CARD
+   ========================================= */
+.lux-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+}
+
+.lux-card:hover {
+    border-color: var(--primary);
+}
+
+.lux-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.lux-card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.lux-card-body { padding: 0; }
+
+.lux-card-footer {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-light);
+    display: flex;
+    gap: 8px;
+}
+
+/* =========================================
+   5. COMPONENT: BUTTONS
+   ========================================= */
+.lux-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: var(--radius);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: var(--transition);
+    gap: 6px;
+    font-family: inherit;
+}
+
+.lux-btn-primary {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.lux-btn-primary:hover {
+    background: var(--primary-dark);
+    border-color: var(--primary-dark);
+}
+
+.lux-btn-secondary {
+    background: var(--bg-sidebar);
+    color: white;
+    border-color: var(--bg-sidebar);
+}
+
+.lux-btn-outline {
+    background: transparent;
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
+.lux-btn-outline:hover {
+    background: var(--primary-bg);
+}
+
+.lux-btn-ghost {
+    background: transparent;
+    color: var(--text-muted);
+    border-color: transparent;
+}
+
+.lux-btn-ghost:hover {
+    background: var(--bg-hover);
+    color: var(--text-main);
+}
+
+.lux-btn-success { background: var(--success); color: white; border-color: var(--success); }
+.lux-btn-success:hover { background: #047857; }
+
+.lux-btn-danger { background: var(--danger); color: white; border-color: var(--danger); }
+.lux-btn-danger:hover { background: #b91c1c; }
+
+.lux-btn-warning { background: var(--warning); color: white; border-color: var(--warning); }
+.lux-btn-warning:hover { background: var(--primary-dark); }
+
+.lux-btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+.lux-btn-lg { padding: 12px 24px; font-size: 1rem; }
+.lux-btn-block { width: 100%; }
+.lux-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* =========================================
+   6. COMPONENT: FORMS
+   ========================================= */
+.lux-form-group { margin-bottom: 16px; }
+
+.lux-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-main);
+}
+
+.lux-input, .lux-select, .lux-textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: white;
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: var(--transition);
+    outline: none;
+    color: var(--text-main);
+}
+
+.lux-input:focus, .lux-select:focus, .lux-textarea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px var(--primary-bg);
+}
+
+.lux-textarea { min-height: 100px; resize: vertical; }
+
+.lux-form-help {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+.lux-form-error {
+    font-size: 0.8rem;
+    color: var(--danger);
+    margin-top: 4px;
+}
+
+.lux-input-danger { border-color: var(--danger); }
+.lux-input-success { border-color: var(--success); }
+
+/* Checkbox & Radio */
+.lux-checkbox, .lux-radio {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+}
+
+.lux-checkbox input, .lux-radio input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+/* =========================================
+   7. COMPONENT: BADGES
+   ========================================= */
+.lux-badge {
+    padding: 4px 10px;
+    border-radius: var(--radius);
+    font-size: 0.75rem;
+    font-weight: 500;
+    display: inline-block;
+}
+
+.lux-badge-primary { background: var(--primary-bg); color: var(--primary-dark); }
+.lux-badge-success { background: var(--success-bg); color: var(--success); }
+.lux-badge-warning { background: var(--warning-bg); color: var(--warning); }
+.lux-badge-danger { background: var(--danger-bg); color: var(--danger); }
+.lux-badge-info { background: var(--info-bg); color: var(--info); }
+.lux-badge-secondary { background: var(--bg-hover); color: var(--text-muted); }
+
+/* =========================================
+   8. COMPONENT: ALERTS
+   ========================================= */
+.lux-alert {
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid transparent;
+    font-size: 0.9rem;
+}
+
+.lux-alert-primary {
+    background: var(--primary-bg);
+    color: var(--primary-dark);
+    border-color: var(--primary);
+}
+
+.lux-alert-success {
+    background: var(--success-bg);
+    color: var(--success);
+    border-color: var(--success);
+}
+
+.lux-alert-warning {
+    background: var(--warning-bg);
+    color: var(--warning);
+    border-color: var(--warning);
+}
+
+.lux-alert-danger {
+    background: var(--danger-bg);
+    color: var(--danger);
+    border-color: var(--danger);
+}
+
+.lux-alert-close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    opacity: 0.6;
+}
+.lux-alert-close:hover { opacity: 1; }
+
+/* =========================================
+   9. COMPONENT: MODAL
+   ========================================= */
+.lux-modal-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 9999;
+    display: none;
+    justify-content: center;
+    align-items: center;
+}
+
+.lux-modal-overlay.active {
+    display: flex;
+}
+
+.lux-modal {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+}
+
+.lux-modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.lux-modal-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.lux-modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-muted);
+}
+.lux-modal-close:hover { color: var(--text-main); }
+
+.lux-modal-body {
+    padding: 20px;
+}
+
+.lux-modal-footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border-light);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.lux-modal-sm { max-width: 400px; }
+.lux-modal-lg { max-width: 700px; }
+.lux-modal-xl { max-width: 900px; }
+
+/* =========================================
+   10. COMPONENT: TOAST
+   ========================================= */
+.lux-toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.lux-toast {
+    background: var(--bg-card);
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 280px;
+    font-size: 0.9rem;
+}
+
+.lux-toast-success { border-left: 3px solid var(--success); }
+.lux-toast-warning { border-left: 3px solid var(--warning); }
+.lux-toast-danger { border-left: 3px solid var(--danger); }
+.lux-toast-info { border-left: 3px solid var(--info); }
+
+.lux-toast-close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: var(--text-muted);
+}
+
+/* =========================================
+   11. COMPONENT: DROPDOWN
+   ========================================= */
+.lux-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.lux-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 180px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 4px 0;
+    z-index: 1000;
+    display: none;
+}
+
+.lux-dropdown.active .lux-dropdown-menu {
+    display: block;
+}
+
+.lux-dropdown-item {
+    display: block;
+    padding: 8px 16px;
+    color: var(--text-main);
+    font-size: 0.9rem;
+    transition: var(--transition);
+}
+
+.lux-dropdown-item:hover {
+    background: var(--bg-hover);
+    color: var(--primary);
+}
+
+.lux-dropdown-divider {
+    height: 1px;
+    background: var(--border-light);
+    margin: 4px 0;
+}
+
+/* =========================================
+   12. COMPONENT: TABS
+   ========================================= */
+.lux-tabs {
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+}
+
+.lux-tabs-list {
+    display: flex;
+    gap: 0;
+}
+
+.lux-tab {
+    padding: 10px 20px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: -1px;
+    transition: var(--transition);
+    font-family: inherit;
+    font-size: 0.9rem;
+}
+
+.lux-tab:hover {
+    color: var(--text-main);
+}
+
+.lux-tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+.lux-tab-content {
+    display: none;
+    padding: 20px 0;
+}
+
+.lux-tab-content.active {
+    display: block;
+}
+
+/* =========================================
+   13. COMPONENT: TABLES
+   ========================================= */
+.lux-table-container {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+}
+
+.lux-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-card);
+}
+
+.lux-table thead {
+    background: var(--bg-hover);
+}
+
+.lux-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+}
+
+.lux-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text-main);
+    font-size: 0.9rem;
+}
+
+.lux-table tbody tr:hover {
+    background: var(--bg-hover);
+}
+
+/* =========================================
+   14. COMPONENT: PROGRESS
+   ========================================= */
+.lux-progress {
+    width: 100%;
+    height: 6px;
+    background: var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.lux-progress-bar {
+    height: 100%;
+    background: var(--primary);
+    border-radius: var(--radius);
+    transition: width 0.3s ease;
+}
+
+.lux-progress-bar-success { background: var(--success); }
+.lux-progress-bar-warning { background: var(--warning); }
+.lux-progress-bar-danger { background: var(--danger); }
+
+/* =========================================
+   15. COMPONENT: NAVIGATION
+   ========================================= */
+.lux-navbar {
+    background: var(--bg-card);
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.lux-nav {
+    display: flex;
+    gap: 4px;
+}
+
+.lux-nav-link {
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    color: var(--text-muted);
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: var(--transition);
+}
+
+.lux-nav-link:hover, .lux-nav-link.active {
+    background: var(--bg-hover);
+    color: var(--primary);
+}
+
+/* Sidebar */
+.lux-sidebar {
+    width: 260px;
+    background: var(--bg-sidebar);
+    color: white;
+    height: 100vh;
+    position: fixed;
+    left: 0; top: 0;
+    padding: 16px;
+    z-index: 1000;
+    overflow-y: auto;
+    border-right: 1px solid rgba(255,255,255,0.1);
+}
+
+.lux-sidebar.hidden { transform: translateX(-100%); }
+
+.lux-sidebar-brand {
+    padding: 16px 12px;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.lux-sidebar-brand span { color: var(--primary-light); }
+
+.lux-nav-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    color: #9ca3af;
+    text-decoration: none;
+    border-radius: var(--radius);
+    margin-bottom: 4px;
+    transition: var(--transition);
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.lux-nav-item:hover, .lux-nav-item.active {
+    background: rgba(255,255,255,0.1);
+    color: white;
+}
+
+.lux-nav-item i { margin-right: 10px; width: 18px; text-align: center; }
+
+.lux-main-content {
+    margin-left: 260px;
+    padding: 24px;
+    min-height: 100vh;
+    background: var(--bg-body);
+}
+
+.lux-main-content.expanded { margin-left: 0; }
+
+.lux-sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.3);
+    z-index: 999;
+}
+
+.lux-sidebar-overlay.active { display: block; }
+
+@media (max-width: 768px) {
+    .lux-sidebar { transform: translateX(-100%); }
+    .lux-sidebar.active { transform: translateX(0); }
+    .lux-main-content { margin-left: 0; }
+}
+
+/* =========================================
+   16. COMPONENT: AVATAR
+   ========================================= */
+.lux-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.lux-avatar-sm { width: 28px; height: 28px; font-size: 0.75rem; }
+.lux-avatar-lg { width: 48px; height: 48px; font-size: 1.1rem; }
+
+/* =========================================
+   17. COMPONENT: SPINNER
+   ========================================= */
+.lux-spinner {
+    width: 32px;
+    height: 32px;
+    border: 2px solid var(--border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.lux-spinner-sm { width: 20px; height: 20px; }
+.lux-spinner-lg { width: 48px; height: 48px; }
+
+/* =========================================
+   18. COMPONENT: ACCORDION
+   ========================================= */
+.lux-accordion {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.lux-accordion-item {
+    border-bottom: 1px solid var(--border);
+}
+
+.lux-accordion-item:last-child {
+    border-bottom: none;
+}
+
+.lux-accordion-header {
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--bg-card);
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 500;
+    font-family: inherit;
+    font-size: 0.9rem;
+    transition: var(--transition);
+}
+
+.lux-accordion-header:hover {
+    background: var(--bg-hover);
+}
+
+.lux-accordion-header.active {
+    background: var(--bg-hover);
+    color: var(--primary);
+}
+
+.lux-accordion-content {
+    padding: 0 16px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.lux-accordion-content.active {
+    padding: 14px 16px;
+    max-height: 500px;
+}
+
+/* =========================================
+   19. COMPONENT: PAGINATION
+   ========================================= */
+.lux-pagination {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.lux-page-item {
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.85rem;
+    transition: var(--transition);
+}
+
+.lux-page-item:hover {
+    background: var(--bg-hover);
+    border-color: var(--primary);
+}
+
+.lux-page-item.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.lux-page-item.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* =========================================
+   20. SCROLLBAR
+   ========================================= */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-body);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
+}
+
+/* =========================================
+   DROPDOWN MENU STYLES
+   ========================================= */
+
+.lux-nav-item.has-dropdown {
+    cursor: pointer;
+    justify-content: space-between; 
+}
+
+.lux-nav-arrow {
+    font-size: 1rem;
+    transition: transform 0.3s ease;
+}
+
+.lux-nav-item.active .lux-nav-arrow,
+.lux-nav-item.dropdown-open .lux-nav-arrow {
+    transform: rotate(180deg);
+}
+
+.lux-submenu {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    padding-left: 10px;
+}
+
+.lux-submenu a {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    color: #94a3b8;
+    font-size: 0.9rem;
+    border-radius: var(--radius);
+    margin-bottom: 4px;
+    transition: var(--transition);
+    margin-left: 10px;
+    border-left: 2px solid transparent;
+}
+
+.lux-submenu a:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+    border-left-color: var(--accent);
+}
+
+.lux-submenu a.active {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border-left-color: var(--primary);
+}
+
+.lux-submenu a i {
+    margin-right: 10px;
+    font-size: 1.1rem;
+    opacity: 0.7;
+}
+
+/* =========================================
+   SIDEBAR SECTION LABELS (Kategori Menu)
+   ========================================= */
+
+.lux-nav-label {
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #475569; 
+    padding: 20px 16px 10px 16px;
+    margin-top: 10px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.lux-nav-label::before {
+    content: '';
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--primary), transparent);
+    border-radius: 2px;
+}
+
+.lux-sidebar .lux-nav-label {
+    color: #64748b;
+}
+
+.lux-sidebar .lux-nav-label::before {
+    background: linear-gradient(90deg, var(--accent), transparent);
+    opacity: 0.6;
+}
+
+.lux-nav-label:hover {
+    color: var(--text-main);
+    cursor: default;
+}
+
+.lux-sidebar .lux-nav-label:hover {
+    color: white;
+    opacity: 1;
+}
+
+/* =========================================
+   MODAL COMPONENT (Luxury Design)
+   ========================================= */
+
+/* Overlay Latar Belakang (Gelap & Blur) */
+.lux-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.6); /* Dark Slate dengan transparansi */
+    backdrop-filter: blur(5px); /* Efek blur kaca */
+    -webkit-backdrop-filter: blur(5px);
+    z-index: 2000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+/* State Aktif (Saat Modal Muncul) */
+.lux-modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Kotak Modal Utama */
+.lux-modal {
+    background: var(--bg-card);
+    width: 90%;
+    max-width: 500px;
+    border-radius: 16px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    transform: scale(0.9) translateY(20px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh; /* Agar tidak lebih tinggi dari layar */
+}
+
+/* Animasi Saat Modal Aktif */
+.lux-modal-overlay.active .lux-modal {
+    transform: scale(1) translateY(0);
+}
+
+/* Header Modal */
+.lux-modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(to right, #f8fafc, #ffffff);
+}
+
+.lux-modal-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-main);
+    letter-spacing: -0.5px;
+}
+
+/* Tombol Close (X) */
+.lux-modal-close {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+}
+
+.lux-modal-close:hover {
+    background: #fee2e2;
+    color: #ef4444;
+    transform: rotate(90deg);
+}
+
+/* Body Modal (Tempat Form) */
+.lux-modal-body {
+    padding: 24px;
+    overflow-y: auto; /* Scroll jika konten panjang */
+}
+
+/* Footer Modal (Tombol Aksi) */
+.lux-modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    background: #f8fafc;
+}
+
+/* Ukuran Modal Variatif */
+.lux-modal-sm { max-width: 400px; }
+.lux-modal-lg { max-width: 700px; }
+.lux-modal-xl { max-width: 900px; }
+
+/* Responsive Mobile */
+@media (max-width: 768px) {
+    .lux-modal {
+        width: 95%;
+        max-height: 95vh;
+    }
+    .lux-modal-footer {
+        flex-direction: column-reverse;
+    }
+    .lux-modal-footer .lux-btn {
+        width: 100%;
+    }
+}
+/* Utility Flex */
+.flex { display: flex; }
+.flex-wrap { flex-wrap: wrap; }
+.items-center { align-items: center; }
+.gap-1 { gap: 4px; }
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+.text-center { text-align: center; }
+.text-sm { font-size: 0.85rem; }
+.text-bold { font-weight: 700; }
+.text-muted { color: var(--text-muted); }
+.mb-3 { margin-bottom: 12px; }
+.mb-4 { margin-bottom: 16px; }
+.mb-5 { margin-bottom: 20px; }
+.mt-4 { margin-top: 16px; }
+.mt-5 { margin-top: 20px; }
+.d-inline { display: inline; }
+
+.lux-avatar-sm { width: 32px; height: 32px; font-size: 0.9rem; }
+
+/* Form Error State */
+.lux-input-danger {
+    border-color: var(--danger) !important;
+    background: #fef2f2 !important;
+}
+.lux-form-error {
+    color: var(--danger);
+    font-size: 0.75rem;
+    margin-top: 4px;
+    font-weight: 500;
+}
+
+/* Checkbox Custom */
+.lux-checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-main);
+}
+.lux-checkbox input {
+    margin-top: 4px;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary);
+    cursor: pointer;
+}

@@ -1,0 +1,31 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('event_kategoris', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->foreignUuid('branch_id')->nullable()->constrained('branches')->onDelete('cascade');
+            $table->string('nama_kategori');
+            $table->string('slug')->unique();
+            $table->text('deskripsi')->nullable();
+            $table->string('warna')->default('#4f46e5');
+            $table->string('icon')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->integer('urutan')->default(0);
+            $table->boolean('show_in_website')->default(true);
+            $table->timestamps();
+            $table->softDeletes();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('event_kategoris');
+    }
+};
