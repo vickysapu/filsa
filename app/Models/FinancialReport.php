@@ -1,13 +1,10 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-/**
- * Tambahkan relasi ini ke model FinancialReport yang sudah ada.
- * Juga pastikan calculateTotals() ada.
- */
 class FinancialReport extends Model
 {
     public $incrementing = false;
@@ -37,7 +34,7 @@ class FinancialReport extends Model
         'closing_balance' => 'decimal:2',
     ];
 
-    // ── Relasi ──────────────────────────────────────────────
+
     public function branch()
     {
         return $this->belongsTo(Branch::class);
@@ -46,11 +43,6 @@ class FinancialReport extends Model
     public function submittedToBranch()
     {
         return $this->belongsTo(Branch::class, 'submitted_to');
-    }
-
-    public function show($id)
-    {
-        $transaction = FinancialTransaction::findOrFail($id);
     }
 
     public function approver()
@@ -73,27 +65,34 @@ class FinancialReport extends Model
         return $this->hasMany(FinancialReportDetail::class);
     }
 
-    /**
-     * Riwayat pengiriman / forwarding laporan (BARU)
-     */
     public function forwards()
     {
         return $this->hasMany(FinancialReportForward::class)->orderBy('forwarded_at');
     }
 
-    // ── Business Logic ──────────────────────────────────────
-    public function calculateTotals(): void
+    // Relasi ke Church (melalui details)
+    public function church()
     {
-        $income = $this->details()->where('type', 'income')->sum('amount');
-        $expense = $this->details()->where('type', 'expense')->sum('amount');
-        $this->update([
-            'total_income' => $income,
-            'total_expense' => $expense,
-            'closing_balance' => $this->opening_balance + $income - $expense,
-        ]);
+        return $this->hasOneThrough(Church::class, FinancialReportDetail::class, 'financial_report_id', 'id', 'id', 'church_id');
     }
 
-    // ── Helpers ─────────────────────────────────────────────
+    // ==================== ACCESSOR ====================
+
+    public function getChurchNameAttribute(): string
+    {
+        if ($this->church) {
+            return $this->church->name ?? ($this->church->pic_name ?? '-');
+        }
+
+        // Fallback dari detail pertama
+        $firstDetail = $this->details->first();
+        if ($firstDetail && $firstDetail->church) {
+            return $firstDetail->church->name ?? ($firstDetail->church->pic_name ?? '-');
+        }
+
+        return $this->branch?->name ?? '-';
+    }
+
     public function getStatusLabelAttribute(): string
     {
         return match ($this->status) {
@@ -102,19 +101,15 @@ class FinancialReport extends Model
             'reviewed' => 'Sedang Direview',
             'approved' => 'Disetujui',
             'rejected' => 'Ditolak',
-            default => ucfirst($this->status),
+            default => ucfirst($this->status ?? 'Draft'),
         };
     }
 
-    public function getStatusColorAttribute(): string
+    public function calculateTotals()
     {
-        return match ($this->status) {
-            'draft' => 'warning',
-            'submitted' => 'info',
-            'reviewed' => 'primary',
-            'approved' => 'success',
-            'rejected' => 'danger',
-            default => 'secondary',
-        };
+        $this->total_income = $this->details()->where('type', 'income')->sum('amount');
+        $this->total_expense = $this->details()->where('type', 'expense')->sum('amount');
+        $this->closing_balance = $this->total_income - $this->total_expense + ($this->opening_balance ?? 0);
+        $this->save();
     }
 }

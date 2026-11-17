@@ -13,7 +13,6 @@ return new class extends Migration {
         Schema::create('jemaats', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('branch_id')->nullable()->constrained('branches')->onDelete('cascade');
-            $table->bigInteger('NIK');
             $table->string('nama_lengkap');
             $table->boolean('jenis_kelamin');
             $table->string('tempat_lahir');
@@ -21,7 +20,6 @@ return new class extends Migration {
             $table->string('alamat');
             $table->string('no_hp');
             $table->string('email');
-            $table->enum('status_pernikahan', ['belum menikah', 'menikah', 'janda', 'duda']);
             $table->string('pekerjaan');
             $table->string('pendidikan');
             $table->boolean('status_jemaat');

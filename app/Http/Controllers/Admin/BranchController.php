@@ -11,14 +11,12 @@ use Illuminate\Support\Facades\DB;
 
 class BranchController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
-        $perPage = (int) $request->get('per_page', 15);
-        $perPage = in_array($perPage, [10, 15, 25, 50, 100]) ? $perPage : 15;
         $branches = Branch::withCount(['users'])
             ->orderBy('is_headquarter', 'desc')
             ->orderBy('name')
-            ->paginate($perPage)->withQueryString();
+            ->paginate(15);
         return view('admin.branches.index', compact('branches'));
     }
 

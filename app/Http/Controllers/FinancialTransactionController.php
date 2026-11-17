@@ -19,7 +19,7 @@ class FinancialTransactionController extends Controller
     {
         return [
             'income' => [
-                'persepuluhan' => [['code' => 'pp', 'name' => 'Persepuluhan']],
+                'persepuluhan' => [['code' => 'PP', 'name' => 'Persepuluhan']],
                 'iuran_pejabat' => [['code' => 'iuran_pejabat', 'name' => 'Iuran Pejabat']],
                 'dana_misi_pendidikan' => [['code' => 'dana_misi', 'name' => 'Dana Misi dan Pendidikan']],
                 'penerimaan_lain' => [['code' => 'lain_lain', 'name' => 'Penerimaan Lain-lain'], ['code' => 'setor_tunai', 'name' => 'Setor Tunai']],
@@ -99,9 +99,7 @@ class FinancialTransactionController extends Controller
             ]);
         }
 
-        $perPage = (int) $request->get('per_page', 20);
-        $perPage = in_array($perPage, [10, 20, 25, 50, 100]) ? $perPage : 20;
-        $transactions = $query->paginate($perPage)->withQueryString();
+        $transactions = $query->paginate(20);
 
         return view('features.finance.transactions.index', compact('transactions', 'categories', 'groups'));
     }

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Login - Filadelfia Admin</title>
-    <link rel="icon" href="{{ asset('img/logo.jpeg') }}">
+    <link rel="icon" href="{{ asset('img/logo.png') }}">
 
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -537,7 +537,7 @@
             <div class="login-card">
                 <!-- Logo -->
                 <div class="login-logo">
-                    <img src="{{ asset('img/logo.jpeg') }}" alt="Filadelfia Logo" class="img-fluid">
+                    <img src="{{ asset('img/logo.png') }}" alt="Filadelfia Logo" class="img-fluid">
                     <h1>FILADELFIA<span>ADMIN</span></h1>
                     <p>Silakan login untuk melanjutkan</p>
                 </div>

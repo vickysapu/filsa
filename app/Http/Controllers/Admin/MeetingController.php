@@ -39,9 +39,7 @@ class MeetingController extends Controller
             });
         }
 
-        $perPage = (int) $request->get('per_page', 10);
-        $perPage = in_array($perPage, [10, 25, 50, 100]) ? $perPage : 10;
-        $meetings = $query->paginate($perPage)->withQueryString();
+        $meetings = $query->paginate(10);
 
         if ($request->ajax()) {
             return view('admin.meetings._table', compact('meetings'))->render();

@@ -1,4 +1,5 @@
 <?php
+
 use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\DataAccessApprovalController;
 use App\Http\Controllers\Admin\DataTableController;
@@ -9,12 +10,14 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Api\DataAccessController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Admin\ChurchProfileController;
+use App\Http\Controllers\ChurchController;
 use App\Http\Controllers\ChurchStructureController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DokumentasiController;
 use App\Http\Controllers\DokumentasiKategoriController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventKategoriController;
+use App\Http\Controllers\Finance\CategoryMappingController;
 use App\Http\Controllers\InventarisController;
 use App\Http\Controllers\FinancialExportController;
 use App\Http\Controllers\FinancialReportController;
@@ -39,7 +42,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/notifications', function () {
         $user = Auth::user();
         if (!$user) return response()->json([]);
-
         $notifications = $user->notifications()
             ->whereNull('read_at')
             ->limit(10)
@@ -56,7 +58,6 @@ Route::middleware('auth')->group(function () {
                     'created_at' => $notif->created_at->diffForHumans(),
                 ];
             });
-
         return response()->json($notifications);
     });
 
@@ -95,26 +96,26 @@ Route::prefix('profile')->name('profile.')->group(function () {
 
 Route::get('/Filadelfia/dashboard', [DashboardController::class, 'index'])
     ->name('dashboard')
-    ->middleware(['auth', 'security.fingerprint', 'security.audit']);
+    ->middleware(['auth', 'security.audit']);
 
 Route::prefix('admin')
     ->name('admin.')
-    ->middleware(['auth', 'security.fingerprint', 'security.audit', 'page.token'])
+    ->middleware(['auth', 'security.audit', 'page.token'])
     ->group(function () {
-
+        
         Route::middleware(['permission:users.view'])->group(function () {
             Route::get('/users', [UserController::class, 'index'])->name('users.index');
             Route::get('/users/{user}', [UserController::class, 'show'])->name('users.show');
         });
         Route::middleware(['permission:users.create'])->get('/users/create', [UserController::class, 'create'])->name('users.create');
         Route::middleware(['permission:users.edit'])->get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
-
+        
         Route::middleware(['permission:roles.view'])->get('/roles', [RoleController::class, 'index'])->name('roles.index');
         Route::middleware(['permission:roles.create'])->get('/roles/create', [RoleController::class, 'create'])->name('roles.create');
         Route::middleware(['permission:roles.edit'])->get('/roles/{role}/edit', [RoleController::class, 'edit'])->name('roles.edit');
-
+        
         Route::middleware(['permission:permissions.view'])->get('/permissions', [PermissionController::class, 'index'])->name('permissions.index');
-
+        
         Route::middleware(['permission:branches.view'])->prefix('branches')->name('branches.')->group(function () {
             Route::get('/', [BranchController::class, 'index'])->name('index');
         });
@@ -124,7 +125,6 @@ Route::prefix('admin')
             Route::get('/{jemaat}/api', [JemaatController::class, 'apiShow'])->name('api.show');
             Route::get('/', [JemaatController::class, 'index'])->name('index');
             Route::get('/export', [JemaatController::class, 'export'])->name('export');
-
             Route::middleware(['permission:jemaat.create'])->group(function () {
                 Route::get('/create', [JemaatController::class, 'create'])->name('create');
                 Route::post('', [JemaatController::class, 'store'])->name('store');
@@ -162,43 +162,25 @@ Route::prefix('admin')
             ->name('church_profile.')
             ->middleware(['auth', 'permission:church_profile.view'])
             ->group(function () {
-
                 Route::get('/', [ChurchProfileController::class, 'index'])->name('index');
-
-                // CREATE
                 Route::middleware(['permission:church_profile.create'])->group(function () {
                     Route::get('/create', [ChurchProfileController::class, 'create'])->name('create');
                     Route::post('/', [ChurchProfileController::class, 'store'])->name('store');
                 });
-
-                // EDIT
                 Route::middleware(['permission:church_profile.edit'])->group(function () {
                     Route::get('/{churchProfile}/edit', [ChurchProfileController::class, 'edit'])->name('edit');
                     Route::put('/{churchProfile}', [ChurchProfileController::class, 'update'])->name('update');
-
-                    Route::post('/{churchProfile}/remove-gallery', [ChurchProfileController::class, 'removeGalleryImage'])
-                        ->name('remove-gallery');
-
-                    Route::post('/{churchProfile}/remove-document', [ChurchProfileController::class, 'removeDocument'])
-                        ->name('remove-document');
+                    Route::post('/{churchProfile}/remove-gallery', [ChurchProfileController::class, 'removeGalleryImage'])->name('remove-gallery');
+                    Route::post('/{churchProfile}/remove-document', [ChurchProfileController::class, 'removeDocument'])->name('remove-document');
                 });
-
-                // PREVIEW & PUBLISH
-                Route::get('/{churchProfile}/preview', [ChurchProfileController::class, 'preview'])
-                    ->name('preview');
-
-                Route::post('/{churchProfile}/toggle-publish', [ChurchProfileController::class, 'togglePublish'])
-                    ->name('toggle-publish');
-
-                // DELETE
+                Route::get('/{churchProfile}/preview', [ChurchProfileController::class, 'preview'])->name('preview');
+                Route::post('/{churchProfile}/toggle-publish', [ChurchProfileController::class, 'togglePublish'])->name('toggle-publish');
                 Route::middleware(['permission:church_profile.delete'])->group(function () {
-                    Route::delete('/{churchProfile}', [ChurchProfileController::class, 'destroy'])
-                        ->name('destroy');
+                    Route::delete('/{churchProfile}', [ChurchProfileController::class, 'destroy'])->name('destroy');
                 });
             });
 
         Route::prefix('finance')->name('finance.')->middleware(['page.token'])->group(function () {
-
             Route::prefix('transactions')->name('transactions.')->group(function () {
                 Route::middleware('permission:finance.transaction.view')->group(function () {
                     Route::get('/', [FinancialTransactionController::class, 'index'])->name('index');
@@ -220,28 +202,51 @@ Route::prefix('admin')
                 });
             });
 
+            Route::middleware('permission:finance.report.view')->group(function () {
+                Route::resource('churches', ChurchController::class)->except(['create', 'show', 'edit']);
+            });
+
+            Route::middleware('permission:finance.report.edit')->group(function () {
+                Route::post('churches/{church}/link', [ChurchController::class, 'link'])->name('churches.link');
+                Route::post('churches/{church}/migrate', [ChurchController::class, 'migrate'])->name('churches.migrate');
+            });
+
             Route::prefix('reports')->name('reports.')->group(function () {
                 
+                // 1. Route Spesifik (Tanpa Parameter) - WAJIB DI ATAS
                 Route::middleware('permission:finance.report.consolidate')->group(function () {
                     Route::post('/consolidate', [FinancialReportController::class, 'consolidateReports'])->name('consolidate');
                     Route::post('/pusat-download', [FinancialReportController::class, 'pusatDownload'])->name('pusatDownload');
                 });
-
-                Route::middleware('permission:finance.report.view')->group(function () {
-                    Route::get('/create', [FinancialReportController::class, 'create'])->name('create');
-                    Route::get('/index', [FinancialReportController::class, 'index'])->name('index');
-                    Route::get('/received', [FinancialReportController::class, 'receivedReports'])->name('received');
-                    Route::get('/{report}', [FinancialReportController::class, 'show'])->name('show');
-                    Route::get('/{report}/edit', [FinancialReportController::class, 'edit'])->name('edit');
+                
+                Route::middleware('permission:finance.report.edit')->group(function () {
+                    Route::put('/{report}', [FinancialReportController::class, 'update'])->name('update');
+                    Route::get('/category-mapping', [CategoryMappingController::class, 'index'])->name('category-mapping');
+                    Route::post('/category-mapping/update', [CategoryMappingController::class, 'update'])->name('category-mapping.update');
                 });
 
                 Route::middleware('permission:finance.report.create')->group(function () {
                     Route::post('/store-report', [FinancialReportController::class, 'storeReport'])->name('storeReport');
                     Route::post('/generate', [FinancialReportController::class, 'generateFromTransactions'])->name('generate');
+                    Route::get('/import-template', [FinancialReportController::class, 'downloadTemplate'])->name('import.template');
+                    Route::post('/import', [FinancialReportController::class, 'importExcel'])->name('import');
+                    Route::post('/import/analyze', [FinancialReportController::class, 'importAnalyze'])->name('import.analyze');
+                    Route::post('/import/columns', [FinancialReportController::class, 'importColumns'])->name('import.columns');
+                    Route::post('/import/preview', [FinancialReportController::class, 'importPreview'])->name('import.preview');
+                    Route::post('/import/commit', [FinancialReportController::class, 'importCommit'])->name('import.commit');
                 });
 
-                Route::middleware('permission:finance.report.edit')->group(function () {
-                    Route::put('/{report}', [FinancialReportController::class, 'update'])->name('update');
+                Route::middleware('permission:finance.report.submit')->group(function () {
+                    Route::post('/submit-folder', [FinancialReportController::class, 'submitFolder'])->name('submit-folder'); // Dipindah ke atas
+                });
+
+                // 2. Route dengan Parameter Wildcard `/{report}` - WAJIB DI BAWAH
+                Route::middleware('permission:finance.report.view')->group(function () {
+                    Route::get('/', [FinancialReportController::class, 'index'])->name('index');
+                    Route::get('/create', [FinancialReportController::class, 'create'])->name('create');
+                    Route::get('/received', [FinancialReportController::class, 'receivedReports'])->name('received');
+                    Route::get('/{report}', [FinancialReportController::class, 'show'])->name('show');
+                    Route::get('/{report}/edit', [FinancialReportController::class, 'edit'])->name('edit');
                 });
 
                 Route::middleware('permission:finance.report.delete')->group(function () {
@@ -255,6 +260,8 @@ Route::prefix('admin')
                 Route::middleware('permission:finance.report.approve')->group(function () {
                     Route::post('/{report}/approve', [FinancialReportController::class, 'approve'])->name('approve');
                     Route::post('/{report}/reject', [FinancialReportController::class, 'reject'])->name('reject');
+                    Route::post('/approve-folder', [FinancialReportController::class, 'approveFolder'])->name('approve-folder');
+                    Route::post('/reject-folder', [FinancialReportController::class, 'rejectFolder'])->name('reject-folder');
                 });
 
                 Route::middleware('permission:finance.report.forward')->group(function () {
@@ -262,19 +269,19 @@ Route::prefix('admin')
                 });
             });
 
+
             Route::prefix('export')->name('export.')->group(function () {
                 Route::middleware('permission:finance.report.export')->group(function () {
-
-                    // ✅ Form Laporan Keuangan MD (Kas Masuk/Pengeluaran)
-                    Route::get('/consolidated', [FinancialExportController::class, 'exportFormLapkeuMD'])
-                        ->name('consolidated');
-                    Route::get('/monthly-income', [FinancialExportController::class, 'exportDaftarPemasukanJabar'])
-                        ->name('monthly-income');
-                    Route::get('/transactions', [FinancialExportController::class, 'exportLaporanKeuanganMDFJabar'])
-                        ->name('transactions');
-                    Route::get('/annual-report', [FinancialExportController::class, 'exportFormLapkeuMD'])
-                        ->name('annual-report');
-
+                    Route::get('/consolidated', [FinancialExportController::class, 'exportFormLapkeuMD'])->name('consolidated');
+                    Route::get('/monthly-income', [FinancialExportController::class, 'exportDaftarPemasukanJabar'])->name('monthly-income');
+                    Route::get('/transactions', [FinancialExportController::class, 'exportLaporanKeuanganMDFJabar'])->name('transactions');
+                    Route::get('/annual-report', [FinancialExportController::class, 'exportFormLapkeuMD'])->name('annual-report');
+                    Route::get('/transactions-pdf', [FinancialExportController::class, 'exportLaporanKeuanganPDF'])->name('transactions-pdf');
+                    Route::get('/run', [FinancialExportController::class, 'run'])->name('run');
+                    Route::get('/templates', [FinancialExportController::class, 'templateIndex'])->name('templates.index');
+                    Route::post('/templates', [FinancialExportController::class, 'templateStore'])->name('templates.store');
+                    Route::put('/templates/{id}', [FinancialExportController::class, 'templateUpdate'])->name('templates.update');
+                    Route::delete('/templates/{id}', [FinancialExportController::class, 'templateDestroy'])->name('templates.destroy');
                 });
             });
         });
@@ -362,14 +369,14 @@ Route::prefix('admin')
         Route::middleware(['permission:users.create'])->post('/users', [UserController::class, 'store'])->name('users.store');
         Route::middleware(['permission:users.edit'])->put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::middleware(['permission:users.delete'])->delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
-
+        
         Route::middleware(['permission:roles.create'])->post('/roles', [RoleController::class, 'store'])->name('roles.store');
         Route::middleware(['permission:roles.edit'])->put('/roles/{role}', [RoleController::class, 'update'])->name('roles.update');
         Route::middleware(['permission:roles.delete'])->delete('/roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
-
+        
         Route::middleware(['permission:permissions.create'])->post('/permissions', [PermissionController::class, 'store'])->name('permissions.store');
         Route::middleware(['permission:permissions.delete'])->delete('/permissions/{permission}', [PermissionController::class, 'destroy'])->name('permissions.destroy');
-
+        
         Route::prefix('branches')->name('branches.')->group(function () {
             Route::middleware(['permission:branches.create'])->post('/', [BranchController::class, 'store'])->name('store');
             Route::middleware(['permission:branches.edit'])->put('/{branch}', [BranchController::class, 'update'])->name('update');
@@ -384,7 +391,7 @@ Route::prefix('admin')
             Route::post('/pemasukan/{pemasukan}/reject', [PemasukanController::class, 'reject'])->name('pemasukan.reject');
         });
         Route::middleware(['permission:pemasukan.delete'])->delete('/pemasukan/{pemasukan}', [PemasukanController::class, 'destroy'])->name('pemasukan.destroy');
-
+        
         Route::middleware(['permission:pengeluaran.create'])->post('/pengeluaran', [PengeluaranController::class, 'store'])->name('pengeluaran.store');
         Route::middleware(['permission:pengeluaran.edit'])->put('/pengeluaran/{pengeluaran}', [PengeluaranController::class, 'update'])->name('pengeluaran.update');
         Route::middleware(['permission:pengeluaran.verify'])->group(function () {
@@ -392,7 +399,7 @@ Route::prefix('admin')
             Route::post('/pengeluaran/{pengeluaran}/reject', [PengeluaranController::class, 'reject'])->name('pengeluaran.reject');
         });
         Route::middleware(['permission:pengeluaran.delete'])->delete('/pengeluaran/{pengeluaran}', [PengeluaranController::class, 'destroy'])->name('pengeluaran.destroy');
-
+        
         Route::prefix('pelayanan/kategori')->name('kategori.pelayanan.')->group(function () {
             Route::middleware(['permission:pelayanan.kategori.create'])->post('/', [KategoriPelayananController::class, 'store'])->name('store');
             Route::middleware(['permission:pelayanan.kategori.edit'])->put('/{kategori}', [KategoriPelayananController::class, 'update'])->name('update');
@@ -484,12 +491,10 @@ Route::post('/request-data-access', [DataAccessRequestController::class, 'store'
 Route::prefix('data-portal')->name('data-portal.')->middleware(['throttle:60,1'])->group(function () {
     Route::get('/', [DataAccessPortalController::class, 'showVerification'])->name('verify');
     Route::post('/verify', [DataAccessPortalController::class, 'verifyToken'])->name('verify.post');
-
     Route::middleware(['verify.portal.token'])->group(function () {
         Route::get('/dashboard', [DataAccessPortalController::class, 'showDashboard'])->name('dashboard');
         Route::get('/data/{table}', [DataAccessPortalController::class, 'fetchTableData'])->name('data.fetch');
         Route::get('/data/{table}/export/csv', [DataAccessPortalController::class, 'exportCsv'])->name('data.export.csv');
     });
-
     Route::post('/logout', [DataAccessPortalController::class, 'logout'])->name('logout');
 });

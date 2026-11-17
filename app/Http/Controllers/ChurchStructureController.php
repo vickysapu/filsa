@@ -19,7 +19,7 @@ class ChurchStructureController extends Controller
     public function index(Request $request)
     {
         $branchId = $this->getBranchId();
-        $query = ChurchStructure::query()->with(['jemaat']);
+        $query = ChurchStructure::query()->with(['jemaat', 'children.jemaat']);
 
         if ($branchId) {
             $query->where('branch_id', $branchId);
@@ -40,7 +40,7 @@ class ChurchStructureController extends Controller
         $structures = $query->whereNull('parent_id')->orderBy('sort_order')->paginate(20);
         $jemaats = Jemaat::when($branchId, fn($q) => $q->where('branch_id', $branchId))
             ->orderBy('nama_lengkap')
-            ->get(['id', 'nama_lengkap', 'NIK']);
+            ->get(['id', 'nama_lengkap']);
 
         if ($request->ajax()) {
             return view('features.church_structure._table', compact('structures'))->render();
@@ -79,35 +79,27 @@ class ChurchStructureController extends Controller
             'position_level' => 'required',
             'priority' => ['nullable', Rule::in(['primer', 'sekunder', 'none'])],
             'jemaat_id' => 'nullable|exists:jemaats,id',
-            'parent_id' => 'nullable|array',
-            'parent_id.*' => 'exists:church_structures,id',
+            'parent_id' => 'nullable|exists:church_structures,id',
             'description' => 'nullable|string|max:500',
             'is_active' => 'boolean',
         ]);
 
-        // Handle parent_id - convert to array if it's a single value
-        $parentIds = $validated['parent_id'] ?? [];
-        if (!empty($parentIds)) {
-            // Ensure all parents belong to the same branch
-            $parents = ChurchStructure::whereIn('id', $parentIds)->get();
-            if ($branchId && $parents->where('branch_id', '!=', $branchId)->count() > 0) {
+        if ($validated['parent_id'] && $branchId) {
+            $parent = ChurchStructure::find($validated['parent_id']);
+            if ($parent && $parent->branch_id !== $branchId) {
                 abort(403);
             }
-            $parentIds = $parents->pluck('id')->toArray() ?: null;
-        } else {
-            $parentIds = null;
         }
 
         $maxOrder =
             ChurchStructure::when($branchId, fn($q) => $q->where('branch_id', $branchId))
+                ->where('parent_id', $validated['parent_id'] ?? null)
                 ->max('sort_order') ?? 0;
 
         if (!empty($validated['jemaat_id'])) {
-
-            Jemaat::where('id', $validated['jemaat_id'])
-                ->update([
-                    'priority' => $validated['priority'] ?? 'none'
-                ]);
+            Jemaat::where('id', $validated['jemaat_id'])->update([
+                'priority' => $validated['priority'] ?? 'none',
+            ]);
         }
 
         ChurchStructure::create([
@@ -115,7 +107,7 @@ class ChurchStructureController extends Controller
             'position_name' => $validated['position_name'],
             'position_level' => $validated['position_level'],
             'jemaat_id' => $validated['jemaat_id'] ?? null,
-            'parent_id' => $parentIds,
+            'parent_id' => $validated['parent_id'] ?? null,
             'sort_order' => $maxOrder + 1,
             'description' => $validated['description'] ?? null,
             'is_active' => $validated['is_active'] ?? true,
@@ -172,38 +164,29 @@ class ChurchStructureController extends Controller
             'position_level' => 'required',
             'priority' => ['nullable', Rule::in(['primer', 'sekunder', 'none'])],
             'jemaat_id' => 'nullable|exists:jemaats,id',
-            'parent_id' => 'nullable|array',
-            'parent_id.*' => 'exists:church_structures,id',
+            'parent_id' => 'nullable|exists:church_structures,id',
             'description' => 'nullable|string|max:500',
-            'is_active' => 'nullable|boolean'
+            'is_active' => 'nullable|boolean',
         ]);
 
-        // Handle parent_id - convert to array if it's a single value
-        $parentIds = $validated['parent_id'] ?? [];
-        if (!empty($parentIds)) {
-            // Ensure all parents belong to the same branch
-            $parents = ChurchStructure::whereIn('id', $parentIds)->get();
-            if ($branchId && $parents->where('branch_id', '!=', $branchId)->count() > 0) {
-                abort(403);
+        if ($validated['parent_id'] && $validated['parent_id'] !== $churchStructure->parent_id) {
+            $parent = ChurchStructure::find($validated['parent_id']);
+            if ($parent && ($parent->branch_id !== $branchId || $this->isDescendant($parent->id, $churchStructure->id))) {
+                abort(403, 'Tidak dapat memindahkan ke child sendiri atau branch berbeda');
             }
-            $parentIds = $parents->pluck('id')->toArray() ?: null;
-        } else {
-            $parentIds = null;
         }
 
         if (!empty($validated['jemaat_id'])) {
-
-            Jemaat::where('id', $validated['jemaat_id'])
-                ->update([
-                    'priority' => $validated['priority'] ?? 'none'
-                ]);
+            Jemaat::where('id', $validated['jemaat_id'])->update([
+                'priority' => $validated['priority'] ?? 'none',
+            ]);
         }
 
         $churchStructure->update([
             'position_name' => $validated['position_name'],
             'position_level' => $validated['position_level'],
             'jemaat_id' => $validated['jemaat_id'] ?? null,
-            'parent_id' => $parentIds,
+            'parent_id' => $validated['parent_id'] ?? null,
             'description' => $validated['description'] ?? null,
             'is_active' => $validated['is_active'] ?? true,
         ]);
@@ -227,11 +210,10 @@ class ChurchStructureController extends Controller
     public function reorder(Request $request)
     {
         $branchId = $this->getBranchId();
-        $validated = $request->validate([   
+        $validated = $request->validate([
             'items' => 'required|array',
             'items.*.id' => 'required|exists:church_structures,id',
-            'items.*.parent_id' => 'nullable|array',
-            'items.*.parent_id.*' => 'exists:church_structures,id',
+            'items.*.parent_id' => 'nullable|exists:church_structures,id',
             'items.*.sort_order' => 'required|integer|min:0',
         ]);
 
@@ -242,19 +224,13 @@ class ChurchStructureController extends Controller
                 if ($branchId && $structure->branch_id !== $branchId) {
                     continue;
                 }
-                
-                $parentIds = $item['parent_id'] ?? [];
-                if (!empty($parentIds)) {
-                    $parents = ChurchStructure::whereIn('id', $parentIds)->get();
-                    if ($branchId && $parents->where('branch_id', '!=', $branchId)->count() > 0) {
+                if ($item['parent_id']) {
+                    $parent = ChurchStructure::find($item['parent_id']);
+                    if ($parent && $parent->branch_id !== $branchId) {
                         continue;
                     }
-                    $parentIds = $parents->pluck('id')->toArray() ?: null;
-                } else {
-                    $parentIds = null;
                 }
-                
-                $structure->update(['parent_id' => $parentIds, 'sort_order' => $item['sort_order']]);
+                $structure->update(['parent_id' => $item['parent_id'] ?? null, 'sort_order' => $item['sort_order']]);
             }
             DB::commit();
             return response()->json(['success' => true, 'message' => 'Urutan struktur berhasil disimpan']);
@@ -267,54 +243,21 @@ class ChurchStructureController extends Controller
     public function apiTree(Request $request)
     {
         $branchId = $this->getBranchId();
-        
-        // If accordion=true, return flat list without deduplication
-        if ($request->get('accordion') === 'true') {
-            return $this->apiTreeFlat($branchId);
-        }
-        
-        // Otherwise return tree structure with deduplication
-        $query = ChurchStructure::with(['jemaat'])->whereNull('parent_id');
+        $query = ChurchStructure::with(['jemaat', 'children.jemaat'])->whereNull('parent_id');
         if ($branchId) {
             $query->where('branch_id', $branchId);
         }
         $roots = $query->orderBy('sort_order')->get();
 
-        // Get all child nodes (nodes with parents)
-        $allChildQuery = ChurchStructure::with(['jemaat'])->whereNotNull('parent_id');
-        if ($branchId) {
-            $allChildQuery->where('branch_id', $branchId);
-        }
-        $allChildren = $allChildQuery->get();
-
-        // Track which children have been used in the tree
-        $usedChildrenIds = [];
-
-        $buildTree = function ($items) use (&$buildTree, $branchId, $allChildren, &$usedChildrenIds) {
-            return $items->map(function ($item) use (&$buildTree, $branchId, $allChildren, &$usedChildrenIds) {
-                // Find all children for this item
-                $children = $allChildren->filter(function ($child) use ($item) {
-                    if (empty($child->parent_id)) {
-                        return false;
-                    }
-                    $parentIds = is_array($child->parent_id) ? $child->parent_id : [$child->parent_id];
-                    return in_array($item->id, $parentIds);
-                })->filter(function ($child) use (&$usedChildrenIds) {
-                    // Only include children that haven't been used yet
-                    // This prevents duplicate cards when multiple parents have same child
-                    if (in_array($child->id, $usedChildrenIds)) {
-                        return false;
-                    }
-                    $usedChildrenIds[] = $child->id;
-                    return true;
-                })->values();
-                
+        $buildTree = function ($items) use (&$buildTree, $branchId) {
+            return $items->map(function ($item) use (&$buildTree, $branchId) {
+                $children = $item->children->filter(fn($c) => !$branchId || $c->branch_id === $branchId);
                 return [
                     'id' => $item->id,
                     'parent_id' => $item->parent_id,
                     'position_name' => $item->position_name,
                     'position_level' => $item->position_level,
-                    'jemaat' => $item->jemaat ? ['id' => $item->jemaat->id, 'nama_lengkap' => $item->jemaat->nama_lengkap, 'priority' => $item->jemaat->priority ?? 'none',] : null,
+                    'jemaat' => $item->jemaat ? ['id' => $item->jemaat->id, 'nama_lengkap' => $item->jemaat->nama_lengkap, 'priority' => $item->jemaat->priority ?? 'none'] : null,
                     'description' => $item->description,
                     'is_active' => $item->is_active,
                     'children' => $buildTree($children),
@@ -323,54 +266,6 @@ class ChurchStructureController extends Controller
         };
 
         return response()->json(['tree' => $buildTree($roots)]);
-    }
-
-    private function apiTreeFlat($branchId)
-    {
-        // Return flat list of all structures with their parent relationships
-        $query = ChurchStructure::with(['jemaat']);
-        if ($branchId) {
-            $query->where('branch_id', $branchId);
-        }
-        $structures = $query->orderBy('sort_order')->get();
-
-        $rootIds = [];
-        $childMap = []; // Map of parent_id => [children]
-
-        // Build map of all parent-child relationships
-        foreach ($structures as $structure) {
-            if (empty($structure->parent_id)) {
-                $rootIds[] = $structure->id;
-            } else {
-                $parentIds = is_array($structure->parent_id) ? $structure->parent_id : [$structure->parent_id];
-                foreach ($parentIds as $parentId) {
-                    if (!isset($childMap[$parentId])) {
-                        $childMap[$parentId] = [];
-                    }
-                    $childMap[$parentId][] = $structure;
-                }
-            }
-        }
-
-        // Convert to array for easier processing in JS
-        $structureArray = [];
-        foreach ($structures as $structure) {
-            $structureArray[] = [
-                'id' => $structure->id,
-                'parent_id' => $structure->parent_id,
-                'position_name' => $structure->position_name,
-                'position_level' => $structure->position_level,
-                'jemaat' => $structure->jemaat ? ['id' => $structure->jemaat->id, 'nama_lengkap' => $structure->jemaat->nama_lengkap, 'priority' => $structure->jemaat->priority ?? 'none',] : null,
-                'description' => $structure->description,
-                'is_active' => $structure->is_active,
-            ];
-        }
-
-        return response()->json([
-            'flat' => $structureArray,
-            'roots' => $rootIds,
-            'childMap' => $childMap
-        ]);
     }
 
     private function isDescendant($parentId, $childId, $visited = [])

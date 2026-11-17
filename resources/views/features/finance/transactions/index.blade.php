@@ -83,45 +83,28 @@
 
         <!-- Data Table -->
         <div class="card-custom">
-            {{-- DataTable Toolbar --}}
-            <div class="dt-toolbar">
-                <div class="dt-entries">
-                    <label>Tampilkan</label>
-                    <select onchange="var p=new URLSearchParams(window.location.search);p.set('per_page',this.value);p.set('page',1);window.location.href='{{ url()->current() }}?'+p.toString()">
-                        @foreach([10,25,50,100] as $pp)
-                            <option value="{{ $pp }}" {{ request('per_page', 10) == $pp ? 'selected' : '' }}>{{ $pp }}</option>
-                        @endforeach
-                    </select>
-                    <label>entri</label>
-                </div>
-                <div class="dt-search">
-                    <div class="dt-search-wrap">
-                        <i class="ri-search-line"></i>
-                        <input type="text" id="dtSearchTx" placeholder="Cari transaksi..." value="{{ request('search') }}"
-                            onkeydown="if(event.key==='Enter'){var p=new URLSearchParams(window.location.search);p.set('search',this.value);p.set('page',1);window.location.href='{{ url()->current() }}?'+p.toString();}">
-                    </div>
-                </div>
-            </div>
             <div class="table-responsive">
                 <table class="table table-hover mb-0 align-middle">
                     <thead class="bg-body-tertiary">
                         <tr>
                             <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold">Tanggal</th>
-                            <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold" style="min-width:240px">Deskripsi</th>
+                            <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold">Deskripsi</th>
                             <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold">Kategori</th>
-                            <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold text-end" style="min-width:150px">Jumlah</th>
+                            <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold text-end">
+                                Jumlah</th>
                             <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold">Tipe</th>
                             <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold">Status</th>
-                            <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold text-center">Aksi</th>
+                            <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold text-center">
+                                Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($transactions as $tx)
                             <tr class="border-bottom border-custom">
-                                <td class="py-3 px-4 date-cell">
+                                <td class="py-3 px-4">
                                     <span class="fw-medium">{{ $tx->transaction_date?->format('d M Y') }}</span>
                                 </td>
-                                <td class="py-3 px-4 wrap-cell">
+                                <td class="py-3 px-4">
                                     <div class="fw-semibold">{{ $tx->description }}</div>
                                     @if ($tx->reference_number)
                                         <small class="text-muted-custom">Ref: {{ $tx->reference_number }}</small>
@@ -130,9 +113,9 @@
                                 <td class="py-3 px-4">
                                     <span class="badge badge-secondary-custom">{{ $tx->category_name }}</span>
                                 </td>
-                                <td class="py-3 px-4 amount-cell text-end">
-                                    <span class="fw-bold {{ $tx->type === 'income' ? 'text-success' : 'text-danger' }}" style="white-space:nowrap">
-                                        Rp&nbsp;{{ number_format($tx->amount, 0, ',', '.') }}
+                                <td class="py-3 px-4 text-end">
+                                    <span class="fw-bold {{ $tx->type === 'income' ? 'text-success' : 'text-danger' }}">
+                                        Rp {{ number_format($tx->amount, 0, ',', '.') }}
                                     </span>
                                 </td>
                                 <td class="py-3 px-4">
@@ -222,17 +205,8 @@
 
             <!-- Pagination -->
             @if ($transactions->hasPages())
-                <div class="dt-footer">
-                    <span class="dt-info">
-                        Menampilkan {{ $transactions->firstItem() }}–{{ $transactions->lastItem() }} dari {{ $transactions->total() }} data
-                    </span>
-                    <div>
-                        {{ $transactions->withQueryString()->links('pagination::simple-bootstrap-4') }}
-                    </div>
-                </div>
-            @else
-                <div class="dt-footer">
-                    <span class="dt-info">Menampilkan {{ $transactions->count() }} data</span>
+                <div class="d-flex justify-content-center p-4 border-top border-custom">
+                    {{ $transactions->withQueryString()->links('pagination::simple-bootstrap-4') }}
                 </div>
             @endif
         </div>

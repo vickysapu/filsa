@@ -20,7 +20,7 @@ class FinancialReportDetail extends Model
         });
     }
 
-    protected $fillable = ['financial_report_id', 'category_code', 'category_name', 'category_group', 'type', 'amount', 'notes'];
+    protected $fillable = ['financial_report_id', 'church_id', 'category_code', 'category_name', 'category_group', 'type', 'amount', 'notes'];
 
     protected $casts = [
         'amount' => 'decimal:2',
@@ -29,5 +29,10 @@ class FinancialReportDetail extends Model
     public function report(): BelongsTo
     {
         return $this->belongsTo(FinancialReport::class, 'financial_report_id');
+    }
+
+    public function church()
+    {
+        return $this->belongsTo(Church::class);
     }
 }

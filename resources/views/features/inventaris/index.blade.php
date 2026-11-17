@@ -61,25 +61,6 @@
 
         <!-- Data Table -->
         <div class="card-custom">
-            {{-- DataTable Toolbar --}}
-            <div class="dt-toolbar">
-                <div class="dt-entries">
-                    <label>Tampilkan</label>
-                    <select onchange="var p=new URLSearchParams(window.location.search);p.set('per_page',this.value);p.set('page',1);window.location.href='{{ url()->current() }}?'+p.toString()">
-                        @foreach([10,25,50,100] as $pp)
-                            <option value="{{ $pp }}" {{ request('per_page', 10) == $pp ? 'selected' : '' }}>{{ $pp }}</option>
-                        @endforeach
-                    </select>
-                    <label>entri</label>
-                </div>
-                <div class="dt-search">
-                    <div class="dt-search-wrap">
-                        <i class="ri-search-line"></i>
-                        <input type="text" placeholder="Cari inventaris..." value="{{ request('search') }}"
-                            onkeydown="if(event.key==='Enter'){var p=new URLSearchParams(window.location.search);p.set('search',this.value);p.set('page',1);window.location.href='{{ url()->current() }}?'+p.toString();}">
-                    </div>
-                </div>
-            </div>
             <div class="table-responsive">
                 <table class="table table-hover mb-0 align-middle" id="tabel-inventaris">
                     <thead class="bg-body-tertiary">
@@ -101,12 +82,6 @@
                     </tbody>
                 </table>
             </div>
-            @if(isset($inventaris) && method_exists($inventaris, 'hasPages') && $inventaris->hasPages())
-                <div class="dt-footer">
-                    <span class="dt-info">Menampilkan {{ $inventaris->firstItem() }}–{{ $inventaris->lastItem() }} dari {{ $inventaris->total() }} data</span>
-                    <div>{{ $inventaris->withQueryString()->links('pagination::simple-bootstrap-4') }}</div>
-                </div>
-            @endif
         </div>
 
     </div>

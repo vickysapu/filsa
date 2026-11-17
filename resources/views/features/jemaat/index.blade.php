@@ -12,8 +12,8 @@
 
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
             <div>
-                <h1 class="h3 mb-1 fw-bold" style="font-family: 'Playfair Display', Georgia, serif; letter-spacing: -0.01em;">Data Jemaat</h1>
-                <p class="text-muted-custom mb-0">Kelola data anggota dan pertumbuhan jemaat Gereja Filadelfia</p>
+                <h1 class="h3 mb-1 fw-bold">Data Jemaat</h1>
+                <p class="text-muted-custom mb-0">Kelola data anggota jemaat Gereja Filadelfia</p>
             </div>
             <button type="button" class="btn btn-custom btn-tambah-jemaat" data-bs-toggle="modal"
                 data-bs-target="#modalJemaatForm">
@@ -55,7 +55,7 @@
                                     class="ri-search-line position-absolute top-50 start-0 translate-middle-y ms-3 text-muted-custom"></i>
                                 <input type="text" id="search" name="search"
                                     class="form-control form-control-custom ps-5" value="{{ request('search') }}"
-                                    placeholder="Nama, NIK, atau Email...">
+                                    placeholder="Nama, Email, atau No HP...">
                             </div>
                         </div>
 
@@ -71,22 +71,6 @@
                         </div>
 
                         <div class="col-6 col-lg-2">
-                            <label class="form-label small fw-semibold mb-2">Status Pernikahan</label>
-                            <select id="status_pernikahan" name="status_pernikahan" class="form-select form-select-custom">
-                                <option value="">Semua</option>
-                                <option value="belum menikah"
-                                    {{ request('status_pernikahan') == 'belum menikah' ? 'selected' : '' }}>Belum Menikah
-                                </option>
-                                <option value="menikah" {{ request('status_pernikahan') == 'menikah' ? 'selected' : '' }}>
-                                    Menikah</option>
-                                <option value="janda" {{ request('status_pernikahan') == 'janda' ? 'selected' : '' }}>Janda
-                                </option>
-                                <option value="duda" {{ request('status_pernikahan') == 'duda' ? 'selected' : '' }}>Duda
-                                </option>
-                            </select>
-                        </div>
-
-                        <div class="col-6 col-lg-2">
                             <label class="form-label small fw-semibold mb-2">Status Jemaat</label>
                             <select id="status_jemaat" name="status_jemaat" class="form-select form-select-custom">
                                 <option value="">Semua</option>
@@ -97,7 +81,7 @@
                             </select>
                         </div>
 
-                        <div class="col-6 col-lg-{{ $isSuperAdmin ? '2' : '3' }} d-flex align-items-end">
+                        <div class="col-6 col-lg-{{ $isSuperAdmin ? '3' : '4' }} d-flex align-items-end">
                             <button type="button" id="btnFilter" class="btn btn-custom w-100">
                                 <i class="ri-filter-line me-1"></i> Filter
                             </button>
@@ -108,25 +92,6 @@
         </div>
 
         <div class="card-custom">
-            {{-- DataTable Toolbar --}}
-            <div class="dt-toolbar">
-                <div class="dt-entries">
-                    <label>Tampilkan</label>
-                    <select onchange="var p=new URLSearchParams(window.location.search);p.set('per_page',this.value);p.set('page',1);window.location.href='{{ url()->current() }}?'+p.toString()">
-                        @foreach([10,25,50,100] as $pp)
-                            <option value="{{ $pp }}" {{ request('per_page', 10) == $pp ? 'selected' : '' }}>{{ $pp }}</option>
-                        @endforeach
-                    </select>
-                    <label>entri</label>
-                </div>
-                <div class="dt-search">
-                    <div class="dt-search-wrap">
-                        <i class="ri-search-line"></i>
-                        <input type="text" placeholder="Cari nama, NIK, email..." value="{{ request('search') }}"
-                            onkeydown="if(event.key==='Enter'){var p=new URLSearchParams(window.location.search);p.set('search',this.value);p.set('page',1);window.location.href='{{ url()->current() }}?'+p.toString();}">
-                    </div>
-                </div>
-            </div>
             <div class="table-responsive">
                 <table class="table table-hover mb-0 align-middle" id="tabel-jemaat">
                     <thead class="bg-body-tertiary">
@@ -154,8 +119,7 @@
                                         <div>
                                             <div class="fw-semibold">{{ $jemaat->nama_lengkap }}</div>
                                             <div class="text-muted-custom small">
-                                                NIK: {{ number_format($jemaat->NIK, 0, ',', '.') }} •
-                                                {{ $jemaat->jenis_kelamin == 1 ? 'L' : 'P' }}
+                                                {{ $jemaat->jenis_kelamin == 1 ? 'Laki-laki' : 'Perempuan' }}
                                             </div>
                                         </div>
                                     </div>
@@ -175,9 +139,6 @@
                                                 <i class="ri-close-line me-1"></i> Non-Aktif
                                             </span>
                                         @endif
-                                        <span class="badge badge-secondary-custom">
-                                            {{ ucfirst($jemaat->status_pernikahan ?? '-') }}
-                                        </span>
                                     </div>
                                 </td>
                                 <td class="py-3 px-4">
@@ -221,18 +182,14 @@
 
             @if ($jemaats->hasPages())
                 <div
-                    class="dt-footer">
-                    <span class="dt-info">
-                        Menampilkan {{ $jemaats->firstItem() }}–{{ $jemaats->lastItem() }} dari {{ $jemaats->total() }}
+                    class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 p-4 border-top border-custom">
+                    <span class="text-muted-custom small">
+                        Menampilkan {{ $jemaats->firstItem() }} - {{ $jemaats->lastItem() }} dari {{ $jemaats->total() }}
                         data
                     </span>
                     <div>
-                        {{ $jemaats->withQueryString()->links('pagination::simple-bootstrap-4') }}
+                        {{ $jemaats->links('pagination::simple-bootstrap-4') }}
                     </div>
-                </div>
-            @else
-                <div class="dt-footer">
-                    <span class="dt-info">Menampilkan {{ $jemaats->count() }} dari {{ $jemaats->total() }} data</span>
                 </div>
             @endif
         </div>
@@ -294,16 +251,6 @@
                                             <input type="text" name="nama_lengkap" id="nama_lengkap"
                                                 class="form-control form-control-custom" required placeholder="Sesuai KTP"
                                                 value="{{ old('nama_lengkap', $jemaat?->nama_lengkap ?? '') }}">
-                                        </div>
-
-                                        <div class="mb-3">
-                                            <label class="form-label small fw-semibold text-muted-custom">NIK <span
-                                                    class="text-danger">*</span></label>
-                                            <input type="text" name="NIK" id="NIK"
-                                                class="form-control form-control-custom" required
-                                                placeholder="16 digit NIK" maxlength="16"
-                                                value="{{ old('NIK', $jemaat?->NIK ?? '') }}">
-                                            <small class="text-muted-custom">Masukkan 16 digit angka NIK</small>
                                         </div>
 
                                         <div class="row g-3">
@@ -435,27 +382,6 @@
                                             </div>
                                         </div>
 
-                                        <div class="mb-3">
-                                            <label class="form-label small fw-semibold text-muted-custom">Status Pernikahan
-                                                <span class="text-danger">*</span></label>
-                                            <select name="status_pernikahan" id="status_pernikahan"
-                                                class="form-select form-select-custom" required>
-                                                <option value="">Pilih...</option>
-                                                <option value="belum menikah"
-                                                    {{ old('status_pernikahan', $jemaat?->status_pernikahan ?? '') == 'belum menikah' ? 'selected' : '' }}>
-                                                    Belum Menikah</option>
-                                                <option value="menikah"
-                                                    {{ old('status_pernikahan', $jemaat?->status_pernikahan ?? '') == 'menikah' ? 'selected' : '' }}>
-                                                    Menikah</option>
-                                                <option value="janda"
-                                                    {{ old('status_pernikahan', $jemaat?->status_pernikahan ?? '') == 'janda' ? 'selected' : '' }}>
-                                                    Janda</option>
-                                                <option value="duda"
-                                                    {{ old('status_pernikahan', $jemaat?->status_pernikahan ?? '') == 'duda' ? 'selected' : '' }}>
-                                                    Duda</option>
-                                            </select>
-                                        </div>
-
                                         <div class="form-check form-switch-custom mt-4 p-3 bg-body-tertiary rounded">
                                             <input type="hidden" name="status_jemaat" value="0">
                                             <input type="checkbox" name="status_jemaat" id="status_jemaat"
@@ -566,37 +492,35 @@
         }
 
         .avatar-placeholder {
-            background: var(--zaitun-primary, #718F50);
-            color: #FBF8EE;
+            background: var(--accent-blue);
+            color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 700;
+            font-weight: 600;
             font-size: 1.1rem;
         }
 
         .badge-status-success {
-            background: rgba(169, 199, 125, 0.22);
-            color: #3A4C2E;
-            border: 1px solid rgba(169, 199, 125, 0.45);
-            padding: 0.4em 0.8em;
-            font-weight: 600;
-            font-size: 0.78rem;
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.25);
+            padding: 0.4em 0.75em;
+            font-weight: 500;
+            font-size: 0.8rem;
             display: inline-flex;
             align-items: center;
-            border-radius: var(--radius-sm);
         }
 
         .badge-status-danger {
-            background: rgba(125, 72, 86, 0.15);
-            color: var(--zaitun-ripe, #7D4856);
-            border: 1px solid rgba(125, 72, 86, 0.35);
-            padding: 0.4em 0.8em;
-            font-weight: 600;
-            font-size: 0.78rem;
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            padding: 0.4em 0.75em;
+            font-weight: 500;
+            font-size: 0.8rem;
             display: inline-flex;
             align-items: center;
-            border-radius: var(--radius-sm);
         }
 
         .badge-secondary-custom {
@@ -604,9 +528,8 @@
             color: var(--text-secondary);
             border: 1px solid var(--border-color);
             padding: 0.35em 0.65em;
-            font-size: 0.74rem;
+            font-size: 0.75rem;
             font-weight: 500;
-            border-radius: var(--radius-sm);
         }
 
         .btn-action {
@@ -626,39 +549,36 @@
 
         .btn-action:hover {
             transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
+            box-shadow: var(--shadow-sm);
         }
 
         .btn-action-info {
-            border-color: rgba(113, 143, 80, 0.4);
-            color: var(--zaitun-primary, #718F50);
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
         }
 
         .btn-action-info:hover {
-            background: var(--zaitun-primary, #718F50);
-            border-color: var(--zaitun-primary, #718F50);
-            color: #FBF8EE;
+            background: var(--accent-blue);
+            color: white;
         }
 
         .btn-action-primary {
-            border-color: rgba(113, 143, 80, 0.4);
-            color: var(--zaitun-primary, #718F50);
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
         }
 
         .btn-action-primary:hover {
-            background: var(--zaitun-primary, #718F50);
-            border-color: var(--zaitun-primary, #718F50);
-            color: #FBF8EE;
+            background: var(--accent-blue);
+            color: white;
         }
 
         .btn-action-danger {
-            border-color: rgba(125, 72, 86, 0.4);
-            color: var(--zaitun-ripe, #7D4856);
+            border-color: #ef4444;
+            color: #ef4444;
         }
 
         .btn-action-danger:hover {
-            background: var(--zaitun-ripe, #7D4856);
-            border-color: var(--zaitun-ripe, #7D4856);
+            background: #ef4444;
             color: white;
         }
 
@@ -675,9 +595,8 @@
 
         .form-control-custom:focus,
         .form-select-custom:focus {
-            border-color: var(--zaitun-primary, #718F50);
-            box-shadow: 0 0 0 3px rgba(113, 143, 80, 0.15);
-        }
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
             outline: none;
         }
 
@@ -725,7 +644,7 @@
         }
 
         .form-switch-custom .form-check-input-custom:checked {
-            background-color: var(--zaitun-primary, #718F50);
+            background-color: var(--accent-blue);
         }
 
         .textarea-custom {
@@ -763,9 +682,9 @@
         }
 
         .alert-custom-error {
-            background: rgba(125, 72, 86, 0.1);
-            border-left: 4px solid var(--zaitun-ripe, #7D4856);
-            color: var(--zaitun-ripe, #7D4856);
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid #ef4444;
+            color: #ef4444;
             padding: 0.75rem 1rem;
             border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
         }
@@ -779,8 +698,8 @@
             width: 72px;
             height: 72px;
             border-radius: 50%;
-            background: rgba(125, 72, 86, 0.12);
-            color: var(--zaitun-ripe, #7D4856);
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -793,13 +712,13 @@
             height: 80px;
             border-radius: 50%;
             background: var(--bg-body);
-            color: var(--zaitun-young, #A9C77D);
+            color: var(--text-secondary);
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto;
             font-size: 2.5rem;
-            opacity: 0.7;
+            opacity: 0.5;
         }
 
         .pagination .page-link {
@@ -814,9 +733,9 @@
 
         .pagination .page-link:hover,
         .pagination .page-item.active .page-link {
-            background: var(--zaitun-primary, #718F50);
-            border-color: var(--zaitun-primary, #718F50);
-            color: #FBF8EE;
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
         }
 
         .pagination .page-item.disabled .page-link {
@@ -830,22 +749,6 @@
 
         [data-theme="dark"] .avatar-table {
             border-color: var(--bg-sidebar);
-        }
-
-        /* Table header styling */
-        thead.bg-body-tertiary {
-            background-color: rgba(247, 245, 237, 0.7) !important;
-        }
-
-        [data-theme="dark"] thead.bg-body-tertiary {
-            background-color: rgba(30, 43, 34, 0.9) !important;
-        }
-
-        table.table thead th {
-            border-bottom: 2px solid var(--border-color) !important;
-            font-size: 0.72rem;
-            letter-spacing: 0.06em;
-            color: var(--text-secondary) !important;
         }
 
         @media (max-width: 768px) {
@@ -900,10 +803,6 @@
                 } else {
                     preview.classList.add('d-none');
                 }
-            });
-
-            document.getElementById('NIK')?.addEventListener('input', function(e) {
-                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 16);
             });
 
             document.getElementById('no_hp')?.addEventListener('input', function(e) {
@@ -961,9 +860,7 @@
                     formMethod.value = 'POST';
                     jemaatId.value = '';
 
-                    // reset semua input manual
                     document.getElementById('nama_lengkap').value = '';
-                    document.getElementById('NIK').value = '';
                     document.getElementById('tempat_lahir').value = '';
                     document.getElementById('tanggal_lahir').value = '';
                     document.getElementById('email').value = '';
@@ -971,22 +868,17 @@
                     document.getElementById('alamat').value = '';
                     document.getElementById('pendidikan').value = '';
                     document.getElementById('pekerjaan').value = '';
-                    document.getElementById('status_pernikahan').value = '';
 
-                    // reset radio
                     document.querySelectorAll('input[name="jenis_kelamin"]')
                         .forEach(r => r.checked = false);
 
-                    // reset switch
                     document.getElementById('status_jemaat').checked = true;
 
-                    // reset foto
                     document.getElementById('foto').value = '';
                     document.getElementById('imgPreview').src = '';
                     document.getElementById('fotoPreview')
                         ?.classList.add('d-none');
 
-                    // reset branch
                     const branchInput = document.getElementById('branch_id');
                     if (branchInput) {
                         branchInput.value = '';
@@ -1021,7 +913,6 @@
                         jemaatId.value = data.id;
 
                         document.getElementById('nama_lengkap').value = data.nama_lengkap || '';
-                        document.getElementById('NIK').value = data.NIK || '';
                         document.getElementById('tempat_lahir').value = data.tempat_lahir || '';
                         document.getElementById('tanggal_lahir').value =
                             data.tanggal_lahir ?
@@ -1032,8 +923,6 @@
                         document.getElementById('alamat').value = data.alamat || '';
                         document.getElementById('pendidikan').value = data.pendidikan || '';
                         document.getElementById('pekerjaan').value = data.pekerjaan || '';
-                        document.getElementById('status_pernikahan').value = data
-                            .status_pernikahan || '';
                         if (document.getElementById('branch_id')) {
                             document.getElementById('branch_id').value = data.branch_id || '';
                         }
@@ -1124,17 +1013,11 @@
                         </div>
                         <div class="col-md-8">
                             <div class="row g-3">
-                                <div class="col-6"><strong>NIK</strong></div>
-                                <div class="col-6">${data.NIK?.toString().replace(/(\d{4})(?=\d)/g, '$1.') || '-'}</div>
-                                
                                 <div class="col-6"><strong>Tempat, Tgl Lahir</strong></div>
                                 <div class="col-6">${data.tempat_lahir || '-'}, ${data.tanggal_lahir ? new Date(data.tanggal_lahir).toLocaleDateString('id-ID') : '-'}</div>
                                 
                                 <div class="col-6"><strong>Jenis Kelamin</strong></div>
                                 <div class="col-6">${data.jenis_kelamin == 1 ? 'Laki-laki' : 'Perempuan'}</div>
-                                
-                                <div class="col-6"><strong>Status Pernikahan</strong></div>
-                                <div class="col-6">${data.status_pernikahan?.toUpperCase() || '-'}</div>
                                 
                                 <div class="col-6"><strong>No. HP</strong></div>
                                 <div class="col-6">${data.no_hp || '-'}</div>
