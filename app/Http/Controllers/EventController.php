@@ -58,7 +58,9 @@ class EventController extends Controller
             });
         }
 
-        $events = $query->latest()->paginate(10);
+        $perPage = (int) $request->get('per_page', 10);
+        $perPage = in_array($perPage, [10, 25, 50, 100]) ? $perPage : 10;
+        $events = $query->latest()->paginate($perPage)->withQueryString();
 
         $kategoriQuery = EventKategori::query();
 
