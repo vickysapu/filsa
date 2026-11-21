@@ -2,23 +2,21 @@
 @section('title', 'Portal Data - ' . ($branch->name ?? 'Dashboard'))
 
 @section('content')
-    <div class="lux-container"
-        style="padding: 6rem 2rem 4rem; min-height: 100vh; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);">
-
-        {{-- Header Section --}}
-        <div style="margin-bottom: 2.5rem; text-align: center; max-width: 800px; margin-left: auto; margin-right: auto;">
-            <span class="hero-badge"
-                style="display: inline-block; background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(6, 182, 212, 0.1)); border: 2px solid rgba(79, 70, 229, 0.3); padding: 0.5rem 1.5rem; border-radius: 50px; font-weight: 600; color: var(--brand-primary); margin-bottom: 1rem;">
-                <i class="ri-shield-keyhole-line me-1"></i>Data Access Portal
-            </span>
-            <h1
-                style="font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 800; margin: 0 0 1rem 0; background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                {{ $branch->name }}
-            </h1>
-            <p style="font-size: 1rem; color: var(--brand-dark); opacity: 0.7;">
-                Branch Code: <strong>{{ $branch->code }}</strong>
-            </p>
+    <header class="page-hero public-page-hero public-page-hero--about">
+        <div class="page-hero-container fade-in">
+            <nav class="page-breadcrumbs" aria-label="Breadcrumb">
+                <a href="{{ route('public.home') }}">Beranda</a>
+                <i class="ri-arrow-right-s-line"></i>
+                <span>Portal Data</span>
+            </nav>
+            <span class="page-kicker">Data Access Portal</span>
+            <h1 class="page-hero-title">{{ $branch->name }}</h1>
+            <p class="page-hero-desc">Branch Code: <strong>{{ $branch->code }}</strong></p>
         </div>
+        <span class="page-image-note">Foto ilustrasi · bukan dokumentasi Gereja Filadelfia</span>
+    </header>
+    <div class="lux-container"
+        style="padding: 2rem 2rem 4rem; min-height: 100vh; background: var(--zaitun-sand, #FAF7EF);">
 
         {{-- Token Info Bar --}}
         <div class="lux-card"
@@ -175,7 +173,7 @@
 
         @media (max-width: 768px) {
             .lux-container {
-                padding: 5rem 1rem 3rem !important;
+                padding: 1rem 1rem 3rem !important;
             }
 
             #dataViewerHeader,

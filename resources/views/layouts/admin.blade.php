@@ -1253,6 +1253,14 @@
 
             <div class="d-flex align-items-center gap-3 ms-auto">
 
+                <!-- === TOMBOL LIHAT WEBSITE === -->
+                <a href="{{ route('public.home') }}" target="_blank" class="btn btn-light d-flex align-items-center gap-2 border shadow-sm px-3 py-2"
+                    style="background: var(--bg-surface); border-color: var(--border-color) !important; border-radius: var(--radius-sm); font-size: 0.825rem; color: var(--text-primary); text-decoration: none;"
+                    title="Buka Landing Page Website">
+                    <i class="ri-global-line fs-5" style="color: var(--fig-olive);"></i>
+                    <span class="d-none d-md-inline fw-medium">Lihat Website</span>
+                </a>
+
                 <!-- === NOTIFIKASI DROPDOWN === -->
                 <div class="dropdown notification-dropdown">
                     <button class="btn btn-light position-relative border-0 shadow-sm" type="button"
