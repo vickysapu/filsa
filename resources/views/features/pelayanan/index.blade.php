@@ -6,7 +6,7 @@
     <div class="container-fluid px-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
-                <h1 class="fw-bold mb-1" style="font-size: 1.75rem;">Jadwal Pelayanan</h1>
+                <h1 class="fw-bold mb-1" style="font-size: 1.75rem; font-family: 'Playfair Display', Georgia, serif; letter-spacing: -0.01em;">Jadwal Pelayanan</h1>
                 <p class="text-muted-custom mb-0">Kelola jadwal dan petugas pelayanan gereja</p>
             </div>
             <button type="button" class="btn btn-custom btn-tambah-jadwal">

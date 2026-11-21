@@ -12,10 +12,13 @@ use Illuminate\Support\Facades\DB;
 
 class RoleController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         /** @var \App\Models\User $currentUser */
         $currentUser = Auth::user();
+
+        $perPage = (int) $request->get('per_page', 15);
+        $perPage = in_array($perPage, [10, 15, 25, 50, 100]) ? $perPage : 15;
 
         $roles = Role::withCount(['permissions', 'users'])
             ->with('branch')
@@ -26,7 +29,7 @@ class RoleController extends Controller
             })
             ->orderBy('is_active', 'desc')
             ->orderBy('display_name')
-            ->paginate(15);
+            ->paginate($perPage)->withQueryString();
 
         $permissions = Permission::orderBy('group')->orderBy('display_name')->get();
         $permissionGroups = $permissions->groupBy('group');

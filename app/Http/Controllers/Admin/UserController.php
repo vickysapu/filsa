@@ -18,7 +18,9 @@ class UserController extends Controller
     {
         $currentUser = Auth::user();
 
-        $users = User::with('roles', 'branch')->paginate(10);
+        $perPage = (int) $request->get('per_page', 10);
+        $perPage = in_array($perPage, [10, 25, 50, 100]) ? $perPage : 10;
+        $users = User::with('roles', 'branch')->paginate($perPage)->withQueryString();
 
         $roles = Role::active()
             ->when(!$currentUser->isSuperAdmin(), fn($q) => $q->where('branch_id', $currentUser->branch_id))

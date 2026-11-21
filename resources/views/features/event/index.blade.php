@@ -91,28 +91,45 @@
 
         <!-- Events Table -->
         <div class="card-custom">
+            {{-- DataTable Toolbar --}}
+            <div class="dt-toolbar">
+                <div class="dt-entries">
+                    <label>Tampilkan</label>
+                    <select onchange="window.location.href='{{ url()->current() }}?'+new URLSearchParams({...Object.fromEntries(new URLSearchParams(window.location.search)),...{per_page:this.value,page:1}}).toString()">
+                        @foreach([10,25,50,100] as $pp)
+                            <option value="{{ $pp }}" {{ request('per_page', 10) == $pp ? 'selected' : '' }}>{{ $pp }}</option>
+                        @endforeach
+                    </select>
+                    <label>entri</label>
+                </div>
+                <div class="dt-search">
+                    <div class="dt-search-wrap">
+                        <i class="ri-search-line"></i>
+                        <input type="text" id="dtSearchEvent" placeholder="Cari event..." value="{{ request('search') }}"
+                            onkeydown="if(event.key==='Enter'){var p=new URLSearchParams(window.location.search);p.set('search',this.value);p.set('page',1);window.location.href='{{ url()->current() }}?'+p.toString();}">
+                    </div>
+                </div>
+            </div>
             <div class="table-responsive">
                 <table class="table table-hover mb-0 align-middle">
                     <thead class="bg-body-tertiary">
                         <tr>
-                            <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold">Event</th>
+                            <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold" style="min-width:260px">Event</th>
                             @if ($isSuperAdmin)
-                                <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold">Cabang
-                                </th>
+                                <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold">Cabang</th>
                             @endif
                             <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold">Kategori</th>
                             <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold">Tanggal</th>
-                            <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold">Lokasi</th>
+                            <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold" style="min-width:140px">Lokasi</th>
                             <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold">Status</th>
-                            <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold text-center">
-                                Aksi</th>
+                            <th class="border-0 py-3 px-4 small text-uppercase text-muted-custom fw-semibold text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="eventsTableBody">
                         @forelse($events as $evt)
                             <tr class="border-bottom border-custom">
-                                <td class="py-3 px-4">
-                                    <div class="d-flex align-items-center gap-3">
+                                <td class="py-3 px-4 wrap-cell">
+                                    <div class="d-flex align-items-start gap-3">
                                         @if ($evt->gambar_featured)
                                             <img src="{{ asset('storage/' . $evt->gambar_featured) }}"
                                                 alt="{{ $evt->nama_event }}" class="event-thumbnail">
@@ -139,13 +156,13 @@
                                         {{ $evt->kategori->nama_kategori }}
                                     </span>
                                 </td>
-                                <td class="py-3 px-4">
+                                <td class="py-3 px-4 date-cell">
                                     <div class="fw-medium">
                                         <i class="ri-calendar-line me-1"></i> {{ $evt->tanggal_mulai->format('d M Y') }}
                                     </div>
                                     <small class="text-muted-custom">{{ $evt->tanggal_mulai->format('H:i') }} WIB</small>
                                 </td>
-                                <td class="py-3 px-4">{{ $evt->lokasi }}</td>
+                                <td class="py-3 px-4 location-cell">{{ $evt->lokasi }}</td>
                                 <td class="py-3 px-4">
                                     <span class="badge badge-status-{{ $evt->status }}">
                                         {{ $evt->status_label['label'] }}
@@ -192,8 +209,17 @@
 
             <!-- Pagination -->
             @if ($events->hasPages())
-                <div class="d-flex justify-content-center p-4 border-top border-custom" id="paginationContainer">
-                    {{ $events->links('pagination::simple-bootstrap-4') }}
+                <div class="dt-footer">
+                    <span class="dt-info">
+                        Menampilkan {{ $events->firstItem() }}–{{ $events->lastItem() }} dari {{ $events->total() }} data
+                    </span>
+                    <div>
+                        {{ $events->withQueryString()->links('pagination::simple-bootstrap-4') }}
+                    </div>
+                </div>
+            @else
+                <div class="dt-footer">
+                    <span class="dt-info">Menampilkan {{ $events->count() }} dari {{ $events->total() }} data</span>
                 </div>
             @endif
         </div>

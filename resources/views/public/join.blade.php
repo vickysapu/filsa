@@ -9,43 +9,94 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f5f1e7;
             min-height: 100vh;
+            margin: 0;
+            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+        }
+
+        .join-hero {
+            min-height: 390px;
+            padding: 5rem 1.5rem 7rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+            color: white;
+            background:
+                linear-gradient(90deg, rgba(16, 59, 43, 0.88), rgba(16, 59, 43, 0.55)),
+                url('https://images.unsplash.com/photo-1511988617509-a57c8a288659?w=1800&auto=format&fit=crop&q=82') center 45% / cover;
+        }
+
+        .join-hero-content {
+            max-width: 860px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .join-hero-kicker {
+            display: block;
+            margin-bottom: 1rem;
+            color: #e4d4ae;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+        }
+
+        .join-hero h1 {
+            margin: 0;
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: clamp(2.2rem, 5vw, 4rem);
+            font-weight: 500;
+            line-height: 1.12;
+        }
+
+        .join-photo-note {
+            position: absolute;
+            right: 1.25rem;
+            bottom: 1rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.65rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
         }
 
         .join-card {
+            position: relative;
+            margin: -4rem auto 3rem;
             background: white;
-            border-radius: 20px;
+            border-radius: 2px;
             padding: 2rem;
-            max-width: 500px;
-            width: 90%;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 660px;
+            width: calc(100% - 2rem);
+            box-shadow: 0 16px 42px rgba(16, 59, 43, 0.12);
         }
 
         .meeting-info {
-            background: #f8f9fa;
-            border-radius: 12px;
+            background: #FAF7EF;
+            border: 1px solid #E4DCBF;
+            border-radius: 16px;
             padding: 1.5rem;
             margin: 1.5rem 0;
         }
 
         .btn-join {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #174C35;
             border: none;
             padding: 1rem 2rem;
-            font-size: 1.1rem;
-            font-weight: 600;
+            font-size: 1.05rem;
+            font-weight: 700;
             color: white;
-            border-radius: 10px;
+            border-radius: 50px;
             width: 100%;
-            transition: transform 0.2s;
+            transition: all 0.25s ease;
         }
 
         .btn-join:hover {
+            background: #103B2B;
             transform: translateY(-2px);
             color: white;
         }
@@ -57,14 +108,30 @@
             font-size: 0.9rem;
             font-weight: 600;
         }
+
+        @media (max-width: 600px) {
+            .join-hero {
+                min-height: 340px;
+                padding: 4.5rem 1.25rem 6rem;
+            }
+
+            .join-card {
+                padding: 1.5rem;
+            }
+        }
     </style>
 </head>
 
 <body>
+    <header class="join-hero">
+        <div class="join-hero-content">
+            <span class="join-hero-kicker">Pertemuan Online</span>
+            <h1>{{ $meeting->nama_meeting }}</h1>
+        </div>
+        <span class="join-photo-note">Foto ilustrasi · bukan dokumentasi pertemuan</span>
+    </header>
     <div class="join-card">
         <div class="text-center mb-4">
-            <i class="ri-video-line" style="font-size: 3rem; color: #667eea;"></i>
-            <h2 class="mt-3 mb-1">{{ $meeting->nama_meeting }}</h2>
             @if ($meeting->platform === 'jitsi')
                 <span class="platform-badge" style="background: #1d84ff20; color: #1d84ff;">
                     <i class="ri-video-line"></i> Jitsi Meet

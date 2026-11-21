@@ -2,8 +2,21 @@
 @section('title', 'Ajukan Akses Data')
 
 @section('content')
+    <header class="page-hero public-page-hero public-page-hero--events">
+        <div class="page-hero-container fade-in">
+            <nav class="page-breadcrumbs" aria-label="Breadcrumb">
+                <a href="{{ route('public.home') }}">Beranda</a>
+                <i class="ri-arrow-right-s-line"></i>
+                <span>Ajukan Akses Data</span>
+            </nav>
+            <span class="page-kicker">Permohonan Terbatas</span>
+            <h1 class="page-hero-title">Ajukan Akses Data</h1>
+            <p class="page-hero-desc">Sampaikan kebutuhan data dan tujuan penggunaannya untuk ditinjau oleh tim keamanan.</p>
+        </div>
+        <span class="page-image-note">Foto ilustrasi · bukan dokumentasi Gereja Filadelfia</span>
+    </header>
     <div class="lux-container"
-        style="padding: 4rem 2rem; min-height: calc(100vh - 200px); display: flex; align-items: center;">
+        style="padding: 3rem 2rem 4rem; min-height: calc(100vh - 200px); display: flex; align-items: center;">
         <div style="max-width: 700px; margin: 0 auto; width: 100%;">
 
             <div class="lux-card" style="border-left: 4px solid var(--brand-accent, #f59e0b); margin-bottom: 2rem;">
@@ -36,7 +49,7 @@
 
             <div class="lux-card" style="border-radius: 24px; overflow: hidden;">
                 <div
-                    style="background: linear-gradient(135deg, var(--brand-primary, #4f46e5), var(--brand-secondary, #06b6d4)); padding: 1.5rem 2rem; color: white;">
+                    style="background: linear-gradient(135deg, var(--zaitun-deep, #34432C), var(--zaitun-primary, #526E3B)); padding: 1.5rem 2rem; color: white;">
                     <h3
                         style="margin: 0; font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem;">
                         <i class="ri-file-list-3-line"></i>
@@ -201,12 +214,12 @@
                                 <i class="ri-arrow-left-line"></i> Batal
                             </a>
                             <button type="submit" class="lux-btn lux-btn-primary" id="submitBtn"
-                                style="padding: 0.75rem 1.5rem; border-radius: 50px; font-weight: 600; background: linear-gradient(135deg, var(--brand-primary, #4f46e5), var(--brand-secondary, #06b6d4)); color: white; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.3s ease;">
+                                style="padding: 0.75rem 1.5rem; border-radius: 50px; font-weight: 600; background: var(--zaitun-deep, #34432C); color: white; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.3s ease;">
                                 <i class="ri-send-plane-line"></i> Ajukan Permintaan
                             </button>
-                            <a href="{{ route('data-portal.verify') }}" class="lux-btn lux-btn-primary" id="submitBtn"
-                                style="padding: 0.75rem 1.5rem; border-radius: 50px; font-weight: 600; background: linear-gradient(135deg, var(--brand-primary, #4f46e5), var(--brand-secondary, #06b6d4)); color: white; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.3s ease;">
-                                <i class="ri-send-plane-line"></i> Telah Memiliki Token?
+                            <a href="{{ route('data-portal.verify') }}" class="lux-btn"
+                                style="padding: 0.75rem 1.5rem; border-radius: 50px; font-weight: 600; background: var(--zaitun-sand, #FAF7EF); color: var(--zaitun-deep, #34432C); border: 1.5px solid var(--zaitun-border, #E4DCBF); cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.3s ease;">
+                                <i class="ri-key-line"></i> Telah Memiliki Token?
                             </a>
                         </div>
                     </form>

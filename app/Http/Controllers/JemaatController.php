@@ -44,6 +44,7 @@ class JemaatController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('nama_lengkap', 'like', "%{$search}%")
+                    ->orWhere('NIK', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
                     ->orWhere('no_hp', 'like', "%{$search}%");
             });
@@ -53,11 +54,17 @@ class JemaatController extends Controller
             $query->where('jenis_kelamin', (int) $request->jenis_kelamin);
         }
 
+        if ($request->filled('status_pernikahan')) {
+            $query->where('status_pernikahan', $request->status_pernikahan);
+        }
+
         if ($request->filled('status_jemaat')) {
             $query->where('status_jemaat', (bool) $request->status_jemaat);
         }
 
-        $jemaats = $query->latest()->paginate(15)->withQueryString();
+        $perPage = (int) $request->get('per_page', 15);
+        $perPage = in_array($perPage, [10, 15, 25, 50, 100]) ? $perPage : 15;
+        $jemaats = $query->latest()->paginate($perPage)->withQueryString();
 
         if ($request->ajax()) {
             return view('features.jemaat._table', compact('jemaats', 'isSuperAdmin'))->render();
@@ -75,7 +82,7 @@ class JemaatController extends Controller
         $branchId = $this->getBranchId();
         $isSuperAdmin = $this->isSuperAdmin();
 
-        $query = Jemaat::select('id', 'nama_lengkap', 'no_hp', 'email', 'branch_id');
+        $query = Jemaat::select('id', 'nama_lengkap', 'NIK', 'no_hp', 'email', 'branch_id');
 
         if (!$isSuperAdmin && $branchId) {
             $query->where('branch_id', $branchId);
@@ -118,6 +125,7 @@ class JemaatController extends Controller
             $isSuperAdmin = $this->isSuperAdmin();
 
             $validationRules = [
+                'NIK' => 'required|string|size:16|unique:jemaats,NIK',
                 'nama_lengkap' => 'required|string|max:255',
                 'jenis_kelamin' => 'required|in:0,1',
                 'tempat_lahir' => 'required|string|max:100',
@@ -125,6 +133,7 @@ class JemaatController extends Controller
                 'alamat' => 'required|string|max:500',
                 'no_hp' => 'required|string|regex:/^[0-9\+\-\s\(\)]{10,20}$/',
                 'email' => 'nullable|email|max:255|unique:jemaats,email',
+                'status_pernikahan' => ['required', Rule::in(['belum menikah', 'menikah', 'janda', 'duda'])],
                 'pekerjaan' => 'nullable|string|max:100',
                 'pendidikan' => 'nullable|string|max:50',
                 'status_jemaat' => 'nullable|boolean',
@@ -136,6 +145,8 @@ class JemaatController extends Controller
             }
 
             $validated = $request->validate($validationRules, [
+                'NIK.size' => 'NIK harus tepat 16 digit',
+                'NIK.unique' => 'NIK sudah terdaftar dalam sistem',
                 'no_hp.regex' => 'Format nomor HP tidak valid',
                 'tanggal_lahir.before' => 'Tanggal lahir harus di masa lalu',
             ]);
@@ -149,6 +160,7 @@ class JemaatController extends Controller
 
             $jemaat = Jemaat::create([
                 'branch_id' => $branchId,
+                'NIK' => $validated['NIK'],
                 'nama_lengkap' => $validated['nama_lengkap'],
                 'jenis_kelamin' => $validated['jenis_kelamin'],
                 'tempat_lahir' => $validated['tempat_lahir'],
@@ -156,13 +168,23 @@ class JemaatController extends Controller
                 'alamat' => $validated['alamat'],
                 'no_hp' => $validated['no_hp'],
                 'email' => $validated['email'] ?? null,
+                'status_pernikahan' => $validated['status_pernikahan'],
                 'pekerjaan' => $validated['pekerjaan'] ?? null,
                 'pendidikan' => $validated['pendidikan'] ?? null,
                 'status_jemaat' => $validated['status_jemaat'] ?? true,
                 'foto' => $fotoPath,
             ]);
 
-            $this->sendNotificationToAuthorizedUsers($branchId, 'Data Jemaat Baru', "Jemaat atas nama {$jemaat->nama_lengkap} telah ditambahkan.", route('admin.jemaat.index'), 'ri-user-add-line', 'text-success', 'JEMAAT');
+            // Kirim Notifikasi
+            $this->sendNotificationToAuthorizedUsers(
+                $branchId,
+                'Data Jemaat Baru',
+                "Jemaat atas nama {$jemaat->nama_lengkap} telah ditambahkan.",
+                route('admin.jemaat.index'),
+                'ri-user-add-line',
+                'text-success',
+                'JEMAAT'
+            );
 
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json(
@@ -201,7 +223,6 @@ class JemaatController extends Controller
             return back()->with('error', 'Gagal menyimpan data. Silakan coba lagi.');
         }
     }
-
     public function show(Jemaat $jemaat)
     {
         $branchId = $this->getBranchId();
@@ -239,6 +260,7 @@ class JemaatController extends Controller
 
         try {
             $validationRules = [
+                'NIK' => 'required|string|size:16|unique:jemaats,NIK,' . $jemaat->id,
                 'nama_lengkap' => 'required|string|max:255',
                 'jenis_kelamin' => 'required|in:0,1',
                 'tempat_lahir' => 'required|string|max:100',
@@ -246,6 +268,7 @@ class JemaatController extends Controller
                 'alamat' => 'required|string|max:500',
                 'no_hp' => 'required|string|regex:/^[0-9\+\-\s\(\)]{10,20}$/',
                 'email' => 'nullable|email|max:255|unique:jemaats,email,' . $jemaat->id,
+                'status_pernikahan' => ['required', Rule::in(['belum menikah', 'menikah', 'janda', 'duda'])],
                 'pekerjaan' => 'nullable|string|max:100',
                 'pendidikan' => 'nullable|string|max:50',
                 'status_jemaat' => 'nullable|boolean',
@@ -257,6 +280,8 @@ class JemaatController extends Controller
             }
 
             $validated = $request->validate($validationRules, [
+                'NIK.size' => 'NIK harus tepat 16 digit',
+                'NIK.unique' => 'NIK sudah terdaftar',
                 'no_hp.regex' => 'Format nomor HP tidak valid',
             ]);
 
@@ -269,6 +294,7 @@ class JemaatController extends Controller
             }
 
             $updateData = [
+                'NIK' => $validated['NIK'],
                 'nama_lengkap' => $validated['nama_lengkap'],
                 'jenis_kelamin' => $validated['jenis_kelamin'],
                 'tempat_lahir' => $validated['tempat_lahir'],
@@ -276,6 +302,7 @@ class JemaatController extends Controller
                 'alamat' => $validated['alamat'],
                 'no_hp' => $validated['no_hp'],
                 'email' => $validated['email'] ?? null,
+                'status_pernikahan' => $validated['status_pernikahan'],
                 'pekerjaan' => $validated['pekerjaan'] ?? null,
                 'pendidikan' => $validated['pendidikan'] ?? null,
                 'status_jemaat' => $validated['status_jemaat'] ?? true,
@@ -288,9 +315,19 @@ class JemaatController extends Controller
 
             $jemaat->update($updateData);
 
+            // Kirim Notifikasi Update
+            // Menggunakan branch_id dari data jemaat yang sudah diupdate (atau sebelumnya jika branch berubah)
             $targetBranchId = $isSuperAdmin && isset($validated['branch_id']) ? $validated['branch_id'] : $jemaat->branch_id;
-
-            $this->sendNotificationToAuthorizedUsers($targetBranchId, 'Data Jemaat Diperbarui', "Data jemaat atas nama {$jemaat->nama_lengkap} telah diperbarui.", route('admin.jemaat.index'), 'ri-edit-line', 'text-warning', 'JEMAAT');
+            
+            $this->sendNotificationToAuthorizedUsers(
+                $targetBranchId,
+                'Data Jemaat Diperbarui',
+                "Data jemaat atas nama {$jemaat->nama_lengkap} telah diperbarui.",
+                route('admin.jemaat.index'),
+                'ri-edit-line',
+                'text-warning',
+                'JEMAAT'
+            );
 
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
@@ -338,21 +375,26 @@ class JemaatController extends Controller
         $query = User::where('is_active', true)->with('roles.permissions');
 
         if ($branchId) {
-            $query->where(function ($q) use ($branchId) {
-                $q->where('branch_id', $branchId)->orWhereHas('roles', function ($r) {
-                    $r->where('name', 'administrator')->orWhere('name', 'Super Admin');
-                });
+            $query->where(function($q) use ($branchId) {
+                $q->where('branch_id', $branchId)
+                  ->orWhereHas('roles', function($r) {
+                      $r->where('name', 'administrator') 
+                        ->orWhere('name', 'Super Admin'); 
+                  });
             });
         }
 
         $users = $query->get();
 
         $authorizedUsers = $users->filter(function ($user) {
-            return $user->hasPermission('jemaat.view');
+            return $user->hasPermission('jemaat.view'); 
         });
 
         if ($authorizedUsers->isNotEmpty()) {
-            Notification::send($authorizedUsers, new UnifiedNotification($title, $message, $url, $icon, $color, $source));
+            Notification::send(
+                $authorizedUsers, 
+                new UnifiedNotification($title, $message, $url, $icon, $color, $source)
+            );
         }
     }
 }

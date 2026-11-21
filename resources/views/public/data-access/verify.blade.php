@@ -2,18 +2,24 @@
 @section('title', 'Verifikasi Token Akses Data')
 
 @section('content')
+    <header class="page-hero public-page-hero public-page-hero--gallery">
+        <div class="page-hero-container fade-in">
+            <nav class="page-breadcrumbs" aria-label="Breadcrumb">
+                <a href="{{ route('public.home') }}">Beranda</a>
+                <i class="ri-arrow-right-s-line"></i>
+                <span>Verifikasi Token</span>
+            </nav>
+            <span class="page-kicker">Portal Akses Data</span>
+            <h1 class="page-hero-title">Verifikasi Token Akses</h1>
+            <p class="page-hero-desc">Masukkan token yang dikirim melalui email untuk melanjutkan ke portal data.</p>
+        </div>
+        <span class="page-image-note">Foto ilustrasi · bukan dokumentasi Gereja Filadelfia</span>
+    </header>
     <div class="lux-container"
-        style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem;">
+        style="display: flex; align-items: center; justify-content: center; padding: 3rem 2rem;">
         <div style="max-width: 500px; width: 100%;">
 
             <div class="lux-card" style="border-radius: 24px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.1);">
-                <div
-                    style="background: linear-gradient(135deg, var(--brand-primary, #4f46e5), var(--brand-secondary, #06b6d4)); padding: 2rem; text-align: center; color: white;">
-                    <i class="ri-key-2-line" style="font-size: 3rem; display: block; margin-bottom: 1rem;"></i>
-                    <h2 style="margin: 0; font-size: 1.5rem;">Verifikasi Token Akses</h2>
-                    <p style="margin: 0.5rem 0 0; opacity: 0.9;">Masukkan token dari email untuk mengakses data Anda</p>
-                </div>
-
                 <div style="padding: 2rem;">
                     @if (session('error'))
                         <div
@@ -35,7 +41,7 @@
                         </div>
 
                         <button type="submit" class="lux-btn lux-btn-primary"
-                            style="width: 100%; padding: 1rem; border-radius: 50px; font-weight: 600; background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary)); color: white; border: none; cursor: pointer;">
+                            style="width: 100%; padding: 1rem; border-radius: 50px; font-weight: 600; background: var(--zaitun-deep, #34432C); color: white; border: none; cursor: pointer; transition: all 0.3s ease;">
                             <i class="ri-lock-unlock-line me-2"></i>Verifikasi & Masuk
                         </button>
                     </form>

@@ -60,6 +60,11 @@ class Event extends Model
         return $query->where('status', 'published')->where('show_in_website', true);
     }
 
+    public function scopeUpcoming($query)
+    {
+        return $query->where('tanggal_mulai', '>=', now());
+    }
+
     public function getStatusLabelAttribute()
     {
         $labels = [
