@@ -50,5 +50,8 @@ Route::prefix('data-portal')->name('data-portal.')->middleware(['throttle:60,1']
         Route::get('/data/{table}', [DataAccessPortalController::class, 'fetchTableData'])->name('data.fetch');
         Route::get('/data/{table}/export/csv', [DataAccessPortalController::class, 'exportCsv'])->name('data.export.csv');
     });
+    Route::post('/token', [DataAccessPortalController::class, 'addToken'])
+        ->name('token.add')
+        ->middleware('throttle:10,1');
     Route::post('/logout', [DataAccessPortalController::class, 'logout'])->name('logout');
 });

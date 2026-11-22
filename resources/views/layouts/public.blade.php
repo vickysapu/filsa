@@ -7,7 +7,7 @@
     <meta name="description" content="Gereja Filadelfia - Komunitas Iman, Pengharapan, dan Kasih Persaudaraan di Dalam Kristus.">
     <meta name="keywords" content="gereja filadelfia, ibadah minggu, persekutuan kristen, firman tuhan, pelayanan doa">
     <title>@yield('title', 'Gereja Filadelfia - Welcome Home')</title>
-    <link rel="icon" href="{{ asset('img/olive-tree-logo.svg') }}" type="image/svg+xml">
+    <link rel="icon" href="{{ asset('img/white.tree-logo.png') }}" type="image/svg+xml">
 
     <!-- Fonts: Plus Jakarta Sans & Playfair Display (Pure Architectural Editorial Hierarchy) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -230,26 +230,6 @@
             background: var(--zaitun-terracotta-hover);
             transform: translateY(-2px);
             box-shadow: none;
-        }
-
-        .btn-login-nav {
-            background: transparent;
-            color: var(--zaitun-sand) !important;
-            border: 1px solid rgba(245, 241, 230, 0.35);
-            padding: 0.6rem 1.2rem;
-            border-radius: 4px;
-            font-size: 0.88rem;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            transition: var(--transition);
-        }
-
-        .btn-login-nav:hover {
-            background: var(--zaitun-sand);
-            color: var(--zaitun-deep) !important;
-            border-color: var(--zaitun-sand);
         }
 
         .mobile-hamburger {
@@ -702,8 +682,7 @@
             font-size: 0.86rem;
         }
 
-        .btn-worship-nav,
-        .btn-login-nav {
+        .btn-worship-nav {
             border-radius: 3px;
             min-height: 40px;
         }
@@ -1066,7 +1045,7 @@
         <div class="navbar-inner">
             <a href="{{ route('public.home') }}" class="brand-link">
                 <div class="brand-icon-box">
-                    <img src="{{ asset('img/olive-tree-logo.svg') }}" alt="Filadelfia" onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\'ri-ancient-gate-line\' style=\'color:#EADEB8;\'></i>';">
+                    <img src="{{ asset('img/white.tree-logo.png') }}" alt="Filadelfia" onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\'ri-ancient-gate-line\' style=\'color:#EADEB8;\'></i>';">
                 </div>
                 <div class="brand-name-group">
                     <span class="brand-title">FILADELFIA</span>
@@ -1081,7 +1060,6 @@
                     <li><a href="{{ route('public.events') }}" class="{{ request()->routeIs('public.events*') || request()->routeIs('public.event.detail') ? 'active' : '' }}">Agenda</a></li>
                     <li><a href="{{ route('public.gallery') }}" class="{{ request()->routeIs('public.gallery*') ? 'active' : '' }}">Galeri</a></li>
                     <li><a href="{{ route('public.contact') }}" class="{{ request()->routeIs('public.contact') ? 'active' : '' }}">Kontak</a></li>
-                    <li class="d-md-none"><a href="{{ route('login') }}">Masuk Portal Admin</a></li>
                 </ul>
             </nav>
 
@@ -1089,10 +1067,6 @@
                 <a href="{{ route('public.home') }}#jadwal-ibadah" class="btn-worship-nav">
                     <i class="ri-time-line"></i>
                     <span>Jadwal Ibadah</span>
-                </a>
-                <a href="{{ route('login') }}" class="btn-login-nav">
-                    <i class="ri-lock-line"></i>
-                    <span>Login</span>
                 </a>
             </div>
 
@@ -1113,7 +1087,7 @@
             <div>
                 <div class="footer-brand-lockup">
                     <div class="footer-brand-icon">
-                        <img src="{{ asset('img/olive-tree-logo.svg') }}" alt="Logo Filadelfia">
+                        <img src="{{ asset('img/white.tree-logo.png') }}" alt="Logo Filadelfia">
                     </div>
                     <span class="footer-brand-title">FILADELFIA</span>
                 </div>
