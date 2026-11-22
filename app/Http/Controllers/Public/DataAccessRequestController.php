@@ -55,7 +55,7 @@ class DataAccessRequestController extends Controller
                 'project_name' => 'required|string|max:150',
                 'project_url' => 'nullable|url|max:255',
                 'purpose' => 'required|string|min:50|max:1000',
-                'requested_tables' => ['required', 'array', 'min:1', 'max:5'],
+                'requested_tables' => ['required', 'array', 'min:1'],
                 'requested_tables.*' => ['uuid', Rule::exists('data_tables', 'id')->where(fn($q) => $q->where('status', true))],
                 'branch_id' => ['required', 'uuid', Rule::exists('branches', 'id')->where(fn($q) => $q->where('is_active', true))],
                 'agreed_terms' => 'accepted',
@@ -122,7 +122,7 @@ class DataAccessRequestController extends Controller
         $projectUrl = $dataRequest->project_url ?: 'Tidak diisi';
 
         Mail::raw("🔔 Permintaan Akses Data Baru\n\n" . "👤 Nama: {$dataRequest->requester_name}\n" . "📧 Email: {$dataRequest->requester_email}\n" . "📦 Project: {$dataRequest->project_name}\n" . "🔗 URL: {$projectUrl}\n" . '🗄️ Tabel: ' . implode(', ', $tableNames) . "\n" . "🏢 Branch: {$branchName}\n\n" . "📝 Tujuan:\n{$dataRequest->purpose}", function ($message) {
-            $message->to('vickypplg12@gmail.com')->subject('🔔 Permintaan Akses Data Baru');
+            $message->to('filadelfiamusa@gmail.com')->subject('🔔 Permintaan Akses Data Baru');
         });
     }
 }
