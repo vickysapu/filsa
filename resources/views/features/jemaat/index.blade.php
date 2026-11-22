@@ -3,20 +3,15 @@
 @section('title', 'Data Jemaat')
 
 @section('content')
-    @php
-        if (!isset($jemaat)) {
-            $jemaat = null;
-        }
-    @endphp
     <div class="page-wrapper">
 
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
             <div>
-                <h1 class="h3 mb-1 fw-bold" style="font-family: 'Playfair Display', Georgia, serif; letter-spacing: -0.01em;">Data Jemaat</h1>
+                <h1 class="h3 mb-1 fw-bold" style="font-family: 'Playfair Display', Georgia, serif; letter-spacing: -0.01em;">
+                    Data Jemaat</h1>
                 <p class="text-muted-custom mb-0">Kelola data anggota dan pertumbuhan jemaat Gereja Filadelfia</p>
             </div>
-            <button type="button" class="btn btn-custom btn-tambah-jemaat" data-bs-toggle="modal"
-                data-bs-target="#modalJemaatForm">
+            <button type="button" class="btn btn-custom btn-tambah-jemaat">
                 <i class="ri-user-add-line me-1"></i> Tambah Jemaat
             </button>
         </div>
@@ -31,14 +26,14 @@
 
         <div class="card-custom mb-4">
             <div class="card-body p-4">
-                <form id="formFilter">
+                <form id="formFilter" autocomplete="off" data-no-loading>
                     <div class="row g-3">
                         @if ($isSuperAdmin)
                             <div class="col-md-6 col-lg-3">
                                 <label class="form-label small fw-semibold mb-2">Filter Cabang</label>
                                 <select id="filter_branch_id" name="branch_id" class="form-select form-select-custom">
                                     <option value="">Semua Cabang</option>
-                                    @foreach (\App\Models\Branch::all() as $branch)
+                                    @foreach ($branches as $branch)
                                         <option value="{{ $branch->id }}"
                                             {{ request('branch_id') == $branch->id ? 'selected' : '' }}>
                                             {{ $branch->name }}
@@ -53,9 +48,9 @@
                             <div class="position-relative">
                                 <i
                                     class="ri-search-line position-absolute top-50 start-0 translate-middle-y ms-3 text-muted-custom"></i>
-                                <input type="text" id="search" name="search"
+                                <input type="text" id="search" name="search" autocomplete="off"
                                     class="form-control form-control-custom ps-5" value="{{ request('search') }}"
-                                    placeholder="Nama, NIK, atau Email...">
+                                    placeholder="Nama, No. HP, atau Email...">
                             </div>
                         </div>
 
@@ -108,13 +103,14 @@
         </div>
 
         <div class="card-custom">
-            {{-- DataTable Toolbar --}}
             <div class="dt-toolbar">
                 <div class="dt-entries">
                     <label>Tampilkan</label>
-                    <select onchange="var p=new URLSearchParams(window.location.search);p.set('per_page',this.value);p.set('page',1);window.location.href='{{ url()->current() }}?'+p.toString()">
-                        @foreach([10,25,50,100] as $pp)
-                            <option value="{{ $pp }}" {{ request('per_page', 10) == $pp ? 'selected' : '' }}>{{ $pp }}</option>
+                    <select
+                        onchange="var p=new URLSearchParams(window.location.search);p.set('per_page',this.value);p.set('page',1);window.location.href='{{ url()->current() }}?'+p.toString()">
+                        @foreach ([10, 25, 50, 100] as $pp)
+                            <option value="{{ $pp }}" {{ request('per_page', 10) == $pp ? 'selected' : '' }}>
+                                {{ $pp }}</option>
                         @endforeach
                     </select>
                     <label>entri</label>
@@ -122,7 +118,8 @@
                 <div class="dt-search">
                     <div class="dt-search-wrap">
                         <i class="ri-search-line"></i>
-                        <input type="text" placeholder="Cari nama, NIK, email..." value="{{ request('search') }}"
+                        <input type="text" autocomplete="off" placeholder="Cari nama, No. HP, email..."
+                            value="{{ request('search') }}"
                             onkeydown="if(event.key==='Enter'){var p=new URLSearchParams(window.location.search);p.set('search',this.value);p.set('page',1);window.location.href='{{ url()->current() }}?'+p.toString();}">
                     </div>
                 </div>
@@ -148,14 +145,16 @@
                                                 alt="{{ $jemaat->nama_lengkap }}" class="avatar-table">
                                         @else
                                             <div class="avatar-table avatar-placeholder">
-                                                {{ substr($jemaat->nama_lengkap, 0, 1) }}
+                                                {{ strtoupper(substr($jemaat->nama_lengkap, 0, 1)) }}
                                             </div>
                                         @endif
                                         <div>
                                             <div class="fw-semibold">{{ $jemaat->nama_lengkap }}</div>
                                             <div class="text-muted-custom small">
-                                                NIK: {{ number_format($jemaat->NIK, 0, ',', '.') }} •
-                                                {{ $jemaat->jenis_kelamin == 1 ? 'L' : 'P' }}
+                                                {{ $jemaat->jenis_kelamin == 1 ? 'Laki-laki' : 'Perempuan' }}
+                                                @if ($jemaat->tempat_lahir)
+                                                    • {{ $jemaat->tempat_lahir }}
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
@@ -220,8 +219,7 @@
             </div>
 
             @if ($jemaats->hasPages())
-                <div
-                    class="dt-footer">
+                <div class="dt-footer">
                     <span class="dt-info">
                         Menampilkan {{ $jemaats->firstItem() }}–{{ $jemaats->lastItem() }} dari {{ $jemaats->total() }}
                         data
@@ -240,7 +238,7 @@
     </div>
 
     <div class="modal fade" id="modalJemaatForm" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" style="max-height: 90vh;">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content modal-content-custom">
 
                 <div class="modal-header border-bottom border-custom">
@@ -248,7 +246,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
-                <form id="formJemaat" method="POST" enctype="multipart/form-data">
+                <form id="formJemaat" method="POST" enctype="multipart/form-data" autocomplete="off" data-no-loading>
                     @csrf
                     <input type="hidden" name="_method" id="formMethod" value="POST">
                     <input type="hidden" name="id" id="jemaatId" value="">
@@ -264,80 +262,61 @@
                             <div class="col-lg-6">
                                 <div class="card card-custom h-100">
                                     <div class="card-header-custom border-bottom border-custom py-3 px-4">
-                                        <h6 class="mb-0 fw-semibold"><i
-                                                class="ri-user-line me-2 text-primary"></i>Identitas Diri</h6>
+                                        <h6 class="mb-0 fw-semibold">
+                                            <i class="ri-user-line me-2 text-primary"></i>Identitas Diri
+                                        </h6>
                                     </div>
                                     <div class="card-body p-4">
 
                                         @if ($isSuperAdmin)
                                             <div class="mb-3">
-                                                <label class="form-label small fw-semibold text-muted-custom">Cabang <span
-                                                        class="text-danger">*</span></label>
-                                                <select name="branch_id" id="branch_id"
+                                                <label class="form-label small fw-semibold text-muted-custom">Cabang
+                                                    <span class="text-danger">*</span></label>
+                                                <select name="branch_id" id="branch_id" autocomplete="off"
                                                     class="form-select form-select-custom" required>
                                                     <option value="">Pilih Cabang...</option>
                                                     @foreach ($branches as $branch)
-                                                        <option value="{{ $branch->id }}"
-                                                            {{ (old('branch_id') ?? ($jemaat?->branch_id ?? ($defaultBranchId ?? ''))) == $branch->id ? 'selected' : '' }}>
-                                                            {{ $branch->name }}
-                                                        </option>
+                                                        <option value="{{ $branch->id }}">{{ $branch->name }}</option>
                                                     @endforeach
                                                 </select>
                                             </div>
-                                        @else
-                                            <input type="hidden" name="branch_id" value="{{ $defaultBranchId }}">
                                         @endif
 
                                         <div class="mb-3">
                                             <label class="form-label small fw-semibold text-muted-custom">Nama Lengkap
                                                 <span class="text-danger">*</span></label>
                                             <input type="text" name="nama_lengkap" id="nama_lengkap"
-                                                class="form-control form-control-custom" required placeholder="Sesuai KTP"
-                                                value="{{ old('nama_lengkap', $jemaat?->nama_lengkap ?? '') }}">
+                                                autocomplete="off" class="form-control form-control-custom" required
+                                                placeholder="Nama lengkap jemaat">
                                         </div>
 
-                                        <div class="mb-3">
-                                            <label class="form-label small fw-semibold text-muted-custom">NIK <span
-                                                    class="text-danger">*</span></label>
-                                            <input type="text" name="NIK" id="NIK"
-                                                class="form-control form-control-custom" required
-                                                placeholder="16 digit NIK" maxlength="16"
-                                                value="{{ old('NIK', $jemaat?->NIK ?? '') }}">
-                                            <small class="text-muted-custom">Masukkan 16 digit angka NIK</small>
-                                        </div>
-
-                                        <div class="row g-3">
+                                        <div class="row g-3 mb-3">
                                             <div class="col-6">
                                                 <label class="form-label small fw-semibold text-muted-custom">Tempat Lahir
                                                     <span class="text-danger">*</span></label>
                                                 <input type="text" name="tempat_lahir" id="tempat_lahir"
-                                                    class="form-control form-control-custom" required
-                                                    value="{{ old('tempat_lahir', $jemaat?->tempat_lahir ?? '') }}">
+                                                    autocomplete="off" class="form-control form-control-custom" required>
                                             </div>
                                             <div class="col-6">
                                                 <label class="form-label small fw-semibold text-muted-custom">Tanggal Lahir
                                                     <span class="text-danger">*</span></label>
                                                 <input type="date" name="tanggal_lahir" id="tanggal_lahir"
-                                                    class="form-control form-control-custom" required
-                                                    value="{{ old('tanggal_lahir', $jemaat?->tanggal_lahir ?? '') }}">
+                                                    autocomplete="off" class="form-control form-control-custom" required>
                                             </div>
                                         </div>
 
-                                        <div class="mb-3 mt-4">
-                                            <label
-                                                class="form-label small fw-semibold text-muted-custom d-block mb-2">Jenis
-                                                Kelamin <span class="text-danger">*</span></label>
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold text-muted-custom d-block mb-2">
+                                                Jenis Kelamin <span class="text-danger">*</span></label>
                                             <div class="d-flex gap-4">
                                                 <label class="form-check-radio">
                                                     <input type="radio" name="jenis_kelamin" value="1"
-                                                        class="form-check-input-custom"
-                                                        {{ old('jenis_kelamin', $jemaat?->jenis_kelamin ?? '') == 1 ? 'checked' : '' }}>
+                                                        class="form-check-input-custom">
                                                     <span class="form-check-label-custom">Laki-laki</span>
                                                 </label>
                                                 <label class="form-check-radio">
                                                     <input type="radio" name="jenis_kelamin" value="0"
-                                                        class="form-check-input-custom"
-                                                        {{ old('jenis_kelamin', $jemaat?->jenis_kelamin ?? '') == 0 ? 'checked' : '' }}>
+                                                        class="form-check-input-custom">
                                                     <span class="form-check-label-custom">Perempuan</span>
                                                 </label>
                                             </div>
@@ -348,13 +327,12 @@
                                                 Profil</label>
                                             <input type="file" name="foto" id="foto"
                                                 class="form-control form-control-custom" accept="image/*">
-                                            <div id="fotoPreview"
-                                                class="mt-3 {{ $jemaat?->foto ?? false ? '' : 'd-none' }}">
-                                                <img id="imgPreview" class="img-preview"
-                                                    src="{{ $jemaat?->foto ? asset('storage/' . $jemaat->foto) : '' }}">
+                                            <div id="fotoPreview" class="mt-3 d-none">
+                                                <img id="imgPreview" class="img-preview" src="">
                                             </div>
-                                            <small class="text-muted-custom"><i
-                                                    class="ri-information-line me-1"></i>Format: JPG, PNG. Max: 2MB</small>
+                                            <small class="text-muted-custom">
+                                                <i class="ri-information-line me-1"></i>Format: JPG, PNG. Max: 2MB
+                                            </small>
                                         </div>
                                     </div>
                                 </div>
@@ -363,104 +341,79 @@
                             <div class="col-lg-6">
                                 <div class="card card-custom h-100">
                                     <div class="card-header-custom border-bottom border-custom py-3 px-4">
-                                        <h6 class="mb-0 fw-semibold"><i
-                                                class="ri-contact-line me-2 text-primary"></i>Kontak & Data</h6>
+                                        <h6 class="mb-0 fw-semibold">
+                                            <i class="ri-contact-line me-2 text-primary"></i>Kontak & Data
+                                        </h6>
                                     </div>
                                     <div class="card-body p-4">
 
-                                        <div class="row g-3">
+                                        <div class="row g-3 mb-3">
                                             <div class="col-6">
                                                 <label class="form-label small fw-semibold text-muted-custom">Email</label>
-                                                <input type="email" name="email" id="email"
+                                                <input type="email" name="email" id="email" autocomplete="off"
                                                     class="form-control form-control-custom"
-                                                    placeholder="email@contoh.com"
-                                                    value="{{ old('email', $jemaat?->email ?? '') }}">
+                                                    placeholder="email@contoh.com">
                                             </div>
                                             <div class="col-6">
-                                                <label class="form-label small fw-semibold text-muted-custom">No. HP <span
-                                                        class="text-danger">*</span></label>
-                                                <input type="tel" name="no_hp" id="no_hp"
+                                                <label class="form-label small fw-semibold text-muted-custom">No. HP
+                                                    <span class="text-danger">*</span></label>
+                                                <input type="tel" name="no_hp" id="no_hp" autocomplete="off"
                                                     class="form-control form-control-custom" required
-                                                    placeholder="08123456789"
-                                                    value="{{ old('no_hp', $jemaat?->no_hp ?? '') }}">
+                                                    placeholder="08123456789">
                                             </div>
                                         </div>
 
                                         <div class="mb-3">
                                             <label class="form-label small fw-semibold text-muted-custom">Alamat Lengkap
                                                 <span class="text-danger">*</span></label>
-                                            <textarea name="alamat" id="alamat" class="form-control form-control-custom textarea-custom" rows="3"
-                                                required placeholder="Nama jalan, RT/RW, Kelurahan, Kecamatan">{{ old('alamat', $jemaat?->alamat ?? '') }}</textarea>
+                                            <textarea name="alamat" id="alamat" autocomplete="off" class="form-control form-control-custom textarea-custom"
+                                                rows="3" required placeholder="Nama jalan, RT/RW, Kelurahan, Kecamatan"></textarea>
                                         </div>
 
                                         <hr class="border-custom my-4">
 
-                                        <div class="row g-3">
+                                        <div class="row g-3 mb-3">
                                             <div class="col-6">
                                                 <label class="form-label small fw-semibold text-muted-custom">Pendidikan
                                                     Terakhir</label>
-                                                <select name="pendidikan" id="pendidikan"
+                                                <select name="pendidikan" id="pendidikan" autocomplete="off"
                                                     class="form-select form-select-custom">
                                                     <option value="">Pilih...</option>
-                                                    <option value="SD"
-                                                        {{ old('pendidikan', $jemaat?->pendidikan ?? '') == 'SD' ? 'selected' : '' }}>
-                                                        SD / Sederajat</option>
-                                                    <option value="SMP"
-                                                        {{ old('pendidikan', $jemaat?->pendidikan ?? '') == 'SMP' ? 'selected' : '' }}>
-                                                        SMP / Sederajat</option>
-                                                    <option value="SMA"
-                                                        {{ old('pendidikan', $jemaat?->pendidikan ?? '') == 'SMA' ? 'selected' : '' }}>
-                                                        SMA / SMK / Sederajat</option>
-                                                    <option value="D3"
-                                                        {{ old('pendidikan', $jemaat?->pendidikan ?? '') == 'D3' ? 'selected' : '' }}>
-                                                        Diploma (D3)</option>
-                                                    <option value="S1"
-                                                        {{ old('pendidikan', $jemaat?->pendidikan ?? '') == 'S1' ? 'selected' : '' }}>
-                                                        Sarjana (S1)</option>
-                                                    <option value="S2"
-                                                        {{ old('pendidikan', $jemaat?->pendidikan ?? '') == 'S2' ? 'selected' : '' }}>
-                                                        Magister (S2)</option>
-                                                    <option value="S3"
-                                                        {{ old('pendidikan', $jemaat?->pendidikan ?? '') == 'S3' ? 'selected' : '' }}>
-                                                        Doktor (S3)</option>
+                                                    <option value="SD">SD / Sederajat</option>
+                                                    <option value="SMP">SMP / Sederajat</option>
+                                                    <option value="SMA">SMA / SMK / Sederajat</option>
+                                                    <option value="D3">Diploma (D3)</option>
+                                                    <option value="S1">Sarjana (S1)</option>
+                                                    <option value="S2">Magister (S2)</option>
+                                                    <option value="S3">Doktor (S3)</option>
                                                 </select>
                                             </div>
                                             <div class="col-6">
                                                 <label
                                                     class="form-label small fw-semibold text-muted-custom">Pekerjaan</label>
-                                                <input type="text" name="pekerjaan" id="pekerjaan"
+                                                <input type="text" name="pekerjaan" id="pekerjaan" autocomplete="off"
                                                     class="form-control form-control-custom"
-                                                    placeholder="Contoh: Wiraswasta"
-                                                    value="{{ old('pekerjaan', $jemaat?->pekerjaan ?? '') }}">
+                                                    placeholder="Contoh: Wiraswasta">
                                             </div>
                                         </div>
 
                                         <div class="mb-3">
                                             <label class="form-label small fw-semibold text-muted-custom">Status Pernikahan
                                                 <span class="text-danger">*</span></label>
-                                            <select name="status_pernikahan" id="status_pernikahan"
+                                            <select name="status_pernikahan" id="status_pernikahan" autocomplete="off"
                                                 class="form-select form-select-custom" required>
                                                 <option value="">Pilih...</option>
-                                                <option value="belum menikah"
-                                                    {{ old('status_pernikahan', $jemaat?->status_pernikahan ?? '') == 'belum menikah' ? 'selected' : '' }}>
-                                                    Belum Menikah</option>
-                                                <option value="menikah"
-                                                    {{ old('status_pernikahan', $jemaat?->status_pernikahan ?? '') == 'menikah' ? 'selected' : '' }}>
-                                                    Menikah</option>
-                                                <option value="janda"
-                                                    {{ old('status_pernikahan', $jemaat?->status_pernikahan ?? '') == 'janda' ? 'selected' : '' }}>
-                                                    Janda</option>
-                                                <option value="duda"
-                                                    {{ old('status_pernikahan', $jemaat?->status_pernikahan ?? '') == 'duda' ? 'selected' : '' }}>
-                                                    Duda</option>
+                                                <option value="belum menikah">Belum Menikah</option>
+                                                <option value="menikah">Menikah</option>
+                                                <option value="janda">Janda</option>
+                                                <option value="duda">Duda</option>
                                             </select>
                                         </div>
 
                                         <div class="form-check form-switch-custom mt-4 p-3 bg-body-tertiary rounded">
                                             <input type="hidden" name="status_jemaat" value="0">
                                             <input type="checkbox" name="status_jemaat" id="status_jemaat"
-                                                class="form-check-input-custom" value="1"
-                                                {{ old('status_jemaat', $jemaat?->status_jemaat ?? true) == 1 ? 'checked' : '' }}>
+                                                class="form-check-input-custom" value="1" checked>
                                             <label class="form-check-label-custom fw-semibold" for="status_jemaat">Status
                                                 Jemaat Aktif</label>
                                         </div>
@@ -677,7 +630,6 @@
         .form-select-custom:focus {
             border-color: var(--zaitun-primary, #718F50);
             box-shadow: 0 0 0 3px rgba(113, 143, 80, 0.15);
-        }
             outline: none;
         }
 
@@ -702,8 +654,8 @@
         }
 
         .form-check-input-custom:checked {
-            background-color: var(--accent-blue);
-            border-color: var(--accent-blue);
+            background-color: var(--zaitun-primary, #718F50);
+            border-color: var(--zaitun-primary, #718F50);
         }
 
         .form-check-input-custom[type="radio"] {
@@ -832,7 +784,6 @@
             border-color: var(--bg-sidebar);
         }
 
-        /* Table header styling */
         thead.bg-body-tertiary {
             background-color: rgba(247, 245, 237, 0.7) !important;
         }
@@ -860,16 +811,9 @@
                 height: 28px;
                 font-size: 0.9rem;
             }
-
-            .modal-dialog-scrollable .modal-content {
-                max-height: calc(100vh - 2rem);
-            }
         }
     </style>
 
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
 
@@ -884,6 +828,12 @@
             const jemaatId = document.getElementById('jemaatId');
             const errorAlert = document.getElementById('formErrors');
             const errorList = document.getElementById('errorList');
+
+            function escapeHtml(value) {
+                const div = document.createElement('div');
+                div.textContent = value ?? '';
+                return div.innerHTML;
+            }
 
             document.getElementById('foto')?.addEventListener('change', function(e) {
                 const preview = document.getElementById('fotoPreview');
@@ -902,109 +852,61 @@
                 }
             });
 
-            document.getElementById('NIK')?.addEventListener('input', function(e) {
-                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 16);
-            });
-
-            document.getElementById('no_hp')?.addEventListener('input', function(e) {
+            document.getElementById('no_hp')?.addEventListener('input', function() {
                 this.value = this.value.replace(/[^0-9\+\-\s\(\)]/g, '').slice(0, 20);
             });
 
             document.getElementById('btnFilter')?.addEventListener('click', function() {
-                const form = document.getElementById('formFilter');
-                const params = new URLSearchParams(new FormData(form));
-                const url = `${window.location.pathname}?${params.toString()}`;
-
-                this.disabled = true;
-                this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Memuat...';
-
-                fetch(url, {
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    })
-                    .then(res => res.text())
-                    .then(html => {
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, 'text/html');
-
-                        document.getElementById('tabel-body').innerHTML =
-                            doc.getElementById('tabel-body')?.innerHTML ||
-                            '<tr><td colspan="4" class="text-center py-4">Tidak ada data</td></tr>';
-
-                        const newPagination = doc.querySelector('.pagination');
-                        const oldPagination = document.querySelector(
-                            '.card-custom > div:last-child .pagination');
-                        if (newPagination && oldPagination) {
-                            oldPagination.replaceWith(newPagination);
-                        }
-                    })
-                    .catch(err => {
-                        console.error('Filter error:', err);
-                        alert('Gagal memuat data. Silakan refresh halaman.');
-                    })
-                    .finally(() => {
-                        this.disabled = false;
-                        this.innerHTML = '<i class="ri-filter-line me-1"></i> Filter';
-                    });
+                const filterForm = document.getElementById('formFilter');
+                const params = new URLSearchParams(new FormData(filterForm));
+                const perPage = new URLSearchParams(window.location.search).get('per_page');
+                if (perPage) {
+                    params.set('per_page', perPage);
+                }
+                window.location.href = `${window.location.pathname}?${params.toString()}`;
             });
 
-            document.querySelector('#formFilter button[type="reset"]')?.addEventListener('click', () => {
-                window.location = window.location.pathname;
+            document.getElementById('search')?.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    document.getElementById('btnFilter')?.click();
+                }
             });
 
-            document.querySelectorAll('.btn-tambah-jemaat').forEach(btn => {
-                btn.addEventListener('click', () => {
+            document.addEventListener('click', function(e) {
+                const addBtn = e.target.closest('.btn-tambah-jemaat');
+                if (!addBtn) return;
 
-                    form.reset();
+                form.reset();
 
-                    formMethod.value = 'POST';
-                    jemaatId.value = '';
+                formMethod.value = 'POST';
+                jemaatId.value = '';
 
-                    // reset semua input manual
-                    document.getElementById('nama_lengkap').value = '';
-                    document.getElementById('NIK').value = '';
-                    document.getElementById('tempat_lahir').value = '';
-                    document.getElementById('tanggal_lahir').value = '';
-                    document.getElementById('email').value = '';
-                    document.getElementById('no_hp').value = '';
-                    document.getElementById('alamat').value = '';
-                    document.getElementById('pendidikan').value = '';
-                    document.getElementById('pekerjaan').value = '';
-                    document.getElementById('status_pernikahan').value = '';
+                document.querySelectorAll('input[name="jenis_kelamin"]').forEach(r => r.checked = false);
+                document.getElementById('status_jemaat').checked = true;
 
-                    // reset radio
-                    document.querySelectorAll('input[name="jenis_kelamin"]')
-                        .forEach(r => r.checked = false);
+                document.getElementById('foto').value = '';
+                document.getElementById('imgPreview').src = '';
+                document.getElementById('fotoPreview')?.classList.add('d-none');
 
-                    // reset switch
-                    document.getElementById('status_jemaat').checked = true;
+                const branchInput = document.getElementById('branch_id');
+                if (branchInput) {
+                    branchInput.value = '';
+                }
 
-                    // reset foto
-                    document.getElementById('foto').value = '';
-                    document.getElementById('imgPreview').src = '';
-                    document.getElementById('fotoPreview')
-                        ?.classList.add('d-none');
+                document.getElementById('modalJemaatLabel').textContent = 'Tambah Jemaat Baru';
 
-                    // reset branch
-                    const branchInput = document.getElementById('branch_id');
-                    if (branchInput) {
-                        branchInput.value = '';
-                    }
+                errorAlert?.classList.add('d-none');
+                errorList.innerHTML = '';
 
-                    document.getElementById('modalJemaatLabel')
-                        .textContent = 'Tambah Jemaat Baru';
-
-                    errorAlert?.classList.add('d-none');
-
-                    modalForm.show();
-                });
+                modalForm.show();
             });
 
             document.querySelectorAll('.btn-edit-jemaat').forEach(btn => {
                 btn.addEventListener('click', async function() {
                     const id = this.dataset.id;
                     errorAlert?.classList.add('d-none');
+                    errorList.innerHTML = '';
 
                     try {
                         const res = await fetch(`/admin/jemaat/${id}/api`, {
@@ -1017,16 +919,15 @@
 
                         const data = await res.json();
 
+                        form.reset();
+
                         formMethod.value = 'PUT';
                         jemaatId.value = data.id;
 
                         document.getElementById('nama_lengkap').value = data.nama_lengkap || '';
-                        document.getElementById('NIK').value = data.NIK || '';
                         document.getElementById('tempat_lahir').value = data.tempat_lahir || '';
                         document.getElementById('tanggal_lahir').value =
-                            data.tanggal_lahir ?
-                            data.tanggal_lahir.split('T')[0] :
-                            '';
+                            data.tanggal_lahir ? data.tanggal_lahir.split('T')[0] : '';
                         document.getElementById('email').value = data.email || '';
                         document.getElementById('no_hp').value = data.no_hp || '';
                         document.getElementById('alamat').value = data.alamat || '';
@@ -1034,8 +935,10 @@
                         document.getElementById('pekerjaan').value = data.pekerjaan || '';
                         document.getElementById('status_pernikahan').value = data
                             .status_pernikahan || '';
-                        if (document.getElementById('branch_id')) {
-                            document.getElementById('branch_id').value = data.branch_id || '';
+
+                        const branchInput = document.getElementById('branch_id');
+                        if (branchInput) {
+                            branchInput.value = data.branch_id || '';
                         }
 
                         document.querySelectorAll('input[name="jenis_kelamin"]').forEach(
@@ -1048,10 +951,12 @@
 
                         const preview = document.getElementById('fotoPreview');
                         const img = document.getElementById('imgPreview');
+                        document.getElementById('foto').value = '';
                         if (data.foto) {
                             img.src = `/storage/${data.foto}`;
                             preview?.classList.remove('d-none');
                         } else {
+                            img.src = '';
                             preview?.classList.add('d-none');
                         }
 
@@ -1072,14 +977,18 @@
 
                     modalShow.show();
                     content.innerHTML = `
-                <div class="text-center py-4">
-                    <div class="spinner-border text-primary mb-3" role="status"></div>
-                    <p class="text-muted">Memuat data...</p>
-                </div>
-            `;
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary mb-3" role="status"></div>
+                            <p class="text-muted">Memuat data...</p>
+                        </div>
+                    `;
 
                     try {
-                        const res = await fetch(`/admin/jemaat/${id}/api`);
+                        const res = await fetch(`/admin/jemaat/${id}/api`, {
+                            headers: {
+                                'Accept': 'application/json'
+                            }
+                        });
                         if (!res.ok) throw new Error('Gagal mengambil data');
 
                         const data = await res.json();
@@ -1094,71 +1003,69 @@
                         document.getElementById('btnDeleteFromShow').classList.toggle('d-none',
                             !canDelete);
 
-                        if (canEdit) {
-                            document.getElementById('btnEditFromShow').onclick = () => {
-                                modalShow.hide();
-                                document.querySelector(`.btn-edit-jemaat[data-id="${id}"]`)
-                                    ?.click();
-                            };
-                        }
-                        if (canDelete) {
-                            document.getElementById('btnDeleteFromShow').onclick = () => {
-                                modalShow.hide();
-                                document.querySelector(
-                                    `.btn-delete-jemaat[data-id="${id}"]`)?.click();
-                            };
-                        }
+                        document.getElementById('btnEditFromShow').onclick = canEdit ? () => {
+                            modalShow.hide();
+                            document.querySelector(`.btn-edit-jemaat[data-id="${id}"]`)
+                                ?.click();
+                        } : null;
+
+                        document.getElementById('btnDeleteFromShow').onclick = canDelete ?
+                    () => {
+                            modalShow.hide();
+                            document.querySelector(`.btn-delete-jemaat[data-id="${id}"]`)
+                                ?.click();
+                        } : null;
+
+                        const tanggalLahir = data.tanggal_lahir ?
+                            new Date(data.tanggal_lahir).toLocaleDateString('id-ID') : '-';
 
                         content.innerHTML = `
-                    <div class="row g-4">
-                        <div class="col-md-4 text-center">
-                            ${data.foto 
-                                ? `<img src="/storage/${data.foto}" class="img-fluid rounded mb-3" style="max-height:200px">`
-                                : `<div class="avatar-placeholder d-inline-flex align-items-center justify-content-center rounded-circle mb-3" style="width:120px;height:120px;background:var(--accent-blue);color:white;font-size:2rem;font-weight:600">${(data.nama_lengkap?.[0] || '?').toUpperCase()}</div>`
-                            }
-                            <h5 class="fw-bold mb-1">${data.nama_lengkap}</h5>
-                            <span class="badge ${data.status_jemaat ? 'badge-status-success' : 'badge-status-danger'}">
-                                ${data.status_jemaat ? 'Aktif' : 'Non-Aktif'}
-                            </span>
-                            ${data.branch ? `<p class="text-muted-custom small mt-2">${data.branch.name}</p>` : ''}
-                        </div>
-                        <div class="col-md-8">
-                            <div class="row g-3">
-                                <div class="col-6"><strong>NIK</strong></div>
-                                <div class="col-6">${data.NIK?.toString().replace(/(\d{4})(?=\d)/g, '$1.') || '-'}</div>
-                                
-                                <div class="col-6"><strong>Tempat, Tgl Lahir</strong></div>
-                                <div class="col-6">${data.tempat_lahir || '-'}, ${data.tanggal_lahir ? new Date(data.tanggal_lahir).toLocaleDateString('id-ID') : '-'}</div>
-                                
-                                <div class="col-6"><strong>Jenis Kelamin</strong></div>
-                                <div class="col-6">${data.jenis_kelamin == 1 ? 'Laki-laki' : 'Perempuan'}</div>
-                                
-                                <div class="col-6"><strong>Status Pernikahan</strong></div>
-                                <div class="col-6">${data.status_pernikahan?.toUpperCase() || '-'}</div>
-                                
-                                <div class="col-6"><strong>No. HP</strong></div>
-                                <div class="col-6">${data.no_hp || '-'}</div>
-                                
-                                <div class="col-6"><strong>Email</strong></div>
-                                <div class="col-6">${data.email || '-'}</div>
-                                
-                                <div class="col-6"><strong>Pendidikan</strong></div>
-                                <div class="col-6">${data.pendidikan || '-'}</div>
-                                
-                                <div class="col-6"><strong>Pekerjaan</strong></div>
-                                <div class="col-6">${data.pekerjaan || '-'}</div>
-                                
-                                <div class="col-12"><strong>Alamat</strong></div>
-                                <div class="col-12">${data.alamat || '-'}</div>
+                            <div class="row g-4">
+                                <div class="col-md-4 text-center">
+                                    ${data.foto
+                                        ? `<img src="/storage/${escapeHtml(data.foto)}" class="img-fluid rounded mb-3" style="max-height:200px">`
+                                        : `<div class="avatar-placeholder d-inline-flex align-items-center justify-content-center rounded-circle mb-3" style="width:120px;height:120px;font-size:2rem;font-weight:600">${escapeHtml((data.nama_lengkap?.[0] || '?').toUpperCase())}</div>`
+                                    }
+                                    <h5 class="fw-bold mb-1">${escapeHtml(data.nama_lengkap)}</h5>
+                                    <span class="badge ${data.status_jemaat ? 'badge-status-success' : 'badge-status-danger'}">
+                                        ${data.status_jemaat ? 'Aktif' : 'Non-Aktif'}
+                                    </span>
+                                    ${data.branch ? `<p class="text-muted-custom small mt-2">${escapeHtml(data.branch.name)}</p>` : ''}
+                                </div>
+                                <div class="col-md-8">
+                                    <div class="row g-3">
+                                        <div class="col-6"><strong>Tempat, Tgl Lahir</strong></div>
+                                        <div class="col-6">${escapeHtml(data.tempat_lahir || '-')}, ${tanggalLahir}</div>
+
+                                        <div class="col-6"><strong>Jenis Kelamin</strong></div>
+                                        <div class="col-6">${data.jenis_kelamin == 1 ? 'Laki-laki' : 'Perempuan'}</div>
+
+                                        <div class="col-6"><strong>Status Pernikahan</strong></div>
+                                        <div class="col-6">${escapeHtml(data.status_pernikahan?.toUpperCase() || '-')}</div>
+
+                                        <div class="col-6"><strong>No. HP</strong></div>
+                                        <div class="col-6">${escapeHtml(data.no_hp || '-')}</div>
+
+                                        <div class="col-6"><strong>Email</strong></div>
+                                        <div class="col-6">${escapeHtml(data.email || '-')}</div>
+
+                                        <div class="col-6"><strong>Pendidikan</strong></div>
+                                        <div class="col-6">${escapeHtml(data.pendidikan || '-')}</div>
+
+                                        <div class="col-6"><strong>Pekerjaan</strong></div>
+                                        <div class="col-6">${escapeHtml(data.pekerjaan || '-')}</div>
+
+                                        <div class="col-12"><strong>Alamat</strong></div>
+                                        <div class="col-12">${escapeHtml(data.alamat || '-')}</div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                `;
+                        `;
 
                     } catch (err) {
                         console.error('Show error:', err);
                         content.innerHTML =
-                            `<div class="alert alert-danger">❌ Gagal memuat detail jemaat.</div>`;
+                            `<div class="alert alert-danger">Gagal memuat detail jemaat.</div>`;
                     }
                 });
             });
@@ -1168,8 +1075,7 @@
             document.querySelectorAll('.btn-delete-jemaat').forEach(btn => {
                 btn.addEventListener('click', function() {
                     deleteId = this.dataset.id;
-                    const nama = this.dataset.nama;
-                    document.getElementById('deleteNamaJemaat').textContent = nama;
+                    document.getElementById('deleteNamaJemaat').textContent = this.dataset.nama;
                     modalDelete.show();
                 });
             });
@@ -1192,7 +1098,7 @@
 
                     const result = await res.json();
 
-                    if (result.success) {
+                    if (res.ok && result.success) {
                         modalDelete.hide();
                         const row = document.querySelector(`#tabel-body tr[data-id="${deleteId}"]`);
                         if (row) {
@@ -1229,7 +1135,6 @@
 
                 const formData = new FormData(form);
                 const id = jemaatId.value;
-                const method = formMethod.value;
                 const url = id ? `/admin/jemaat/${id}` : '/admin/jemaat';
 
                 try {
@@ -1246,31 +1151,18 @@
 
                     if (res.ok && result.success) {
                         modalForm.hide();
-                        showTemporaryAlert('success', result.message);
-
-                        if (id) {
-                            const row = document.querySelector(`#tabel-body tr[data-id="${id}"]`);
-                            if (row && result.data) {
-                                window.location.reload();
-                            } else {
-                                window.location.reload();
-                            }
-                        } else {
-                            window.location.reload();
-                        }
+                        window.location.reload();
+                    } else if (result.errors) {
+                        errorList.innerHTML = Object.values(result.errors)
+                            .flat()
+                            .map(err => `<li>${escapeHtml(err)}</li>`)
+                            .join('');
+                        errorAlert?.classList.remove('d-none');
+                        errorAlert?.scrollIntoView({
+                            behavior: 'smooth'
+                        });
                     } else {
-                        if (result.errors) {
-                            errorList.innerHTML = Object.values(result.errors)
-                                .flat()
-                                .map(err => `<li>${err}</li>`)
-                                .join('');
-                            errorAlert?.classList.remove('d-none');
-                            errorAlert?.scrollIntoView({
-                                behavior: 'smooth'
-                            });
-                        } else {
-                            alert(result.message || 'Gagal menyimpan data.');
-                        }
+                        alert(result.message || 'Gagal menyimpan data.');
                     }
                 } catch (err) {
                     console.error('Submit error:', err);
@@ -1284,42 +1176,38 @@
             function showTemporaryAlert(type, message) {
                 document.querySelectorAll('[data-auto-close]').forEach(el => el.remove());
 
-                const alert = document.createElement('div');
-                alert.className = `alert-custom ${type === 'success' ? 'success' : 'danger'} mb-4`;
-                alert.setAttribute('data-auto-close', '');
-                alert.innerHTML = `
-            <i class="ri-${type === 'success' ? 'checkbox-circle-fill' : 'error-warning-fill'}"></i>
-            <span>${message}</span>
-            <button class="alert-close">&times;</button>
-        `;
+                const alertEl = document.createElement('div');
+                alertEl.className = `alert-custom ${type === 'success' ? 'success' : 'danger'} mb-4`;
+                alertEl.setAttribute('data-auto-close', '');
+                alertEl.innerHTML = `
+                    <i class="ri-${type === 'success' ? 'checkbox-circle-fill' : 'error-warning-fill'}"></i>
+                    <span>${escapeHtml(message)}</span>
+                    <button class="alert-close">&times;</button>
+                `;
 
                 const header = document.querySelector('.page-wrapper > .d-flex');
                 if (header) {
-                    header.after(alert);
+                    header.after(alertEl);
 
                     setTimeout(() => {
-                        alert.style.transition = 'opacity 0.3s ease';
-                        alert.style.opacity = '0';
-                        setTimeout(() => alert.remove(), 300);
+                        alertEl.style.transition = 'opacity 0.3s ease';
+                        alertEl.style.opacity = '0';
+                        setTimeout(() => alertEl.remove(), 300);
                     }, 5000);
-
-                    alert.querySelector('.alert-close')?.addEventListener('click', () => {
-                        alert.remove();
-                    });
                 }
             }
 
             document.addEventListener('click', function(e) {
                 if (e.target.closest('.alert-close')) {
-                    e.target.closest('.alert-custom').remove();
+                    e.target.closest('.alert-custom')?.remove();
                 }
             });
 
-            document.querySelectorAll('[data-auto-close]').forEach(alert => {
+            document.querySelectorAll('[data-auto-close]').forEach(alertEl => {
                 setTimeout(() => {
-                    alert.style.transition = 'opacity 0.3s ease';
-                    alert.style.opacity = '0';
-                    setTimeout(() => alert.remove(), 300);
+                    alertEl.style.transition = 'opacity 0.3s ease';
+                    alertEl.style.opacity = '0';
+                    setTimeout(() => alertEl.remove(), 300);
                 }, 5000);
             });
         });

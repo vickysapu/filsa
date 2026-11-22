@@ -70,9 +70,16 @@ class User extends Authenticatable
         return $this->branch && $this->branch->is_headquarter;
     }
 
+    private ?bool $isSuperAdminMemo = null;
+
     public function isSuperAdmin(): bool
     {
-        return $this->hasRole('administrator') || $this->isHeadquarter();
+        return $this->isSuperAdminMemo ??= $this->hasRole('administrator');
+    }
+
+    public function currentBranchId(): ?string
+    {
+        return $this->roles->pluck('branch_id')->filter()->first() ?? $this->branch_id;
     }
 
     public function hasPermission(string $permissionName): bool

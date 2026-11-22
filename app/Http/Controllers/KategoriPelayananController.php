@@ -8,19 +8,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use App\Http\Controllers\Concerns\ResolvesBranch;
 
 class KategoriPelayananController extends Controller
 {
-    protected function getBranchId()
-    {
-        return Auth::user()?->roles->first()?->branch_id;
-    }
-
-    protected function isSuperAdmin()
-    {
-        $user = Auth::user();
-        return $user && ($user->hasRole('administrator') || ($user->branch && $user->branch->is_headquarter));
-    }
+    use ResolvesBranch;
 
     public function index(Request $request)
     {
@@ -30,11 +22,7 @@ class KategoriPelayananController extends Controller
 
         $query = KategoriPelayanan::query();
 
-        if (!$isSuperAdmin && $branchId) {
-            $query->where('branch_id', $branchId);
-        } elseif ($isSuperAdmin && $request->filled('branch_id')) {
-            $query->where('branch_id', $request->branch_id);
-        }
+        $this->scopeToBranch($query, $request);
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -45,7 +33,7 @@ class KategoriPelayananController extends Controller
 
         $kategoris = $query->ordered()->get();
         $branches = $isSuperAdmin ? Branch::all() : collect();
-        $defaultBranchId = Auth::user()?->roles->first()?->branch_id;
+        $defaultBranchId = $this->getBranchId();
 
         return view('features.kategori.pelayanan.index', compact('kategoris', 'branches', 'isSuperAdmin', 'defaultBranchId'));
     }
@@ -54,16 +42,18 @@ class KategoriPelayananController extends Controller
     {
         try {
             $isSuperAdmin = $this->isSuperAdmin();
-            $branchId = $isSuperAdmin ? $request->branch_id : $this->getBranchId();
+
+            if ($isSuperAdmin) {
+                $request->validate(['branch_id' => 'required|exists:branches,id']);
+            }
+
+            $branchId = $this->resolveBranchId($request);
 
             if (!$branchId) {
-                return response()->json(
-                    [
-                        'success' => false,
-                        'message' => 'Anda tidak memiliki akses Branch yang valid.',
-                    ],
-                    403,
-                );
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Akun Anda belum terhubung ke cabang.',
+                ], 403);
             }
 
             $validated = $request->validate([
@@ -124,12 +114,18 @@ class KategoriPelayananController extends Controller
         $branchId = $this->getBranchId();
         $isSuperAdmin = $this->isSuperAdmin();
 
-        if (!$isSuperAdmin && $branchId && $kategori->branch_id !== $branchId) {
+        if (!$this->ownsBranch($kategori)) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
         }
 
         try {
-            $targetBranchId = $isSuperAdmin ? $request->branch_id : $kategori->branch_id;
+            if ($isSuperAdmin) {
+                $request->validate(['branch_id' => 'nullable|exists:branches,id']);
+            }
+
+            $targetBranchId = $isSuperAdmin
+                ? ($request->input('branch_id') ?: $kategori->branch_id)
+                : $kategori->branch_id;
 
             $validated = $request->validate([
                 'nama_kategori' => [
@@ -156,8 +152,8 @@ class KategoriPelayananController extends Controller
                 'urutan' => $validated['urutan'] ?? $kategori->urutan,
             ];
 
-            if ($isSuperAdmin && isset($validated['branch_id'])) {
-                $updateData['branch_id'] = $validated['branch_id'];
+            if ($isSuperAdmin) {
+                $updateData['branch_id'] = $targetBranchId;
             }
 
             $kategori->update($updateData);
@@ -193,7 +189,7 @@ class KategoriPelayananController extends Controller
         $branchId = $this->getBranchId();
         $isSuperAdmin = $this->isSuperAdmin();
 
-        if (!$isSuperAdmin && $branchId && $kategori->branch_id !== $branchId) {
+        if (!$this->ownsBranch($kategori)) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
         }
 
@@ -232,11 +228,7 @@ class KategoriPelayananController extends Controller
 
         $query = KategoriPelayanan::select('id', 'nama_kategori', 'warna', 'branch_id');
 
-        if (!$isSuperAdmin && $branchId) {
-            $query->where('branch_id', $branchId);
-        } elseif ($request->filled('branch_id') && $isSuperAdmin) {
-            $query->where('branch_id', $request->branch_id);
-        }
+        $this->scopeToBranch($query, $request);
 
         $kategoris = $query->active()->ordered()->get();
         return response()->json($kategoris);

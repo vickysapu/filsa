@@ -13,19 +13,11 @@ use Illuminate\Support\Facades\Log;
 use App\Models\User;
 use App\Notifications\UnifiedNotification;
 use Illuminate\Support\Facades\Notification;
+use App\Http\Controllers\Concerns\ResolvesBranch;
 
 class EventController extends Controller
 {
-    protected function getBranchId()
-    {
-        return Auth::user()?->roles->first()?->branch_id ?? Auth::user()?->branch_id;
-    }
-
-    protected function isSuperAdmin()
-    {
-        $user = Auth::user();
-        return $user && ($user->hasRole('administrator') || ($user->branch && $user->branch->is_headquarter));
-    }
+    use ResolvesBranch;
 
     public function index(Request $request)
     {
@@ -35,11 +27,7 @@ class EventController extends Controller
 
         $query = Event::with(['kategori', 'branch']);
 
-        if (!$isSuperAdmin && $branchId) {
-            $query->where('branch_id', $branchId);
-        } elseif ($isSuperAdmin && $request->filled('branch_id')) {
-            $query->where('branch_id', $request->branch_id);
-        }
+        $this->scopeToBranch($query, $request);
 
         if ($request->filled('kategori_id')) {
             $query->where('kategori_id', $request->kategori_id);
@@ -68,17 +56,7 @@ class EventController extends Controller
             $kategoriQuery->withoutGlobalScope(\App\Models\Scopes\BranchScope::class);
         }
 
-        if (!$isSuperAdmin) {
-            if ($branchId) {
-                $kategoriQuery->where('branch_id', $branchId);
-            } else {
-                $kategoriQuery->whereRaw('1=0');
-            }
-        } else {
-            if ($request->filled('branch_id')) {
-                $kategoriQuery->where('branch_id', $request->branch_id);
-            }
-        }
+        $this->scopeToBranch($kategoriQuery, $request);
 
         $kategoris = $kategoriQuery->orderBy('nama_kategori')->get();
         $branches = $isSuperAdmin ? Branch::all() : collect();
@@ -90,16 +68,18 @@ class EventController extends Controller
     {
         try {
             $isSuperAdmin = $this->isSuperAdmin();
-            $branchId = $isSuperAdmin ? $request->branch_id : $this->getBranchId();
+
+            if ($isSuperAdmin) {
+                $request->validate(['branch_id' => 'required|exists:branches,id']);
+            }
+
+            $branchId = $this->resolveBranchId($request);
 
             if (!$branchId) {
-                return response()->json(
-                    [
-                        'success' => false,
-                        'message' => 'Anda tidak memiliki akses Branch yang valid.',
-                    ],
-                    403,
-                );
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Akun Anda belum terhubung ke cabang.',
+                ], 403);
             }
 
             $validationRules = [
@@ -208,7 +188,7 @@ class EventController extends Controller
         $branchId = $this->getBranchId();
         $isSuperAdmin = $this->isSuperAdmin();
 
-        if (!$isSuperAdmin && $branchId && $event->branch_id !== $branchId) {
+        if (!$this->ownsBranch($event)) {
             if ($request->ajax()) {
                 return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
             }
@@ -252,7 +232,7 @@ class EventController extends Controller
         $branchId = $this->getBranchId();
         $isSuperAdmin = $this->isSuperAdmin();
 
-        if (!$isSuperAdmin && $branchId && $event->branch_id !== $branchId) {
+        if (!$this->ownsBranch($event)) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
         }
 
@@ -370,7 +350,7 @@ class EventController extends Controller
         $branchId = $this->getBranchId();
         $isSuperAdmin = $this->isSuperAdmin();
 
-        if (!$isSuperAdmin && $branchId && $event->branch_id !== $branchId) {
+        if (!$this->ownsBranch($event)) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
         }
 

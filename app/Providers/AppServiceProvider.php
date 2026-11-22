@@ -47,5 +47,30 @@ class AppServiceProvider extends ServiceProvider
                 ->with('exportFields', FinancialExportController::fieldDefs())
                 ->with('exportIsAdmin', FinancialExportController::isAdmin());
         });
+
+        // Share $isSuperAdmin ke semua view agar tidak Undefined variable
+        View::composer('*', function ($view) {
+            if (auth()->check()) {
+                $user = auth()->user();
+                // Hanya set jika belum di-pass oleh controller (agar controller bisa override)
+                $viewData = $view->getData();
+                if (!array_key_exists('isSuperAdmin', $viewData)) {
+                    $view->with('isSuperAdmin', $user->isSuperAdmin());
+                }
+                if (!array_key_exists('branches', $viewData)) {
+                    $view->with('branches', $user->isSuperAdmin()
+                        ? \App\Models\Branch::orderBy('name')->get()
+                        : collect());
+                }
+            } else {
+                $viewData = $view->getData();
+                if (!array_key_exists('isSuperAdmin', $viewData)) {
+                    $view->with('isSuperAdmin', false);
+                }
+                if (!array_key_exists('branches', $viewData)) {
+                    $view->with('branches', collect());
+                }
+            }
+        });
     }
 }

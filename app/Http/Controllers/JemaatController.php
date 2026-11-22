@@ -9,42 +9,75 @@ use App\Notifications\UnifiedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Notification;
 
 class JemaatController extends Controller
 {
-    protected function getBranchId()
+    protected function isAdministrator()
     {
-        return Auth::user()?->roles->first()?->branch_id;
+        $user = Auth::user();
+
+        return $user && $user->hasRole('administrator');
     }
 
     protected function isSuperAdmin()
     {
+        return $this->isAdministrator();
+    }
+
+    protected function getBranchId()
+    {
         $user = Auth::user();
-        return $user && ($user->hasRole('administrator') || ($user->branch && $user->branch->is_headquarter));
+
+        if (!$user) {
+            return null;
+        }
+
+        return $user->roles->pluck('branch_id')->filter()->first() ?? $user->branch_id;
+    }
+    
+    protected function authorizeJemaat(Jemaat $jemaat)
+    {
+        if ($this->isSuperAdmin()) {
+            return;
+        }
+
+        $branchId = $this->getBranchId();
+
+        if (!$branchId || (int) $jemaat->branch_id !== (int) $branchId) {
+            abort(403, 'Akses ditolak');
+        }
+    }
+
+    protected function wantsJsonResponse(Request $request)
+    {
+        return $request->ajax() || $request->wantsJson();
     }
 
     public function index(Request $request)
     {
         $isSuperAdmin = $this->isSuperAdmin();
-        $user = Auth::user();
-        $branchId = $user?->branch_id ?? $user?->roles->pluck('branch_id')->filter()->first();
+        $branchId = $this->getBranchId();
 
         $query = Jemaat::query();
 
-        if (!$isSuperAdmin && $branchId) {
+        if ($isSuperAdmin) {
+            if ($request->filled('branch_id')) {
+                $query->where('branch_id', $request->branch_id);
+            }
+        } else {
+            if (!$branchId) {
+                abort(403, 'Akses ditolak');
+            }
             $query->where('branch_id', $branchId);
-        } elseif ($isSuperAdmin && $request->filled('branch_id')) {
-            $query->where('branch_id', $request->branch_id);
         }
 
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('nama_lengkap', 'like', "%{$search}%")
-                    ->orWhere('NIK', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
                     ->orWhere('no_hp', 'like', "%{$search}%");
             });
@@ -62,17 +95,13 @@ class JemaatController extends Controller
             $query->where('status_jemaat', (bool) $request->status_jemaat);
         }
 
-        $perPage = (int) $request->get('per_page', 15);
-        $perPage = in_array($perPage, [10, 15, 25, 50, 100]) ? $perPage : 15;
+        $perPage = (int) $request->get('per_page', 10);
+        $perPage = in_array($perPage, [10, 25, 50, 100]) ? $perPage : 10;
+
         $jemaats = $query->latest()->paginate($perPage)->withQueryString();
 
-        if ($request->ajax()) {
-            return view('features.jemaat._table', compact('jemaats', 'isSuperAdmin'))->render();
-        }
-
         $branches = $isSuperAdmin ? Branch::all() : collect();
-
-        $defaultBranchId = Auth::user()?->roles->first()?->branch_id;
+        $defaultBranchId = $branchId;
 
         return view('features.jemaat.index', compact('jemaats', 'branches', 'isSuperAdmin', 'defaultBranchId'));
     }
@@ -82,27 +111,25 @@ class JemaatController extends Controller
         $branchId = $this->getBranchId();
         $isSuperAdmin = $this->isSuperAdmin();
 
-        $query = Jemaat::select('id', 'nama_lengkap', 'NIK', 'no_hp', 'email', 'branch_id');
+        $query = Jemaat::select('id', 'nama_lengkap', 'no_hp', 'email', 'branch_id');
 
-        if (!$isSuperAdmin && $branchId) {
+        if ($isSuperAdmin) {
+            if ($request->filled('branch_id')) {
+                $query->where('branch_id', $request->branch_id);
+            }
+        } else {
+            if (!$branchId) {
+                return response()->json([], 403);
+            }
             $query->where('branch_id', $branchId);
-        } elseif ($request->filled('branch_id') && $isSuperAdmin) {
-            $query->where('branch_id', $request->branch_id);
         }
 
-        $jemaats = $query->orderBy('nama_lengkap')->get();
-
-        return response()->json($jemaats);
+        return response()->json($query->orderBy('nama_lengkap')->get());
     }
 
-    public function apiShow(Jemaat $jemaat, Request $request)
+    public function apiShow(Jemaat $jemaat)
     {
-        $branchId = $this->getBranchId();
-        $isSuperAdmin = $this->isSuperAdmin();
-
-        if (!$isSuperAdmin && $branchId && $jemaat->branch_id !== $branchId) {
-            return response()->json(['message' => 'Akses ditolak'], 403);
-        }
+        $this->authorizeJemaat($jemaat);
 
         $jemaat->load(['branch']);
 
@@ -124,8 +151,7 @@ class JemaatController extends Controller
         try {
             $isSuperAdmin = $this->isSuperAdmin();
 
-            $validationRules = [
-                'NIK' => 'required|string|size:16|unique:jemaats,NIK',
+            $rules = [
                 'nama_lengkap' => 'required|string|max:255',
                 'jenis_kelamin' => 'required|in:0,1',
                 'tempat_lahir' => 'required|string|max:100',
@@ -137,30 +163,32 @@ class JemaatController extends Controller
                 'pekerjaan' => 'nullable|string|max:100',
                 'pendidikan' => 'nullable|string|max:50',
                 'status_jemaat' => 'nullable|boolean',
-                'foto' => 'nullable|image|mimes:jpg,png,jpeg',
+                'foto' => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
             ];
 
             if ($isSuperAdmin) {
-                $validationRules['branch_id'] = 'required|exists:branches,id';
+                $rules['branch_id'] = 'required|exists:branches,id';
             }
 
-            $validated = $request->validate($validationRules, [
-                'NIK.size' => 'NIK harus tepat 16 digit',
-                'NIK.unique' => 'NIK sudah terdaftar dalam sistem',
+            $validated = $request->validate($rules, [
                 'no_hp.regex' => 'Format nomor HP tidak valid',
+                'email.unique' => 'Email sudah terdaftar dalam sistem',
                 'tanggal_lahir.before' => 'Tanggal lahir harus di masa lalu',
             ]);
+
+            $branchId = $isSuperAdmin ? $validated['branch_id'] : $this->getBranchId();
+
+            if (!$branchId) {
+                abort(403, 'Akun Anda belum terhubung ke cabang');
+            }
 
             $fotoPath = null;
             if ($request->hasFile('foto') && $request->file('foto')->isValid()) {
                 $fotoPath = $request->file('foto')->store('jemaat/foto', 'public');
             }
 
-            $branchId = $isSuperAdmin ? $validated['branch_id'] : $this->getBranchId();
-
             $jemaat = Jemaat::create([
                 'branch_id' => $branchId,
-                'NIK' => $validated['NIK'],
                 'nama_lengkap' => $validated['nama_lengkap'],
                 'jenis_kelamin' => $validated['jenis_kelamin'],
                 'tempat_lahir' => $validated['tempat_lahir'],
@@ -175,7 +203,6 @@ class JemaatController extends Controller
                 'foto' => $fotoPath,
             ]);
 
-            // Kirim Notifikasi
             $this->sendNotificationToAuthorizedUsers(
                 $branchId,
                 'Data Jemaat Baru',
@@ -186,81 +213,63 @@ class JemaatController extends Controller
                 'JEMAAT'
             );
 
-            if ($request->ajax() || $request->wantsJson()) {
-                return response()->json(
-                    [
-                        'success' => true,
-                        'message' => '✅ Data jemaat berhasil disimpan!',
-                    ],
-                    201,
-                );
+            if ($this->wantsJsonResponse($request)) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Data jemaat berhasil disimpan!',
+                ], 201);
             }
 
             return redirect()->route('admin.jemaat.index')->with('success', 'Jemaat berhasil ditambahkan!');
         } catch (\Illuminate\Validation\ValidationException $e) {
-            if ($request->ajax() || $request->wantsJson()) {
-                return response()->json(
-                    [
-                        'success' => false,
-                        'message' => 'Validasi gagal',
-                        'errors' => $e->errors(),
-                    ],
-                    422,
-                );
+            if ($this->wantsJsonResponse($request)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal',
+                    'errors' => $e->errors(),
+                ], 422);
             }
+            throw $e;
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
             throw $e;
         } catch (\Exception $e) {
             Log::error('Jemaat Store Error: ' . $e->getMessage());
-            if ($request->ajax() || $request->wantsJson()) {
-                return response()->json(
-                    [
-                        'success' => false,
-                        'message' => 'Terjadi kesalahan sistem. Silakan coba lagi.',
-                    ],
-                    500,
-                );
+            if ($this->wantsJsonResponse($request)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan sistem. Silakan coba lagi.',
+                ], 500);
             }
             return back()->with('error', 'Gagal menyimpan data. Silakan coba lagi.');
         }
     }
+
     public function show(Jemaat $jemaat)
     {
-        $branchId = $this->getBranchId();
-        $isSuperAdmin = $this->isSuperAdmin();
-
-        if (!$isSuperAdmin && $branchId && $jemaat->branch_id !== $branchId) {
-            abort(403, 'Akses ditolak');
-        }
+        $this->authorizeJemaat($jemaat);
 
         return view('features.jemaat.show', compact('jemaat'));
     }
 
     public function edit(Jemaat $jemaat)
     {
-        $branchId = $this->getBranchId();
+        $this->authorizeJemaat($jemaat);
+
         $isSuperAdmin = $this->isSuperAdmin();
-
-        if (!$isSuperAdmin && $branchId && $jemaat->branch_id !== $branchId) {
-            abort(403, 'Akses ditolak');
-        }
-
         $branches = $isSuperAdmin ? Branch::all() : collect();
+        $defaultBranchId = $this->getBranchId();
 
-        return view('features.jemaat.form', compact('jemaat', 'branches', 'isSuperAdmin'));
+        return view('features.jemaat.form', compact('jemaat', 'branches', 'isSuperAdmin', 'defaultBranchId'));
     }
 
     public function update(Request $request, Jemaat $jemaat)
     {
-        $branchId = $this->getBranchId();
+        $this->authorizeJemaat($jemaat);
+
         $isSuperAdmin = $this->isSuperAdmin();
 
-        if (!$isSuperAdmin && $branchId && $jemaat->branch_id !== $branchId) {
-            abort(403, 'Akses ditolak');
-        }
-
         try {
-            $validationRules = [
-                'NIK' => 'required|string|size:16|unique:jemaats,NIK,' . $jemaat->id,
+            $rules = [
                 'nama_lengkap' => 'required|string|max:255',
                 'jenis_kelamin' => 'required|in:0,1',
                 'tempat_lahir' => 'required|string|max:100',
@@ -276,13 +285,13 @@ class JemaatController extends Controller
             ];
 
             if ($isSuperAdmin) {
-                $validationRules['branch_id'] = 'required|exists:branches,id';
+                $rules['branch_id'] = 'required|exists:branches,id';
             }
 
-            $validated = $request->validate($validationRules, [
-                'NIK.size' => 'NIK harus tepat 16 digit',
-                'NIK.unique' => 'NIK sudah terdaftar',
+            $validated = $request->validate($rules, [
                 'no_hp.regex' => 'Format nomor HP tidak valid',
+                'email.unique' => 'Email sudah terdaftar dalam sistem',
+                'tanggal_lahir.before' => 'Tanggal lahir harus di masa lalu',
             ]);
 
             $fotoPath = $jemaat->foto;
@@ -294,7 +303,6 @@ class JemaatController extends Controller
             }
 
             $updateData = [
-                'NIK' => $validated['NIK'],
                 'nama_lengkap' => $validated['nama_lengkap'],
                 'jenis_kelamin' => $validated['jenis_kelamin'],
                 'tempat_lahir' => $validated['tempat_lahir'],
@@ -315,12 +323,8 @@ class JemaatController extends Controller
 
             $jemaat->update($updateData);
 
-            // Kirim Notifikasi Update
-            // Menggunakan branch_id dari data jemaat yang sudah diupdate (atau sebelumnya jika branch berubah)
-            $targetBranchId = $isSuperAdmin && isset($validated['branch_id']) ? $validated['branch_id'] : $jemaat->branch_id;
-            
             $this->sendNotificationToAuthorizedUsers(
-                $targetBranchId,
+                $jemaat->branch_id,
                 'Data Jemaat Diperbarui',
                 "Data jemaat atas nama {$jemaat->nama_lengkap} telah diperbarui.",
                 route('admin.jemaat.index'),
@@ -329,39 +333,79 @@ class JemaatController extends Controller
                 'JEMAAT'
             );
 
-            if ($request->ajax() || $request->wantsJson()) {
+            if ($this->wantsJsonResponse($request)) {
                 return response()->json([
                     'success' => true,
-                    'message' => '✅ Data jemaat berhasil diperbarui!',
+                    'message' => 'Data jemaat berhasil diperbarui!',
                     'data' => $jemaat,
                 ]);
             }
 
             return redirect()->route('admin.jemaat.index')->with('success', 'Data jemaat berhasil diupdate!');
         } catch (\Illuminate\Validation\ValidationException $e) {
-            if ($request->ajax() || $request->wantsJson()) {
-                return response()->json(
-                    [
-                        'success' => false,
-                        'message' => 'Validasi gagal',
-                        'errors' => $e->errors(),
-                    ],
-                    422,
-                );
+            if ($this->wantsJsonResponse($request)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal',
+                    'errors' => $e->errors(),
+                ], 422);
             }
+            throw $e;
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
             throw $e;
         } catch (\Exception $e) {
             Log::error('Jemaat Update Error: ' . $e->getMessage());
-            if ($request->ajax() || $request->wantsJson()) {
-                return response()->json(
-                    [
-                        'success' => false,
-                        'message' => 'Terjadi kesalahan sistem.',
-                    ],
-                    500,
-                );
+            if ($this->wantsJsonResponse($request)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan sistem.',
+                ], 500);
             }
             return back()->with('error', 'Gagal mengupdate data.');
+        }
+    }
+
+    public function destroy(Request $request, Jemaat $jemaat)
+    {
+        $this->authorizeJemaat($jemaat);
+
+        try {
+            $nama = $jemaat->nama_lengkap;
+            $branchId = $jemaat->branch_id;
+
+            if ($jemaat->foto && Storage::disk('public')->exists($jemaat->foto)) {
+                Storage::disk('public')->delete($jemaat->foto);
+            }
+
+            $jemaat->delete();
+
+            $this->sendNotificationToAuthorizedUsers(
+                $branchId,
+                'Data Jemaat Dihapus',
+                "Data jemaat atas nama {$nama} telah dihapus.",
+                route('admin.jemaat.index'),
+                'ri-delete-bin-line',
+                'text-danger',
+                'JEMAAT'
+            );
+
+            if ($this->wantsJsonResponse($request)) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Data jemaat berhasil dihapus!',
+                ]);
+            }
+
+            return redirect()->route('admin.jemaat.index')->with('success', 'Data jemaat berhasil dihapus!');
+        } catch (\Exception $e) {
+            Log::error('Jemaat Delete Error: ' . $e->getMessage());
+            if ($this->wantsJsonResponse($request)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal menghapus data jemaat.',
+                ], 500);
+            }
+            return back()->with('error', 'Gagal menghapus data.');
         }
     }
 
@@ -375,24 +419,22 @@ class JemaatController extends Controller
         $query = User::where('is_active', true)->with('roles.permissions');
 
         if ($branchId) {
-            $query->where(function($q) use ($branchId) {
+            $query->where(function ($q) use ($branchId) {
                 $q->where('branch_id', $branchId)
-                  ->orWhereHas('roles', function($r) {
-                      $r->where('name', 'administrator') 
-                        ->orWhere('name', 'Super Admin'); 
-                  });
+                    ->orWhereHas('roles', function ($r) {
+                        $r->where('name', 'administrator')
+                            ->orWhere('name', 'Super Admin');
+                    });
             });
         }
 
-        $users = $query->get();
-
-        $authorizedUsers = $users->filter(function ($user) {
-            return $user->hasPermission('jemaat.view'); 
+        $authorizedUsers = $query->get()->filter(function ($user) {
+            return $user->hasPermission('jemaat.view');
         });
 
         if ($authorizedUsers->isNotEmpty()) {
             Notification::send(
-                $authorizedUsers, 
+                $authorizedUsers,
                 new UnifiedNotification($title, $message, $url, $icon, $color, $source)
             );
         }

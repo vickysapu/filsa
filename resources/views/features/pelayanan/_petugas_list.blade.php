@@ -14,8 +14,7 @@
             style="background: var(--bg-surface);">
             <div class="d-flex align-items-center gap-3 flex-grow-1">
                 <input type="checkbox" id="jemaat_{{ $jemaat->id }}" name="jemaat_ids[]" value="{{ $jemaat->id }}"
-                    class="jemaat-checkbox form-check-input mt-0" {{ $isChecked }}
-                    onchange="toggleKategoriField(this)">
+                    class="jemaat-checkbox form-check-input mt-0" {{ $isChecked }}>
                 <label for="jemaat_{{ $jemaat->id }}" class="d-flex align-items-center gap-3 mb-0"
                     style="cursor:pointer;">
                     <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
@@ -41,6 +40,9 @@
                         </option>
                     @endforeach
                 </select>
+                @if ($kategoris->isEmpty())
+                    <small class="text-danger">Belum ada kategori pelayanan aktif untuk cabang ini.</small>
+                @endif
             </div>
         </div>
     @endforeach

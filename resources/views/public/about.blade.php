@@ -473,6 +473,8 @@
         </div>
     </section>
 
+    @include('public.partials.church-structure')
+
     <!-- Warm Call to Action -->
     <section class="content-container about-invitation" style="text-align: center;">
         <div style="background: var(--zaitun-deep); border-radius: var(--radius-xl); padding: 4.5rem 2rem; color: #FFFFFF;" class="fade-in">

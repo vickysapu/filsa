@@ -39,7 +39,7 @@ class Role extends Model
     }
     public function isAccessibleBy(User $user): bool
     {
-        return $user->isSuperAdmin() || $this->isGlobal() || $this->branch_id === $user->branch_id;
+        return $user->isSuperAdmin() || $this->isGlobal() || $this->branch_id === $user->currentBranchId();    
     }
     public function hasPermission(string $permissionName): bool
     {
