@@ -3,46 +3,59 @@
 @section('title', 'Jadwal Meeting')
 
 @php
-function getPlatformName($p)
-{
-    return [
-        'jitsi' => 'Jitsi Meet',
-        'zoom' => 'Zoom',
-        'google_meet' => 'Google Meet',
-    ][$p] ?? $p ?? '-';
-}
+    function getPlatformName($p)
+    {
+        return [
+            'jitsi' => 'Jitsi Meet',
+            'zoom' => 'Zoom',
+            'google_meet' => 'camera-lens-line',
+            'internal' => 'vidicon-line',
+        ][$p] ??
+            ($p ?? '-');
+    }
 
-function getPlatformIcon($p)
-{
-    return [
-        'jitsi' => 'video-line',
-        'zoom' => 'camera-line',
-        'google_meet' => 'camera-lens-line',
-    ][$p] ?? 'video-line';
-}
+    function getPlatformIcon($p)
+    {
+        return [
+            'jitsi' => 'video-line',
+            'zoom' => 'camera-line',
+            'google_meet' => 'camera-lens-line',
+        ][$p] ?? 'video-line';
+    }
 
-function getStatusText($m)
-{
-    if (!$m || !$m->tanggal_mulai) return '-';
+    function getStatusText($m)
+    {
+        if (!$m || !$m->tanggal_mulai) {
+            return '-';
+        }
 
-    $now = now();
+        $now = now();
 
-    if ($m->tanggal_mulai > $now) return 'Akan Datang';
-    if ($m->tanggal_selesai && $m->tanggal_selesai < $now) return 'Selesai';
-    return 'Berlangsung';
-}
+        if ($m->tanggal_mulai > $now) {
+            return 'Akan Datang';
+        }
+        if ($m->tanggal_selesai && $m->tanggal_selesai < $now) {
+            return 'Selesai';
+        }
+        return 'Berlangsung';
+    }
 
-function getStatusBadgeClass($m)
-{
-    if (!$m || !$m->tanggal_mulai) return 'badge-status-upcoming';
+    function getStatusBadgeClass($m)
+    {
+        if (!$m || !$m->tanggal_mulai) {
+            return 'badge-status-upcoming';
+        }
 
-    $now = now();
+        $now = now();
 
-    if ($m->tanggal_mulai > $now) return 'badge-status-upcoming';
-    if ($m->tanggal_selesai && $m->tanggal_selesai < $now) return 'badge-status-completed';
-    return 'badge-status-ongoing';
-}
-
+        if ($m->tanggal_mulai > $now) {
+            return 'badge-status-upcoming';
+        }
+        if ($m->tanggal_selesai && $m->tanggal_selesai < $now) {
+            return 'badge-status-completed';
+        }
+        return 'badge-status-ongoing';
+    }
 @endphp
 
 @section('content')
@@ -264,6 +277,7 @@ function getStatusBadgeClass($m)
                                 <option value="jitsi">Jitsi Meet (Gratis)</option>
                                 <option value="zoom">Zoom Meeting</option>
                                 <option value="google_meet">Google Meet</option>
+                                <option value="internal">Meeting Internal (Aplikasi Sendiri)</option>
                             </select>
                             <small class="text-muted-custom"><i class="ri-information-line me-1"></i>Jitsi Meet
                                 direkomendasikan - gratis tanpa batas waktu</small>
@@ -284,6 +298,71 @@ function getStatusBadgeClass($m)
                             <input type="url" name="meeting_url" id="meeting_url"
                                 class="form-control form-control-custom"
                                 placeholder="https://zoom.us/j/... atau https://meet.google.com/...">
+                        </div>
+
+                        <div id="internalFields" style="display:none">
+                            <hr class="border-custom my-4">
+                            <h6 class="fw-semibold mb-3">Pengaturan Ruang Meeting</h6>
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-muted-custom">Password Room
+                                    (opsional)</label>
+                                <input type="password" name="password" id="password"
+                                    class="form-control form-control-custom" autocomplete="new-password"
+                                    placeholder="Kosongkan jika tanpa password">
+                                <label class="form-check mt-2">
+                                    <input type="checkbox" name="clear_password" id="clear_password" value="1"
+                                        class="form-check-input-custom">
+                                    <span class="form-check-label-custom">Hapus password yang sudah ada</span>
+                                </label>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-muted-custom">Stream Key YouTube
+                                    (opsional)</label>
+                                <input type="password" name="youtube_stream_key" id="youtube_stream_key"
+                                    class="form-control form-control-custom" autocomplete="new-password"
+                                    placeholder="Tempel stream key dari YouTube Studio">
+                                <small class="text-muted-custom" id="ytKeyHint" style="display:none">
+                                    <i class="ri-check-line me-1"></i>Stream key sudah tersimpan. Isi lagi hanya jika ingin
+                                    menggantinya.
+                                </small>
+                                <label class="form-check mt-2">
+                                    <input type="checkbox" name="clear_youtube_key" id="clear_youtube_key"
+                                        value="1" class="form-check-input-custom">
+                                    <span class="form-check-label-custom">Hapus stream key yang sudah ada</span>
+                                </label>
+                            </div>
+
+                            <label class="form-check form-switch-custom mb-3">
+                                <input type="checkbox" name="viewer_mode" id="viewer_mode" value="1"
+                                    class="form-check-input-custom">
+                                <span class="form-check-label-custom">Mode Penonton (hanya host yang tampil; peserta angkat
+                                    tangan untuk bicara)</span>
+                            </label>
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-muted-custom">Co-Host (tahan Ctrl untuk
+                                    pilih banyak)</label>
+                                <select name="host_ids[]" id="host_ids" class="form-select form-select-custom" multiple
+                                    size="5">
+                                    @foreach ($users ?? [] as $u)
+                                        <option value="{{ $u->id }}">{{ $u->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-muted-custom">Panel Samping</label>
+                                <select name="side_type" id="side_type" class="form-select form-select-custom mb-2">
+                                    <option value="none">Tidak dipakai</option>
+                                    <option value="text">Teks / Lirik lagu</option>
+                                    <option value="image">Gambar (URL)</option>
+                                    <option value="video">Video (URL YouTube atau .mp4)</option>
+                                </select>
+                                <textarea name="side_content" id="side_content" class="form-control form-control-custom textarea-custom"
+                                    rows="5" maxlength="5000" placeholder="Isi lirik, atau tempel URL gambar/video"></textarea>
+                            </div>
                         </div>
 
                         <div class="row g-3">
@@ -346,6 +425,9 @@ function getStatusBadgeClass($m)
                     <a href="#" id="btnJoinMeeting" class="btn btn-custom" target="_blank">
                         <i class="ri-video-add-line me-1"></i> Join Meeting
                     </a>
+                    <button type="button" id="btnCopyLink" class="btn btn-outline-custom">
+                        <i class="ri-links-line me-1"></i> Salin Link
+                    </button>
                 </div>
             </div>
         </div>
@@ -413,6 +495,15 @@ function getStatusBadgeClass($m)
             font-size: 0.75rem;
         }
 
+        .badge-platform-internal {
+            background: rgba(124, 58, 237, 0.15);
+            color: #7c3aed;
+            border: 1px solid rgba(124, 58, 237, 0.3);
+            padding: 0.35em 0.65em;
+            font-weight: 500;
+            font-size: 0.75rem;
+        }
+
         .badge-status-ongoing {
             background: rgba(34, 197, 94, 0.15);
             color: #22c55e;
@@ -429,6 +520,22 @@ function getStatusBadgeClass($m)
             padding: 0.35em 0.65em;
             font-weight: 500;
             font-size: 0.75rem;
+        }
+
+        /* Form pembungkus harus ikut jadi flex column agar body bisa scroll */
+        .modal-dialog-scrollable .modal-content>form {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .modal-dialog-scrollable .modal-body {
+            overflow-y: auto;
+            flex: 1 1 auto;
+            min-height: 0;
+            /* tambahkan ini */
         }
 
         /* ===== ACTION BUTTONS ===== */
@@ -717,6 +824,45 @@ function getStatusBadgeClass($m)
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
             let isEditMode = false;
 
+            const platformNames = {
+                jitsi: 'Jitsi Meet',
+                zoom: 'Zoom',
+                google_meet: 'Google Meet',
+                internal: 'Meeting Gereja'
+            };
+            const platformIcons = {
+                jitsi: 'video-line',
+                zoom: 'camera-line',
+                google_meet: 'camera-lens-line',
+                internal: 'vidicon-line'
+            };
+            const getPlatformName = p => platformNames[p] || p || '-';
+            const getPlatformIcon = p => platformIcons[p] || 'video-line';
+
+            function getStatusKey(m) {
+                const now = new Date();
+                if (!m.tanggal_mulai) return null;
+                if (new Date(m.tanggal_mulai) > now) return 'upcoming';
+                if (m.tanggal_selesai && new Date(m.tanggal_selesai) < now) return 'completed';
+                return 'ongoing';
+            }
+            const getStatusText = m => ({
+                upcoming: 'Akan Datang',
+                completed: 'Selesai',
+                ongoing: 'Berlangsung'
+            } [getStatusKey(m)] || '-');
+            const getStatusBadgeClass = m => 'badge-status-' + (getStatusKey(m) || 'upcoming');
+
+            function escapeHtml(s) {
+                return String(s ?? '').replace(/[&<>"']/g, c => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;'
+                } [c]));
+            }
+
             // ===== PLATFORM FIELD TOGGLE =====
             window.togglePlatformFields = function() {
                 const platform = document.getElementById('platform')?.value;
@@ -724,13 +870,20 @@ function getStatusBadgeClass($m)
                 const manualUrlFields = document.getElementById('manualUrlFields');
                 const urlInput = manualUrlFields?.querySelector('input');
 
+                const internalFields = document.getElementById('internalFields');
+                if (internalFields) internalFields.style.display = platform === 'internal' ? 'block' : 'none';
+
                 if (platform === 'jitsi') {
-                    if (jitsiFields) jitsiFields.style.display = 'block';
-                    if (manualUrlFields) manualUrlFields.style.display = 'none';
+                    jitsiFields.style.display = 'block';
+                    manualUrlFields.style.display = 'none';
+                    if (urlInput) urlInput.required = false;
+                } else if (platform === 'internal') {
+                    jitsiFields.style.display = 'none';
+                    manualUrlFields.style.display = 'none';
                     if (urlInput) urlInput.required = false;
                 } else {
-                    if (jitsiFields) jitsiFields.style.display = 'none';
-                    if (manualUrlFields) manualUrlFields.style.display = 'block';
+                    jitsiFields.style.display = 'none';
+                    manualUrlFields.style.display = 'block';
                     if (urlInput) urlInput.required = true;
                 }
             }
@@ -755,6 +908,17 @@ function getStatusBadgeClass($m)
                         .replace(' ', 'T') : '';
                     document.getElementById('is_active').checked = !!data.is_active;
                     document.getElementById('show_in_website').checked = data.show_in_website !== false;
+                    document.getElementById('viewer_mode').checked = !!data.viewer_mode;
+                    document.getElementById('side_type').value = data.side_type || 'none';
+                    document.getElementById('side_content').value = data.side_content || '';
+                    document.getElementById('password').value = '';
+                    document.getElementById('clear_password').checked = false;
+                    document.getElementById('youtube_stream_key').value = '';
+                    document.getElementById('clear_youtube_key').checked = false;
+                    document.getElementById('ytKeyHint').style.display = data.has_youtube_key ? 'block' : 'none';
+                    const hostIds = (data.host_ids || []).map(String);
+                    [...document.getElementById('host_ids').options].forEach(o => o.selected = hostIds.includes(o
+                        .value));
                     togglePlatformFields();
                 }
 
@@ -1031,7 +1195,7 @@ function getStatusBadgeClass($m)
 
                         const m = data.meeting;
                         document.getElementById('detailNamaMeeting').textContent = m.nama_meeting;
-                        document.getElementById('btnJoinMeeting').href = m.meeting_url;
+                        document.getElementById('btnJoinMeeting').href = m.join_url;
 
                         const platformBadge = `<span class="badge badge-platform-${m.platform}">
                 <i class="ri-${getPlatformIcon(m.platform)} me-1"></i>${getPlatformName(m.platform)}
@@ -1045,8 +1209,7 @@ function getStatusBadgeClass($m)
                         detailContent.innerHTML = `
                 <div class="mb-4 text-center">${platformBadge}</div>
                 
-                ${m.deskripsi ? `<p class="mb-4 text-muted-custom">${m.deskripsi}</p>` : ''}
-                
+                ${m.deskripsi ? `<p class="mb-4 text-muted-custom">${escapeHtml(m.deskripsi)}</p>` : ''}                
                 <div class="row g-4 mb-4">
                     <div class="col-6">
                         <p class="small text-muted-custom mb-1"><i class="ri-calendar-line me-1"></i> Mulai</p>
@@ -1075,6 +1238,7 @@ function getStatusBadgeClass($m)
                 if (form) {
                     form.reset();
                     form.classList.remove('was-validated');
+                    document.getElementById('side_type').value = 'none';
                 }
 
                 const errorBox = document.getElementById('formErrors');
@@ -1084,6 +1248,7 @@ function getStatusBadgeClass($m)
                 document.getElementById('platform').value = 'jitsi';
                 document.getElementById('is_active').checked = true;
                 document.getElementById('show_in_website').checked = true;
+                document.getElementById('ytKeyHint').style.display = 'none';
                 togglePlatformFields();
             }
 

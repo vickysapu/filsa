@@ -48,8 +48,12 @@ class BranchScope implements Scope
             return;
         }
 
-        if ($user->branch_id) {
-            $builder->where("{$model->getTable()}.branch_id", $user->branch_id);
+        $branchId = $user->currentBranchId();
+
+        if ($branchId) {
+            $builder->where("{$model->getTable()}.branch_id", $branchId);
+        } else {
+            $builder->whereRaw('1 = 0');
         }
     }
 }

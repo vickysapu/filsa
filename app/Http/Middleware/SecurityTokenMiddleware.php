@@ -32,7 +32,7 @@ class SecurityTokenMiddleware
             /** @var User $user */
             $user = Auth::user();
             
-            if (!$user->isSuperAdmin() && $user->branch_id !== $securityToken->branch_id) {
+            if (!$user->isSuperAdmin() && $user->currentBranchId() !== $securityToken->branch_id) {
                 return response()->json(['error' => 'Token not authorized for this branch'], 403);
             }
         }

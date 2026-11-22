@@ -14,19 +14,11 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
+use App\Http\Controllers\Concerns\ResolvesBranch;
 
 class DokumentasiController extends Controller
 {
-    protected function getBranchId()
-    {
-        return Auth::user()?->roles->first()?->branch_id ?? Auth::user()?->branch_id;
-    }
-
-    protected function isSuperAdmin()
-    {
-        $user = Auth::user();
-        return $user && ($user->hasRole('administrator') || ($user->branch && $user->branch->is_headquarter));
-    }
+    use ResolvesBranch;
 
     public function index(Request $request)
     {
@@ -36,11 +28,7 @@ class DokumentasiController extends Controller
         $query = DokumentasiAlbum::with(['kategori', 'event', 'creator']);
 
         // Filter Branch
-        if (!$isSuperAdmin && $branchId) {
-            $query->where('branch_id', $branchId);
-        } elseif ($isSuperAdmin && $request->filled('branch_id')) {
-            $query->where('branch_id', $request->branch_id);
-        }
+        $this->scopeToBranch($query, $request);
 
         // Filter Lainnya
         if ($request->filled('kategori_id')) {
@@ -65,11 +53,7 @@ class DokumentasiController extends Controller
 
         // Data untuk Filter & Form
         $kategoriQuery = DokumentasiKategori::query();
-        if (!$isSuperAdmin && $branchId) {
-            $kategoriQuery->where('branch_id', $branchId);
-        } elseif ($isSuperAdmin && $request->filled('branch_id')) {
-            $kategoriQuery->where('branch_id', $request->branch_id);
-        }
+        $this->scopeToBranch($kategoriQuery, $request);
         $kategoris = $kategoriQuery->active()->ordered()->get();
 
         $events = Event::published()->orderBy('tanggal_mulai', 'desc')->get();
@@ -88,7 +72,7 @@ class DokumentasiController extends Controller
         $branchId = $this->getBranchId();
         $isSuperAdmin = $this->isSuperAdmin();
 
-        if (!$isSuperAdmin && $branchId && $album->branch_id !== $branchId) {
+        if (!$this->ownsBranch($album)) {
             abort(403, 'Akses ditolak');
         }
 
@@ -101,16 +85,18 @@ class DokumentasiController extends Controller
     {
         try {
             $isSuperAdmin = $this->isSuperAdmin();
-            $branchId = $isSuperAdmin ? $request->branch_id : $this->getBranchId();
+
+            if ($isSuperAdmin) {
+                $request->validate(['branch_id' => 'required|exists:branches,id']);
+            }
+
+            $branchId = $this->resolveBranchId($request);
 
             if (!$branchId) {
-                return response()->json(
-                    [
-                        'success' => false,
-                        'message' => 'Anda tidak memiliki akses Branch yang valid.',
-                    ],
-                    403,
-                );
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Akun Anda belum terhubung ke cabang.',
+                ], 403);
             }
 
             $validated = $request->validate([
@@ -219,7 +205,7 @@ class DokumentasiController extends Controller
         $branchId = $this->getBranchId();
         $isSuperAdmin = $this->isSuperAdmin();
 
-        if (!$isSuperAdmin && $branchId && $album->branch_id !== $branchId) {
+        if (!$this->ownsBranch($album)) {
             if ($request->ajax()) {
                 return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
             }
@@ -256,7 +242,7 @@ class DokumentasiController extends Controller
         $branchId = $this->getBranchId();
         $isSuperAdmin = $this->isSuperAdmin();
 
-        if (!$isSuperAdmin && $branchId && $album->branch_id !== $branchId) {
+        if (!$this->ownsBranch($album)) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
         }
 
@@ -373,7 +359,7 @@ class DokumentasiController extends Controller
         $branchId = $this->getBranchId();
         $isSuperAdmin = $this->isSuperAdmin();
 
-        if (!$isSuperAdmin && $branchId && $album->branch_id !== $branchId) {
+        if (!$this->ownsBranch($album)) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
         }
 
@@ -391,6 +377,10 @@ class DokumentasiController extends Controller
 
     public function uploadPhotos(Request $request, DokumentasiAlbum $album)
     {
+        if (!$this->ownsBranch($album)) {
+            abort(403, 'Akses ditolak');
+        }
+
         $validated = $request->validate([
             'photos.*' => 'required|image|mimes:jpg,png,jpeg|max:10240',
             'captions.*' => 'nullable|string|max:500',

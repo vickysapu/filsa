@@ -14,19 +14,11 @@ use Illuminate\Support\Str;
 use App\Models\User;
 use App\Notifications\UnifiedNotification;
 use Illuminate\Support\Facades\Notification;
+use App\Http\Controllers\Concerns\ResolvesBranch;
 
 class PelayananController extends Controller
 {
-    protected function getBranchId()
-    {
-        return Auth::user()?->roles->first()?->branch_id ?? Auth::user()?->branch_id;
-    }
-
-    protected function isSuperAdmin()
-    {
-        $user = Auth::user();
-        return $user && ($user->hasRole('administrator') || ($user->branch && $user->branch->is_headquarter));
-    }
+    use ResolvesBranch;
 
     public function index(Request $request)
     {
@@ -187,7 +179,7 @@ class PelayananController extends Controller
                 $targetBranchId,
                 'Jadwal Pelayanan Baru',
                 "Jadwal pelayanan '{$pelayanan->nama_pelayanan}' telah ditambahkan untuk tanggal " . \Carbon\Carbon::parse($pelayanan->tanggal)->translatedFormat('d F Y'),
-                route('admin.pelayanan.index'),
+                route('admin.jadwal.index'),
                 'ri-calendar-event-line',
                 'text-success',
                 'PELAYANAN'
@@ -214,7 +206,7 @@ class PelayananController extends Controller
         $branchId = $this->getBranchId();
         $isSuperAdmin = $this->isSuperAdmin();
 
-        if (!$isSuperAdmin && $branchId && $pelayanan->branch_id !== $branchId) {
+        if (!$this->ownsBranch($pelayanan)) {
             abort(403, 'Akses ditolak');
         }
 
@@ -265,7 +257,7 @@ class PelayananController extends Controller
         $branchId = $this->getBranchId();
         $isSuperAdmin = $this->isSuperAdmin();
 
-        if (!$isSuperAdmin && $branchId && $pelayanan->branch_id !== $branchId) {
+        if (!$this->ownsBranch($pelayanan)) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
         }
 
@@ -344,7 +336,7 @@ class PelayananController extends Controller
                 $targetBranchId,
                 'Jadwal Pelayanan Diperbarui',
                 "Jadwal pelayanan '{$pelayanan->nama_pelayanan}' telah diperbarui.",
-                route('admin.pelayanan.index'),
+                route('admin.jadwal.index'),
                 'ri-edit-line',
                 'text-warning',
                 'PELAYANAN'
@@ -371,7 +363,7 @@ class PelayananController extends Controller
         $branchId = $this->getBranchId();
         $isSuperAdmin = $this->isSuperAdmin();
 
-        if (!$isSuperAdmin && $branchId && $pelayanan->branch_id !== $branchId) {
+        if (!$this->ownsBranch($pelayanan)) {
             if ($request->ajax()) {
                 return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
             }
@@ -387,7 +379,7 @@ class PelayananController extends Controller
             $targetBranchId,
             'Jadwal Pelayanan Dihapus',
             "Jadwal pelayanan '{$namaPelayanan}' telah dihapus dari sistem.",
-            route('admin.pelayanan.index'),
+            route('admin.jadwal.index'),
             'ri-delete-bin-line',
             'text-danger',
             'PELAYANAN'
@@ -408,7 +400,7 @@ class PelayananController extends Controller
         $branchId = $this->getBranchId();
         $isSuperAdmin = $this->isSuperAdmin();
 
-        if (!$isSuperAdmin && $branchId && $pelayanan->branch_id !== $branchId) {
+        if (!$this->ownsBranch($pelayanan)) {
             abort(403, 'Akses ditolak');
         }
 

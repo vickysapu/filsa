@@ -13,14 +13,38 @@ class Meeting extends Model
     public $incrementing = false;
     protected $keyType = 'string';
 
-    protected $fillable = ['branch_id', 'nama_meeting', 'deskripsi', 'meeting_id', 'meeting_url', 'platform', 'tanggal_mulai', 'tanggal_selesai', 'is_active', 'show_in_website', 'created_by', 'updated_by'];
+    protected $fillable = ['branch_id', 'nama_meeting', 'deskripsi', 'meeting_id', 'meeting_url', 'platform','room_password', 'viewer_mode', 'side_type', 'side_content', 'tanggal_mulai', 'tanggal_selesai', 'is_active', 'show_in_website', 'youtube_stream_key', 'created_by', 'updated_by'];
 
     protected $casts = [
         'tanggal_mulai' => 'datetime',
         'tanggal_selesai' => 'datetime',
         'is_active' => 'boolean',
         'show_in_website' => 'boolean',
+        'viewer_mode' => 'boolean',
+        'room_password' => 'hashed',
+        'youtube_stream_key' => 'encrypted'
     ];
+
+    protected $hidden = ['room_password', 'youtube_stream_key'];
+    protected $appends = ['join_url', 'has_password'];
+
+    public function getHasPasswordAttribute(): bool
+    {
+        return !empty($this->attributes['room_password']);
+    }
+
+    public function hosts()
+    {
+        return $this->belongsToMany(User::class, 'meeting_hosts', 'meeting_id', 'user_id');
+    }
+
+    public function getJoinUrlAttribute(): ?string
+    {
+        return $this->platform === 'internal'
+            ? route('meetings.room', $this->id)
+            : $this->meeting_url;
+    }
+    
 
     protected static function boot()
     {

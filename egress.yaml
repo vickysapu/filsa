@@ -1,0 +1,7 @@
+api_key: API_KEY_LIVEKIT_ANDA
+api_secret: API_SECRET_LIVEKIT_ANDA
+ws_url: wss://lk.domainanda.com
+redis:
+  address: 127.0.0.1:6379
+health_port: 8080
+log_level: info

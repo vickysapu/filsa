@@ -1,55 +1,97 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="light">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Login - Filadelfia Admin</title>
-    <link rel="icon" href="{{ asset('img/logo.png') }}">
+    <link rel="icon" href="{{ asset('img/white.tree-logo.png') }}" type="image/svg+xml">
 
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Remix Icons -->
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <!-- Google Fonts: Plus Jakarta Sans & Playfair Display (sama dengan layout admin) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap"
+        rel="stylesheet">
 
     <style>
-        /* ===== CSS VARIABLES - LIGHT MODE (MATCHING DASHBOARD) ===== */
+        /* ===== CSS VARIABLES - POHON ZAITUN (SAMA DENGAN LAYOUT ADMIN) ===== */
         :root {
-            --bg-body: #f8fafc;
-            --bg-surface: #ffffff;
-            --text-primary: #0f172a;
-            --text-secondary: #64748b;
-            --border-color: #e2e8f0;
-            --accent-blue: #2563eb;
-            --accent-blue-hover: #1d4ed8;
-            --accent-amber: #d97706;
-            --danger: #ef4444;
-            --success: #22c55e;
-            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            --zaitun-deep: #3F5035;
+            --zaitun-primary: #718F50;
+            --zaitun-primary-hover: #5D793F;
+            --zaitun-young: #A9C77D;
+            --zaitun-gold: #E5D89B;
+            --zaitun-cream: #F6EBCB;
+            --zaitun-white: #FFFFFF;
+            --zaitun-ripe: #7D4856;
+
+            --bg-body: #FBF8EE;
+            --bg-surface: #FFFFFF;
+            --bg-sidebar: #3F5035;
+            --text-primary: #253320;
+            --text-secondary: #5E6E58;
+            --border-color: #E3DCBF;
+            --border-color-subtle: #EFE9D4;
+            --accent: #718F50;
+            --accent-hover: #5D793F;
+            --danger: #7D4856;
+            --success: #718F50;
+            --shadow-sm: 0 1px 3px rgba(63, 80, 53, 0.05);
+            --shadow-md: 0 4px 14px -2px rgba(63, 80, 53, 0.08);
+            --shadow-lg: 0 12px 24px -4px rgba(63, 80, 53, 0.12);
+            --shadow-xl: 0 24px 48px -12px rgba(63, 80, 53, 0.22);
             --radius: 12px;
             --radius-sm: 8px;
-            --radius-lg: 16px;
-            --transition: all 0.2s ease;
+            --radius-lg: 18px;
+            --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        [data-theme="dark"] {
+            --bg-body: #1A2318;
+            --bg-surface: #243021;
+            --bg-sidebar: #131A11;
+            --text-primary: #F5F8F2;
+            --text-secondary: #A7B89F;
+            --border-color: #344330;
+            --border-color-subtle: #293626;
+            --accent: #88A666;
+            --accent-hover: #9BB878;
+            --danger: #C98595;
+            --success: #88A666;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+            --shadow-md: 0 4px 14px -2px rgba(0, 0, 0, 0.45);
+            --shadow-lg: 0 12px 24px -4px rgba(0, 0, 0, 0.55);
+            --shadow-xl: 0 24px 48px -12px rgba(0, 0, 0, 0.6);
         }
 
         /* ===== RESET & BASE ===== */
-        * {
+        *,
+        *::before,
+        *::after {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
 
+        html,
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            width: 100%;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: var(--bg-body);
             color: var(--text-primary);
             line-height: 1.6;
-            transition: var(--transition);
             min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            transition: var(--transition);
         }
 
         a {
@@ -62,47 +104,54 @@
             font-family: inherit;
         }
 
-        /* ===== LOGIN PAGE STYLES ===== */
+        /* ===== LAYOUT: SPLIT SCREEN ===== */
         .login-page {
             min-height: 100vh;
+            display: grid;
+            grid-template-columns: 1.05fr 1fr;
+        }
+
+        /* ----- Brand panel (kiri) — sama seperti sidebar: Deep Olive ----- */
+        .login-brand {
+            position: relative;
+            background: var(--bg-sidebar);
+            color: #FBF8EE;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, var(--bg-body) 0%, #e2e8f0 100%);
-            padding: 20px;
-            position: relative;
+            text-align: center;
+            padding: 3rem 2.5rem;
             overflow: hidden;
         }
 
-        /* Decorative background elements - Light Mode */
-        .login-page::before {
+        .login-brand::before,
+        .login-brand::after {
             content: '';
             position: absolute;
-            width: 600px;
-            height: 600px;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(37, 99, 235, 0.08) 0%, transparent 70%);
-            top: -200px;
-            right: -200px;
-            animation: float 20s ease-in-out infinite;
             pointer-events: none;
         }
 
-        .login-page::after {
-            content: '';
-            position: absolute;
-            width: 400px;
-            height: 400px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(217, 119, 6, 0.06) 0%, transparent 70%);
-            bottom: -100px;
-            left: -100px;
+        .login-brand::before {
+            width: 520px;
+            height: 520px;
+            top: -180px;
+            right: -180px;
+            background: radial-gradient(circle, rgba(169, 199, 125, 0.18) 0%, transparent 70%);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .login-brand::after {
+            width: 380px;
+            height: 380px;
+            bottom: -140px;
+            left: -120px;
+            background: radial-gradient(circle, rgba(229, 216, 155, 0.14) 0%, transparent 70%);
             animation: float 15s ease-in-out infinite reverse;
-            pointer-events: none;
         }
 
         @keyframes float {
-
             0%,
             100% {
                 transform: translate(0, 0);
@@ -113,11 +162,88 @@
             }
         }
 
-        .login-container {
-            width: 100%;
-            max-width: 440px;
+        .brand-inner {
             position: relative;
             z-index: 1;
+            max-width: 380px;
+            animation: slideUp 0.6s ease;
+        }
+
+        .brand-logo {
+            width: 140px;
+            height: 158px;
+            object-fit: contain;
+            margin-bottom: 1.5rem;
+            filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.4));
+        }
+
+        .brand-title {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-weight: 700;
+            font-size: 2.4rem;
+            letter-spacing: 0.1em;
+            color: #FFFFFF;
+            line-height: 1.15;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .brand-divider {
+            width: 56px;
+            height: 3px;
+            border-radius: 3px;
+            background: var(--zaitun-gold);
+            margin: 1.1rem auto;
+            opacity: 0.9;
+        }
+
+        .brand-tagline {
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--zaitun-gold);
+            opacity: 0.9;
+        }
+
+        .brand-desc {
+            margin-top: 1rem;
+            font-size: 0.92rem;
+            color: rgba(251, 248, 238, 0.75);
+        }
+
+        /* ----- Form panel (kanan) ----- */
+        .login-form-panel {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1.5rem;
+            background: var(--bg-body);
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 1.25rem;
+            right: 1.25rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 0.45rem 0.65rem;
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+        }
+
+        .theme-toggle:hover {
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 430px;
             animation: slideUp 0.5s ease;
         }
 
@@ -142,40 +268,42 @@
             transition: var(--transition);
         }
 
-        .login-card:hover {
-            box-shadow: var(--shadow-lg);
+        .login-heading {
+            margin-bottom: 1.75rem;
         }
 
-        .login-logo {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-
-        .login-logo img {
-            height: 100px;
-            margin-bottom: 1rem;
-            border-radius: var(--radius);
+        .login-mobile-logo {
+            display: none;
+            width: 76px;
+            height: 76px;
+            padding: 12px;
+            margin: 0 auto 1rem;
+            border-radius: 50%;
+            background: var(--bg-sidebar);
             box-shadow: var(--shadow-md);
         }
 
-        .login-logo h1 {
-            font-size: 1.5rem;
+        .login-mobile-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .login-heading h1 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 1.75rem;
             font-weight: 700;
             color: var(--text-primary);
             margin-bottom: 0.25rem;
-            letter-spacing: -0.025em;
+            letter-spacing: -0.01em;
         }
 
-        .login-logo h1 span {
-            color: var(--accent-blue);
-        }
-
-        .login-logo p {
+        .login-heading p {
             color: var(--text-secondary);
             font-size: 0.9rem;
         }
 
-        /* ===== FORM STYLES ===== */
+        /* ===== FORM ===== */
         .lux-form-group {
             margin-bottom: 1.25rem;
         }
@@ -184,14 +312,14 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            font-size: 0.875rem;
-            font-weight: 500;
+            font-size: 0.85rem;
+            font-weight: 600;
             color: var(--text-primary);
             margin-bottom: 0.5rem;
         }
 
         .lux-label i {
-            color: var(--accent-blue);
+            color: var(--accent);
             font-size: 1rem;
         }
 
@@ -199,7 +327,7 @@
             position: relative;
         }
 
-        .login-input-icon i {
+        .login-input-icon>i.field-icon {
             position: absolute;
             left: 1rem;
             top: 50%;
@@ -212,25 +340,25 @@
 
         .lux-input {
             width: 100%;
-            padding: 0.75rem 1rem;
-            padding-left: 2.75rem;
+            padding: 0.75rem 1rem 0.75rem 2.75rem;
+            font-family: inherit;
             font-size: 0.95rem;
             color: var(--text-primary);
-            background: var(--bg-surface);
-            border: 2px solid var(--border-color);
+            background: var(--bg-body);
+            border: 1.5px solid var(--border-color);
             border-radius: var(--radius-sm);
             transition: var(--transition);
         }
 
         .lux-input:focus {
             outline: none;
-            border-color: var(--accent-blue);
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+            background: var(--bg-surface);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(113, 143, 80, 0.15);
         }
 
-        .lux-input:focus+i,
-        .lux-input:focus~.password-toggle i {
-            color: var(--accent-blue);
+        .lux-input:focus~i.field-icon {
+            color: var(--accent);
         }
 
         .lux-input.lux-input-danger {
@@ -238,17 +366,26 @@
         }
 
         .lux-input.lux-input-danger:focus {
-            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.12);
+            box-shadow: 0 0 0 4px rgba(125, 72, 86, 0.15);
         }
 
         .lux-input::placeholder {
             color: var(--text-secondary);
-            opacity: 0.7;
+            opacity: 0.6;
+        }
+
+        /* Autofill ikut tema */
+        .lux-input:-webkit-autofill,
+        .lux-input:-webkit-autofill:hover,
+        .lux-input:-webkit-autofill:focus {
+            -webkit-text-fill-color: var(--text-primary);
+            -webkit-box-shadow: 0 0 0 1000px var(--bg-surface) inset;
+            transition: background-color 5000s ease-in-out 0s;
         }
 
         .password-toggle {
             position: absolute;
-            right: 1rem;
+            right: 0.75rem;
             top: 50%;
             transform: translateY(-50%);
             cursor: pointer;
@@ -256,7 +393,6 @@
             background: none;
             border: none;
             font-size: 1.1rem;
-            padding: 0.25rem;
             border-radius: var(--radius-sm);
             transition: var(--transition);
             display: flex;
@@ -267,8 +403,8 @@
         }
 
         .password-toggle:hover {
-            color: var(--accent-blue);
-            background: rgba(37, 99, 235, 0.08);
+            color: var(--accent);
+            background: rgba(113, 143, 80, 0.12);
         }
 
         .lux-form-error {
@@ -308,47 +444,44 @@
         .lux-checkbox input[type="checkbox"] {
             width: 16px;
             height: 16px;
-            accent-color: var(--accent-blue);
+            accent-color: var(--accent);
             cursor: pointer;
-            border-radius: 4px;
         }
 
         .login-forgot {
             font-size: 0.875rem;
-            color: var(--accent-blue);
-            text-decoration: none;
-            font-weight: 500;
-            transition: var(--transition);
+            color: var(--accent);
+            font-weight: 600;
         }
 
         .login-forgot:hover {
-            color: var(--accent-blue-hover);
+            color: var(--accent-hover);
             text-decoration: underline;
         }
 
-        /* ===== LOGIN BUTTON ===== */
+        /* ===== LOGIN BUTTON (sama dengan .btn-custom di layout) ===== */
         .login-btn {
             width: 100%;
-            padding: 0.875rem 1.5rem;
-            font-size: 1rem;
+            padding: 0.85rem 1.5rem;
+            font-size: 0.95rem;
             font-weight: 600;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
-            background: var(--accent-blue);
-            color: white;
+            background: var(--zaitun-primary);
+            color: #FFFFFF;
             border: none;
             border-radius: var(--radius-sm);
             cursor: pointer;
             transition: var(--transition);
-            box-shadow: var(--shadow-md);
+            box-shadow: 0 2px 6px rgba(113, 143, 80, 0.3);
         }
 
         .login-btn:hover:not(:disabled) {
-            background: var(--accent-blue-hover);
+            background: var(--zaitun-primary-hover);
             transform: translateY(-1px);
-            box-shadow: var(--shadow-lg);
+            box-shadow: 0 4px 12px rgba(113, 143, 80, 0.4);
         }
 
         .login-btn:active:not(:disabled) {
@@ -358,35 +491,33 @@
         .login-btn:disabled {
             opacity: 0.7;
             cursor: not-allowed;
-            transform: none;
-            box-shadow: var(--shadow-sm);
         }
 
         .login-btn i {
             font-size: 1.1rem;
         }
 
-        /* ===== ALERTS (MATCHING DASHBOARD) ===== */
+        /* ===== ALERTS (sama dengan .alert-custom di layout) ===== */
         .lux-alert {
             background: var(--bg-surface);
-            border-left: 4px solid var(--accent-blue);
-            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-            padding: 0.875rem 1.25rem;
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--zaitun-primary);
+            border-radius: var(--radius-sm);
+            padding: 0.8rem 1.1rem;
             margin-bottom: 1.25rem;
             display: flex;
             align-items: center;
             gap: 0.75rem;
             box-shadow: var(--shadow-sm);
             animation: slideIn 0.3s ease;
-            position: relative;
         }
 
         .lux-alert.lux-alert-success {
-            border-left-color: var(--success);
+            border-left-color: var(--zaitun-primary);
         }
 
         .lux-alert.lux-alert-danger {
-            border-left-color: var(--danger);
+            border-left-color: var(--zaitun-ripe);
         }
 
         .lux-alert i {
@@ -404,7 +535,7 @@
 
         .lux-alert span {
             flex: 1;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             color: var(--text-primary);
         }
 
@@ -415,15 +546,14 @@
             font-size: 1.2rem;
             cursor: pointer;
             opacity: 0.7;
-            transition: var(--transition);
-            padding: 0.25rem;
             line-height: 1;
+            padding: 0.25rem;
             border-radius: var(--radius-sm);
+            transition: var(--transition);
         }
 
         .alert-close:hover {
             opacity: 1;
-            background: rgba(0, 0, 0, 0.05);
             color: var(--text-primary);
         }
 
@@ -441,8 +571,8 @@
 
         /* ===== SECURITY INFO ===== */
         .login-security {
-            margin-top: 2rem;
-            padding-top: 1.5rem;
+            margin-top: 1.75rem;
+            padding-top: 1.25rem;
             border-top: 1px solid var(--border-color);
             text-align: center;
         }
@@ -450,36 +580,18 @@
         .login-security p {
             color: var(--text-secondary);
             font-size: 0.8rem;
-            margin-bottom: 0.75rem;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 0.375rem;
+            margin: 0;
         }
 
         .login-security p i {
-            color: var(--success);
+            color: var(--accent);
         }
 
-        .login-security-icons {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            color: var(--accent-blue);
-        }
-
-        .login-security-icons i {
-            font-size: 1.1rem;
-            transition: var(--transition);
-            cursor: default;
-        }
-
-        .login-security-icons i:hover {
-            transform: scale(1.1);
-            color: var(--accent-blue-hover);
-        }
-
-        /* ===== SCROLLBAR (MATCHING DASHBOARD) ===== */
+        /* ===== SCROLLBAR ===== */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -490,27 +602,36 @@
         }
 
         ::-webkit-scrollbar-thumb {
-            background: var(--text-secondary);
+            background: var(--zaitun-young);
             border-radius: 3px;
-            opacity: 0.3;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            opacity: 0.5;
         }
 
         /* ===== RESPONSIVE ===== */
+        @media (max-width: 992px) {
+            .login-page {
+                grid-template-columns: 1fr;
+            }
+
+            .login-brand {
+                display: none;
+            }
+
+            .login-mobile-logo {
+                display: block;
+            }
+
+            .login-heading {
+                text-align: center;
+            }
+        }
+
         @media (max-width: 480px) {
             .login-card {
                 padding: 2rem 1.5rem;
             }
 
-            .login-logo h1 {
-                font-size: 1.25rem;
-            }
-
-            .login-logo img {
-                height: 80px;
+            .login-heading h1 {
+                font-size: 1.5rem;
             }
 
             .login-remember {
@@ -518,119 +639,133 @@
                 align-items: flex-start;
             }
         }
-
-        /* ===== UTILITIES ===== */
-        .text-muted-custom {
-            color: var(--text-secondary) !important;
-        }
-
-        .border-custom {
-            border-color: var(--border-color) !important;
-        }
     </style>
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
 </head>
 
 <body>
 
     <div class="login-page">
-        <div class="login-container">
-            <div class="login-card">
-                <!-- Logo -->
-                <div class="login-logo">
-                    <img src="{{ asset('img/logo.png') }}" alt="Filadelfia Logo" class="img-fluid">
-                    <h1>FILADELFIA<span>ADMIN</span></h1>
-                    <p>Silakan login untuk melanjutkan</p>
-                </div>
 
-                <!-- Flash Messages (Matching Dashboard Alert Style) -->
-                @if (session('success'))
-                    <div class="lux-alert lux-alert-success" data-auto-close>
-                        <i class="ri-checkbox-circle-fill"></i>
-                        <span>{{ session('success') }}</span>
-                        <button class="alert-close" type="button" aria-label="Tutup">&times;</button>
-                    </div>
-                @endif
+        <!-- PANEL BRAND (kiri) -->
+        <aside class="login-brand">
+            <div class="brand-inner">
+                <img src="{{ asset('img/white.tree-logo.png') }}?v={{ time() }}" alt="Logo Filadelfia"
+                    class="brand-logo">
+                <h2 class="brand-title">Filadelfia</h2>
+                <div class="brand-divider"></div>
+                <div class="brand-tagline">Sistem Administrasi Gereja</div>
+                <p class="brand-desc">Kolose 3:23 "Apa pun juga yang kamu perbuat, perbuatlah dengan segenap hatimu seperti untuk Tuhan dan bukan untuk manusia."</p>
+            </div>
+        </aside>
 
-                @if (session('error'))
-                    <div class="lux-alert lux-alert-danger" data-auto-close>
-                        <i class="ri-error-warning-fill"></i>
-                        <span>{{ session('error') }}</span>
-                        <button class="alert-close" type="button" aria-label="Tutup">&times;</button>
-                    </div>
-                @endif
+        <!-- PANEL FORM (kanan) -->
+        <main class="login-form-panel">
+            <button type="button" class="theme-toggle" id="themeToggle" aria-label="Ganti tema">
+                <i class="ri-moon-line" id="themeIcon"></i>
+            </button>
 
-                @if ($errors->any())
-                    <div class="lux-alert lux-alert-danger" data-auto-close>
-                        <i class="ri-error-warning-fill"></i>
-                        <span>{{ $errors->first() }}</span>
-                        <button class="alert-close" type="button" aria-label="Tutup">&times;</button>
-                    </div>
-                @endif
+            <div class="login-container">
+                <div class="login-card">
 
-                <!-- Login Form -->
-                <form action="{{ route('login') }}" method="POST" id="loginForm" novalidate>
-                    @csrf
-
-                    <div class="lux-form-group">
-                        <label class="lux-label" for="email">
-                            <i class="ri-mail-line"></i> Email
-                        </label>
-                        <div class="login-input-icon">
-                            <i class="ri-user-3-line"></i>
-                            <input type="email" id="email" name="email"
-                                class="lux-input @error('email') lux-input-danger @enderror"
-                                placeholder="nama@contoh.com" value="{{ old('email') }}" required autofocus
-                                autocomplete="email" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$">
+                    <div class="login-heading">
+                        <div class="login-mobile-logo">
+                            <img src="{{ asset('img/white.tree-logo.png') }}" alt="Logo Filadelfia">
                         </div>
-                        @error('email')
-                            <p class="lux-form-error">{{ $message }}</p>
-                        @enderror
+                        <h1>Selamat Datang</h1>
+                        <p>Silakan login untuk melanjutkan</p>
                     </div>
 
-                    <div class="lux-form-group">
-                        <label class="lux-label" for="password">
-                            <i class="ri-lock-line"></i> Password
-                        </label>
-                        <div class="login-input-icon">
-                            <i class="ri-key-2-line"></i>
-                            <input type="password" id="password" name="password"
-                                class="lux-input @error('password') lux-input-danger @enderror" placeholder="••••••••"
-                                required autocomplete="current-password" minlength="8">
-                            <button type="button" class="password-toggle" onclick="togglePassword()"
-                                aria-label="Tampilkan/Sembunyikan password">
-                                <i class="ri-eye-off-line" id="eyeIcon"></i>
-                            </button>
+                    <!-- Flash Messages -->
+                    @if (session('success'))
+                        <div class="lux-alert lux-alert-success" data-auto-close>
+                            <i class="ri-checkbox-circle-fill"></i>
+                            <span>{{ session('success') }}</span>
+                            <button class="alert-close" type="button" aria-label="Tutup">&times;</button>
                         </div>
-                        @error('password')
-                            <p class="lux-form-error">{{ $message }}</p>
-                        @enderror
-                    </div>
+                    @endif
 
-                    <div class="login-remember">
-                        <label class="lux-checkbox">
-                            <input type="checkbox" name="remember" value="1"
-                                {{ old('remember') ? 'checked' : '' }}>
-                            Ingat saya
-                        </label>
-                        <a href="#" class="login-forgot">Lupa password?</a>
-                    </div>
+                    @if (session('error'))
+                        <div class="lux-alert lux-alert-danger" data-auto-close>
+                            <i class="ri-error-warning-fill"></i>
+                            <span>{{ session('error') }}</span>
+                            <button class="alert-close" type="button" aria-label="Tutup">&times;</button>
+                        </div>
+                    @endif
 
-                    <button type="submit" class="login-btn" id="loginBtn">
-                        <i class="ri-login-box-line"></i> Login
-                    </button>
-                </form>
+                    @if ($errors->any())
+                        <div class="lux-alert lux-alert-danger" data-auto-close>
+                            <i class="ri-error-warning-fill"></i>
+                            <span>{{ $errors->first() }}</span>
+                            <button class="alert-close" type="button" aria-label="Tutup">&times;</button>
+                        </div>
+                    @endif
 
-                <!-- Security Info -->
-                <div class="login-security">
-                    <p><i class="ri-shield-check-line"></i> Login Aman & Terenkripsi</p>
-                    <div class="login-security-icons">
-                        <i class="ri-shield-check-line" title="SSL Secure"></i>
-                        <i class="ri-lock-2-line" title="Password Encrypted"></i>
-                        <i class="ri-time-line" title="Session Timeout"></i>
+                    <!-- Login Form -->
+                    <form action="{{ route('login') }}" method="POST" id="loginForm" novalidate>
+                        @csrf
+
+                        <div class="lux-form-group">
+                            <label class="lux-label" for="email">
+                                <i class="ri-mail-line"></i> Email
+                            </label>
+                            <div class="login-input-icon">
+                                <input type="email" id="email" name="email"
+                                    class="lux-input @error('email') lux-input-danger @enderror"
+                                    placeholder="nama@contoh.com" value="{{ old('email') }}" required autofocus
+                                    autocomplete="email" pattern="[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$">
+                                <i class="ri-user-3-line field-icon"></i>
+                            </div>
+                            @error('email')
+                                <p class="lux-form-error">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div class="lux-form-group">
+                            <label class="lux-label" for="password">
+                                <i class="ri-lock-line"></i> Password
+                            </label>
+                            <div class="login-input-icon">
+                                <input type="password" id="password" name="password"
+                                    class="lux-input @error('password') lux-input-danger @enderror"
+                                    placeholder="••••••••" required autocomplete="current-password" minlength="8">
+                                <i class="ri-key-2-line field-icon"></i>
+                                <button type="button" class="password-toggle" onclick="togglePassword()"
+                                    aria-label="Tampilkan/Sembunyikan password">
+                                    <i class="ri-eye-off-line" id="eyeIcon"></i>
+                                </button>
+                            </div>
+                            @error('password')
+                                <p class="lux-form-error">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div class="login-remember">
+                            <label class="lux-checkbox">
+                                <input type="checkbox" name="remember" value="1"
+                                    {{ old('remember') ? 'checked' : '' }}>
+                                Ingat saya
+                            </label>
+                            <a href="#" class="login-forgot">Lupa password?</a>
+                        </div>
+
+                        <button type="submit" class="login-btn" id="loginBtn">
+                            <i class="ri-login-box-line"></i> Login
+                        </button>
+                    </form>
+
+                    <!-- Security Info -->
+                    <div class="login-security">
+                        <p><i class="ri-shield-check-line"></i> Login Aman & Terenkripsi</p>
                     </div>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
 
     <!-- Scripts -->
@@ -643,33 +778,49 @@
 
             if (passwordInput.type === 'password') {
                 passwordInput.type = 'text';
-                eyeIcon.classList.remove('ri-eye-off-line');
-                eyeIcon.classList.add('ri-eye-line');
+                eyeIcon.classList.replace('ri-eye-off-line', 'ri-eye-line');
             } else {
                 passwordInput.type = 'password';
-                eyeIcon.classList.remove('ri-eye-line');
-                eyeIcon.classList.add('ri-eye-off-line');
+                eyeIcon.classList.replace('ri-eye-line', 'ri-eye-off-line');
             }
         }
+
+        // ===== THEME TOGGLE (berbagi key 'theme' dengan layout admin) =====
+        (function() {
+            const root = document.documentElement;
+            const icon = document.getElementById('themeIcon');
+            const btn = document.getElementById('themeToggle');
+
+            function syncIcon() {
+                const isDark = root.getAttribute('data-theme') === 'dark';
+                icon.className = isDark ? 'ri-sun-line' : 'ri-moon-line';
+            }
+            syncIcon();
+
+            btn.addEventListener('click', function() {
+                const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                root.setAttribute('data-theme', next);
+                localStorage.setItem('theme', next);
+                syncIcon();
+            });
+        })();
 
         // ===== PREVENT FORM RESUBMISSION =====
         if (window.history.replaceState) {
             window.history.replaceState(null, null, window.location.href);
         }
 
-        // ===== AUTO-CLOSE ALERTS (MATCHING DASHBOARD) =====
+        // ===== AUTO-CLOSE ALERTS =====
         document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('[data-auto-close]').forEach(alert => {
                 const closeBtn = alert.querySelector('.alert-close');
 
-                // Close button handler
                 closeBtn?.addEventListener('click', () => {
                     alert.style.opacity = '0';
                     alert.style.transform = 'translateX(-20px)';
                     setTimeout(() => alert.remove(), 300);
                 });
 
-                // Auto close after 5 seconds
                 setTimeout(() => {
                     if (alert.parentNode) {
                         alert.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
@@ -680,7 +831,6 @@
                 }, 5000);
             });
 
-            // ===== FOCUS MANAGEMENT =====
             const emailInput = document.getElementById('email');
             if (emailInput && !emailInput.value) {
                 setTimeout(() => emailInput.focus(), 300);
@@ -692,18 +842,15 @@
             const form = e.currentTarget;
             const btn = document.getElementById('loginBtn');
 
-            // Basic validation check
             if (!form.checkValidity()) {
                 e.preventDefault();
                 form.classList.add('was-validated');
                 return;
             }
 
-            // Show loading state
             btn.disabled = true;
             btn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Memproses...';
 
-            // Prevent multiple submissions - reset after 30s as fallback
             setTimeout(() => {
                 if (btn.disabled) {
                     btn.disabled = false;

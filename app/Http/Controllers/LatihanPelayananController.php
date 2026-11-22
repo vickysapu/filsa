@@ -11,19 +11,11 @@ use Illuminate\Support\Facades\Log;
 use App\Models\User;
 use App\Notifications\UnifiedNotification;
 use Illuminate\Support\Facades\Notification;
+use App\Http\Controllers\Concerns\ResolvesBranch;
 
 class LatihanPelayananController extends Controller
 {
-    protected function getBranchId()
-    {
-        return Auth::user()?->roles->first()?->branch_id ?? Auth::user()?->branch_id;
-    }
-
-    protected function isSuperAdmin()
-    {
-        $user = Auth::user();
-        return $user && ($user->hasRole('administrator') || ($user->branch && $user->branch->is_headquarter));
-    }
+    use ResolvesBranch;
 
     public function index(Request $request)
     {
@@ -99,7 +91,7 @@ class LatihanPelayananController extends Controller
 
         // Cek kepemilikan pelayanan jika bukan super admin
         $pelayanan = Pelayanan::find($validated['pelayanan_id']);
-        if (!$isSuperAdmin && $pelayanan && $pelayanan->branch_id !== $branchId) {
+        if ($pelayanan && !$this->ownsBranch($pelayanan)) {
             return response()->json(['success' => false, 'message' => 'Pelayanan tersebut tidak berada di branch Anda.'], 403);
         }
 
@@ -150,7 +142,7 @@ class LatihanPelayananController extends Controller
         $branchId = $this->getBranchId();
         $isSuperAdmin = $this->isSuperAdmin();
 
-        if (!$isSuperAdmin && $branchId && $latihan->branch_id !== $branchId) {
+        if (!$this->ownsBranch($latihan)) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
         }
 
@@ -176,7 +168,7 @@ class LatihanPelayananController extends Controller
         $branchId = $this->getBranchId();
         $isSuperAdmin = $this->isSuperAdmin();
 
-        if (!$isSuperAdmin && $branchId && $latihan->branch_id !== $branchId) {
+        if (!$this->ownsBranch($latihan)) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
         }
 
@@ -193,7 +185,7 @@ class LatihanPelayananController extends Controller
 
         // Cek kepemilikan pelayanan baru jika diubah
         $pelayanan = Pelayanan::find($validated['pelayanan_id']);
-        if (!$isSuperAdmin && $pelayanan && $pelayanan->branch_id !== $branchId) {
+        if ($pelayanan && !$this->ownsBranch($pelayanan)) {
             return response()->json(['success' => false, 'message' => 'Pelayanan tersebut tidak berada di branch Anda.'], 403);
         }
 
@@ -243,7 +235,7 @@ class LatihanPelayananController extends Controller
         $branchId = $this->getBranchId();
         $isSuperAdmin = $this->isSuperAdmin();
 
-        if (!$isSuperAdmin && $branchId && $latihan->branch_id !== $branchId) {
+        if (!$this->ownsBranch($latihan)) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
         }
 

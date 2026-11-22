@@ -9,19 +9,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use App\Http\Controllers\Concerns\ResolvesBranch;
 
 class EventKategoriController extends Controller
 {
-    protected function getBranchId()
-    {
-        return Auth::user()?->roles->first()?->branch_id ?? Auth::user()?->branch_id;
-    }
-
-    protected function isSuperAdmin()
-    {
-        $user = Auth::user();
-        return $user && ($user->hasRole('administrator') || ($user->branch && $user->branch->is_headquarter));
-    }
+    use ResolvesBranch;
 
     public function index(Request $request)
     {
@@ -35,17 +27,7 @@ class EventKategoriController extends Controller
             $query->withoutGlobalScope(\App\Models\Scopes\BranchScope::class);
         }
 
-        if (!$isSuperAdmin) {
-            if ($branchId) {
-                $query->where('branch_id', $branchId);
-            } else {
-                $query->whereRaw('1=0');
-            }
-        } else {
-            if ($request->filled('branch_id')) {
-                $query->where('branch_id', $request->branch_id);
-            }
-        }
+        $this->scopeToBranch($query, $request);
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -65,16 +47,18 @@ class EventKategoriController extends Controller
     {
         try {
             $isSuperAdmin = $this->isSuperAdmin();
-            $branchId = $isSuperAdmin ? $request->branch_id : $this->getBranchId();
+
+            if ($isSuperAdmin) {
+                $request->validate(['branch_id' => 'required|exists:branches,id']);
+            }
+
+            $branchId = $this->resolveBranchId($request);
 
             if (!$branchId) {
-                return response()->json(
-                    [
-                        'success' => false,
-                        'message' => 'Anda tidak memiliki akses Branch yang valid.',
-                    ],
-                    403,
-                );
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Akun Anda belum terhubung ke cabang.',
+                ], 403);
             }
 
             // Validasi nama_kategori unik HANYA di dalam branch_id yang sama
@@ -148,7 +132,7 @@ class EventKategoriController extends Controller
         $branchId = $this->getBranchId();
         $isSuperAdmin = $this->isSuperAdmin();
 
-        if (!$isSuperAdmin && $branchId && $kategori->branch_id !== $branchId) {
+        if (!$this->ownsBranch($kategori)) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
         }
 
@@ -229,7 +213,7 @@ class EventKategoriController extends Controller
         $branchId = $this->getBranchId();
         $isSuperAdmin = $this->isSuperAdmin();
 
-        if (!$isSuperAdmin && $branchId && $kategori->branch_id !== $branchId) {
+        if (!$this->ownsBranch($kategori)) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
         }
 
