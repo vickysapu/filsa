@@ -3,6 +3,7 @@
 namespace App\Services\Security;
 
 use App\Models\DataAccessLog;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
@@ -10,6 +11,10 @@ use Symfony\Component\HttpFoundation\IpUtils;
 
 class DataAccessSecurityService
 {
+    public const PORTAL_LOGIN_LIMIT = 3;
+
+    private const KEY_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
     public function generateSecureToken(): array
     {
         $prefix = 'dap_' . Str::random(6);
@@ -29,6 +34,62 @@ class DataAccessSecurityService
     {
         $computedHash = hash('sha512', $providedToken . config('app.key'));
         return hash_equals($storedHash, $computedHash);
+    }
+
+    public function issueOneTimeKey(string $requestId, int $ttlHours = 48): string
+    {
+        $raw = '';
+        $max = strlen(self::KEY_ALPHABET) - 1;
+
+        for ($i = 0; $i < 12; $i++) {
+            $raw .= self::KEY_ALPHABET[random_int(0, $max)];
+        }
+
+        Cache::put(
+            $this->oneTimeCacheKey($requestId),
+            hash('sha256', $raw . config('app.key')),
+            now()->addHours($ttlHours)
+        );
+
+        return implode('-', str_split($raw, 4));
+    }
+
+    public function consumeOneTimeKey(string $requestId, string $providedKey): bool
+    {
+        $normalized = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $providedKey));
+        $stored = Cache::get($this->oneTimeCacheKey($requestId));
+
+        if (!$stored || !hash_equals($stored, hash('sha256', $normalized . config('app.key')))) {
+            return false;
+        }
+
+        Cache::forget($this->oneTimeCacheKey($requestId));
+
+        return true;
+    }
+
+    public function portalLoginsUsed(string $tokenId): int
+    {
+        return DataAccessLog::where('token_id', $tokenId)
+            ->where('endpoint', 'portal.login')
+            ->count();
+    }
+
+    public function portalLoginsLeft(string $tokenId): int
+    {
+        return max(0, self::PORTAL_LOGIN_LIMIT - $this->portalLoginsUsed($tokenId));
+    }
+
+    public function recordPortalLogin($apiToken, ?string $ip, ?string $userAgent): void
+    {
+        $this->logAccess([
+            'token_id' => $apiToken->id,
+            'endpoint' => 'portal.login',
+            'method' => 'POST',
+            'table_accessed' => $apiToken->grant->table_name,
+            'ip_address' => $ip,
+            'user_agent' => $userAgent ? Str::limit($userAgent, 255) : null,
+        ]);
     }
 
     public function encryptResponse(array $data, string $encryptionKey): string
@@ -73,5 +134,10 @@ class DataAccessSecurityService
             'ip_address' => $accessData['ip_address'],
             'user_agent' => $accessData['user_agent'] ?? null,
         ]);
+    }
+
+    private function oneTimeCacheKey(string $requestId): string
+    {
+        return 'data_access_once_' . $requestId;
     }
 }

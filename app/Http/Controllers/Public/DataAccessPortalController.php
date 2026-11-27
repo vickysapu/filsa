@@ -69,6 +69,12 @@ class DataAccessPortalController extends Controller
         return $apiToken->grant;
     }
 
+    protected function quotaExhaustedMessage(): string
+    {
+        return 'Token ini sudah dipakai login ' . DataAccessSecurityService::PORTAL_LOGIN_LIMIT
+            . ' kali. Silakan hubungi admin untuk mendapatkan token baru.';
+    }
+
     public function verifyToken(Request $request)
     {
         $validated = $request->validate([
@@ -83,6 +89,13 @@ class DataAccessPortalController extends Controller
             return back()->with('error', $error);
         }
 
+        if ($this->securityService->portalLoginsLeft($apiToken->id) < 1) {
+            return back()->with('error', $this->quotaExhaustedMessage());
+        }
+
+        $this->securityService->recordPortalLogin($apiToken, $request->ip(), $request->userAgent());
+        $left = $this->securityService->portalLoginsLeft($apiToken->id);
+
         $request->session()->regenerate();
 
         session([
@@ -90,12 +103,11 @@ class DataAccessPortalController extends Controller
             'portal_api_token_id' => $apiToken->id,
             'portal_branch_id' => $apiToken->grant->request->branch_id,
             'portal_request_id' => $apiToken->grant->request_id,
-            // Satu token per tabel: token pertama langsung terdaftar untuk tabelnya
             'portal_tokens' => [$apiToken->grant->table_name => $rawToken],
         ]);
 
         return redirect()->route('data-portal.dashboard')
-            ->with('success', 'Token terverifikasi! Silakan akses data Anda.');
+            ->with('success', "Token terverifikasi! Sisa penggunaan token ini: {$left} kali login.");
     }
 
     /**
@@ -123,7 +135,6 @@ class DataAccessPortalController extends Controller
             return response()->json(['success' => false, 'message' => $error], 422);
         }
 
-        // Token harus berasal dari permintaan akses yang sama
         if ((string) $apiToken->grant->request_id !== (string) $requestId) {
             return response()->json([
                 'success' => false,
@@ -132,8 +143,21 @@ class DataAccessPortalController extends Controller
         }
 
         $table = $apiToken->grant->table_name;
-
         $tokens = session('portal_tokens', []);
+
+        if (($tokens[$table] ?? null) !== $rawToken) {
+            if ($this->securityService->portalLoginsLeft($apiToken->id) < 1) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $this->quotaExhaustedMessage(),
+                ], 429);
+            }
+
+            $this->securityService->recordPortalLogin($apiToken, $request->ip(), $request->userAgent());
+        }
+
+        $left = $this->securityService->portalLoginsLeft($apiToken->id);
+
         $tokens[$table] = $rawToken;
         session(['portal_tokens' => $tokens]);
 
@@ -141,7 +165,7 @@ class DataAccessPortalController extends Controller
             'success' => true,
             'table' => $table,
             'token' => $rawToken,
-            'message' => "Token untuk tabel {$table} berhasil ditambahkan.",
+            'message' => "Token untuk tabel {$table} berhasil ditambahkan. Sisa penggunaan token ini: {$left} kali login.",
         ]);
     }
 

@@ -22,25 +22,16 @@
         </div>
     @endif
 
-    @if ($errors->any())
-        <div class="alert alert-danger">
-            <ul class="mb-0">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
     <div class="card card-custom">
         <div class="card-header d-flex justify-content-between align-items-center">
             <span><i class="ri-list-check me-1"></i>Daftar Profile</span>
             <form class="d-flex gap-2" method="GET">
-                <input type="text" name="search" class="form-control form-control-sm" placeholder="Cari nama gereja..."
-                    value="{{ request('search') }}" style="width:250px">
+                <input type="text" name="search" class="form-control form-control-sm"
+                    placeholder="Cari nama gereja..." value="{{ request('search') }}" style="width:250px">
                 <button type="submit" class="btn btn-sm btn-custom">Cari</button>
             </form>
         </div>
+
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover mb-0 align-middle">
@@ -48,7 +39,6 @@
                         <tr>
                             <th width="60">Logo</th>
                             <th>Nama Gereja</th>
-                            <th>Tagline</th>
                             <th>Kontak</th>
                             <th width="100">Status</th>
                             <th width="180" class="text-end">Aksi</th>
@@ -63,10 +53,8 @@
                                 </td>
                                 <td>
                                     <div class="fw-500">{{ $profile->church_name }}</div>
-                                    <small class="text-muted">{{ $profile->city ?? '-' }},
-                                        {{ $profile->province ?? '' }}</small>
+                                    <small class="text-muted">{{ $profile->city ?: '-' }}</small>
                                 </td>
-                                <td>{{ Str::limit($profile->tagline, 40) ?: '-' }}</td>
                                 <td>
                                     <small class="d-block">{{ $profile->phone ?: '-' }}</small>
                                     <small class="text-muted">{{ $profile->email ?: '-' }}</small>
@@ -84,7 +72,7 @@
                                     <a href="{{ route('admin.church_profile.edit', $profile) }}"
                                         class="btn btn-sm btn-light" title="Edit"><i class="ri-pencil-line"></i></a>
                                     <button class="btn btn-sm btn-light text-danger"
-                                        onclick="deleteProfile('{{ $profile->id }}', '{{ addslashes($profile->church_name) }}')"
+                                        onclick="deleteProfile('{{ $profile->id }}', @js($profile->church_name))"
                                         title="Hapus"><i class="ri-delete-bin-line"></i></button>
                                     <button class="btn btn-sm {{ $profile->is_published ? 'btn-warning' : 'btn-success' }}"
                                         onclick="togglePublish('{{ $profile->id }}')"
@@ -95,7 +83,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center py-5 text-muted">
+                                <td colspan="5" class="text-center py-5 text-muted">
                                     <i class="ri-building-line fs-1 d-block mb-3"></i>
                                     Belum ada data profile gereja
                                 </td>
@@ -105,6 +93,7 @@
                 </table>
             </div>
         </div>
+
         @if ($profiles->hasPages())
             <div class="card-footer">{{ $profiles->withQueryString()->links() }}</div>
         @endif
@@ -113,45 +102,28 @@
     <script>
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 
-        const deleteProfile = async (id, name) => {
-            if (!confirm(`Hapus profile "${name}"? Aksi ini tidak dapat dibatalkan.`)) return;
+        const sendRequest = async (url, method, errorMsg) => {
             try {
-                const res = await fetch(`/admin/church-profile/${id}`, {
-                    method: 'DELETE',
+                const res = await fetch(url, {
+                    method,
                     headers: {
                         'X-CSRF-TOKEN': csrfToken,
                         'Accept': 'application/json'
                     }
                 });
                 const result = await res.json();
-                if (result.success) {
-                    location.reload();
-                } else {
-                    alert(result.message || 'Gagal menghapus');
-                }
+                result.success ? location.reload() : alert(result.message || errorMsg);
             } catch (e) {
                 alert('Kesalahan koneksi');
             }
         };
 
-        const togglePublish = async (id) => {
-            try {
-                const res = await fetch(`/admin/church-profile/${id}/toggle-publish`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json'
-                    }
-                });
-                const result = await res.json();
-                if (result.success) {
-                    location.reload();
-                } else {
-                    alert(result.message || 'Gagal mengubah status');
-                }
-            } catch (e) {
-                alert('Kesalahan koneksi');
-            }
+        const deleteProfile = (id, name) => {
+            if (!confirm(`Hapus profile "${name}"? Aksi ini tidak dapat dibatalkan.`)) return;
+            sendRequest(`/admin/church-profile/${id}`, 'DELETE', 'Gagal menghapus');
         };
+
+        const togglePublish = (id) =>
+            sendRequest(`/admin/church-profile/${id}/toggle-publish`, 'POST', 'Gagal mengubah status');
     </script>
 @endsection

@@ -1,6 +1,12 @@
 @extends('layouts.public')
 @section('title', 'Portal Data - ' . ($branch->name ?? 'Dashboard'))
 
+@php
+    $portalTokens = (object) $table_tokens;
+    $portalAddUrl = route('data-portal.token.add');
+    $portalCsrf = csrf_token();
+@endphp
+
 @section('content')
     <header class="page-hero public-page-hero public-page-hero--about">
         <div class="page-hero-container fade-in">
@@ -16,48 +22,38 @@
         <span class="page-image-note">Foto ilustrasi · bukan dokumentasi Gereja Filadelfia</span>
     </header>
 
-    <div class="lux-container"
-        style="padding: 2rem 2rem 4rem; min-height: 100vh; background: var(--zaitun-sand, #FAF7EF);">
+    <div class="portal-page">
 
-        {{-- Info Bar --}}
-        <div class="lux-card portal-card"
-            style="padding: 1rem 1.5rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-            <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-                <span class="portal-pill">
-                    <i class="ri-key-2-line me-1"></i><span id="tokenCount"></span>
-                </span>
+        {{-- Info bar --}}
+        <div class="portal-bar">
+            <div class="portal-bar-left">
+                <span class="portal-pill"><i class="ri-key-2-line"></i><span id="tokenCount"></span></span>
                 @if ($expires_at)
                     <span class="portal-pill portal-pill--warn">
-                        <i class="ri-time-line me-1"></i>Exp: {{ \Carbon\Carbon::parse($expires_at)->format('d M Y') }}
+                        <i class="ri-time-line"></i>Exp: {{ \Carbon\Carbon::parse($expires_at)->format('d M Y') }}
                     </span>
                 @endif
             </div>
-            <button type="button" onclick="copyTableToken()" class="hero-btn portal-outline-btn">
+            <button type="button" onclick="copyTableToken()" class="portal-btn">
                 <i class="ri-file-copy-line"></i>Salin token tabel ini
             </button>
         </div>
 
         @if (session('success'))
-            <div class="lux-card"
-                style="border-left: 4px solid #22c55e; background: #f0fdf4; padding: 1rem 1.5rem; margin-bottom: 2rem; color: #166534; display: flex; align-items: center; gap: 0.75rem; border-radius: 16px;">
-                <i class="ri-checkbox-circle-fill" style="font-size: 1.5rem;"></i>
-                <span style="font-weight: 600;">{{ session('success') }}</span>
+            <div class="portal-flash" role="status">
+                <i class="ri-checkbox-circle-fill"></i><span>{{ session('success') }}</span>
             </div>
         @endif
 
         <div class="portal-grid">
 
-            {{-- Sidebar: daftar tabel --}}
-            <div class="lux-card portal-card" style="overflow: hidden;">
-                <div style="padding: 1.5rem 2rem; border-bottom: 1px solid #e2e8f0; background: linear-gradient(135deg, #f8fafc, #fff);">
-                    <h3 style="margin: 0; font-size: 1.125rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 0.5rem;">
-                        <i class="ri-database-2-line" style="color: var(--brand-primary);"></i>Tabel Tersedia
-                    </h3>
-                    <p style="margin: 0.5rem 0 0; font-size: 0.8rem; color: #64748b;">
-                        Setiap tabel punya token sendiri. Tabel bergembok perlu token.
-                    </p>
+            {{-- Sidebar --}}
+            <aside class="portal-side">
+                <div class="portal-side-head">
+                    <h3><i class="ri-database-2-line"></i>Tabel Tersedia</h3>
+                    <p>Setiap tabel punya token sendiri. Tabel bergembok perlu token.</p>
                 </div>
-                <div style="padding: 1rem;">
+                <div class="portal-side-list">
                     @foreach ($tables as $table)
                         <button type="button" class="table-btn" data-table="{{ $table['table_name'] }}">
                             <span class="table-btn-name">{{ $table['table_name'] }}</span>
@@ -68,252 +64,275 @@
                         </button>
                     @endforeach
                 </div>
-            </div>
+            </aside>
 
             {{-- Viewer --}}
-            <div>
-                <div class="lux-card portal-card" id="dataViewer"
-                    style="min-height: 600px; display: flex; flex-direction: column; overflow: hidden;">
+            <main class="portal-main">
+                <div class="portal-viewer" id="dataViewer">
 
-                    {{-- Empty state --}}
-                    <div id="dataViewerEmpty"
-                        style="flex: 1; padding: 4rem 2rem; display: flex; align-items: center; justify-content: center;">
-                        <div style="text-align: center;">
-                            <i class="ri-table-2" style="font-size: 4rem; opacity: 0.2; display: block; margin-bottom: 1.25rem; color: var(--brand-primary);"></i>
-                            <p style="margin: 0; font-size: 1rem; color: #94a3b8;">Pilih tabel di sidebar untuk melihat data</p>
+                    <div id="dataViewerEmpty" class="portal-empty">
+                        <div>
+                            <i class="ri-table-2"></i>
+                            <p>Pilih tabel di sidebar untuk melihat data</p>
                         </div>
                     </div>
 
-                    {{-- Konten --}}
-                    <div id="dataViewerContent" style="display: none; flex-direction: column; flex: 1;">
-                        <div id="dataViewerHeader"
-                            style="padding: 1.25rem 2rem; border-bottom: 1px solid #e2e8f0; background: linear-gradient(135deg, #f8fafc, #fff);">
-                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-                                <h3 style="margin: 0; font-size: 1.25rem; font-weight: 700; color: #1e293b;">
-                                    <i class="ri-table-line me-2" style="color: var(--brand-primary);"></i><span id="tableNameDisplay">Pilih tabel</span>
-                                </h3>
-                                <button id="btnRefresh" type="button" class="lux-btn portal-outline-btn">
-                                    <i class="ri-refresh-line me-1"></i>Refresh
-                                </button>
-                            </div>
+                    <div id="dataViewerContent" style="display:none;flex-direction:column;flex:1;min-width:0;">
+                        <div class="portal-viewer-head" id="dataViewerHeader">
+                            <h3><i class="ri-table-line"></i><span id="tableNameDisplay">Pilih tabel</span></h3>
+                            <button id="btnRefresh" type="button" class="portal-btn">
+                                <i class="ri-refresh-line"></i>Refresh
+                            </button>
                         </div>
 
-                        {{-- Form token untuk tabel yang belum punya token --}}
-                        <div id="tokenGate" style="display: none; padding: 2.5rem 2rem;">
-                            <div style="max-width: 560px; margin: 0 auto;">
-                                <div style="text-align: center; margin-bottom: 1.5rem;">
-                                    <i class="ri-lock-2-line" style="font-size: 2.5rem; color: var(--brand-primary);"></i>
-                                    <h4 style="margin: 0.5rem 0 0.25rem; font-weight: 700; color: #1e293b;">
-                                        Token diperlukan untuk tabel <code id="gateTableName"></code>
-                                    </h4>
-                                    <p style="margin: 0; font-size: 0.9rem; color: #64748b;">
-                                        Tempel token khusus tabel ini. Token dikirim lewat email saat permintaan disetujui.
-                                    </p>
-                                </div>
-
-                                <textarea id="tableTokenInput" rows="3" placeholder="Paste token tabel ini di sini..."
-                                    style="width: 100%; padding: 0.75rem; border-radius: 12px; border: 2px solid #e2e8f0; font-family: monospace; font-size: 0.85rem;"></textarea>
-
-                                <div id="tokenGateMsg" role="alert"
-                                    style="display: none; margin-top: 0.75rem; padding: 0.75rem 1rem; border-radius: 10px; font-size: 0.875rem;"></div>
-
-                                <button id="btnSubmitTableToken" type="button" class="lux-btn lux-btn-primary"
-                                    style="width: 100%; margin-top: 1rem; padding: 0.875rem; border-radius: 50px; font-weight: 600; background: var(--zaitun-deep, #34432C); color: #fff; border: none; cursor: pointer;">
-                                    <i class="ri-lock-unlock-line me-2"></i>Verifikasi token
+                        {{-- Gate token --}}
+                        <div id="tokenGate" style="display:none;">
+                            <div class="gate-box">
+                                <i class="ri-lock-2-line gate-icon"></i>
+                                <h4>Token diperlukan untuk tabel <code id="gateTableName"></code></h4>
+                                <p>Tempel token khusus tabel ini. Token dikirim lewat email saat permintaan disetujui.</p>
+                                <textarea id="tableTokenInput" rows="3" placeholder="Paste token tabel ini di sini..."></textarea>
+                                <div id="tokenGateMsg" role="alert" style="display:none;"></div>
+                                <button id="btnSubmitTableToken" type="button" class="portal-btn portal-btn--solid">
+                                    <i class="ri-lock-unlock-line"></i>Verifikasi token
                                 </button>
                             </div>
                         </div>
 
                         {{-- Info API --}}
-                        <div id="apiInfoBar" style="padding: 1rem 2rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
-                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
-                                <i class="ri-code-s-slash-line" style="color: var(--brand-primary); font-size: 1.125rem;"></i>
-                                <span style="font-weight: 600; color: #1e293b; font-size: 0.875rem;">API Endpoint</span>
+                        <div id="apiInfoBar" class="api-info">
+                            <div class="api-info-title"><i class="ri-code-s-slash-line"></i>API Endpoint</div>
+                            <div class="api-code">
+                                <code id="apiEndpointUrl"></code>
+                                <button type="button" onclick="copyApiUrl()"><i class="ri-file-copy-line"></i> Copy</button>
                             </div>
-                            <div style="background: #1e293b; border-radius: 12px; padding: 0.875rem 1rem; overflow-x: auto; position: relative; max-width: 55rem;">
-                                <code id="apiEndpointUrl"
-                                    style="font-family: 'Courier New', monospace; font-size: 0.8125rem; color: #e2e8f0; white-space: nowrap; padding-right: 4rem; display: inline-block;"></code>
-                                <button type="button" onclick="copyApiUrl()"
-                                    style="position: absolute; top: 0.5rem; right: 0.5rem; background: rgba(255,255,255,0.1); border: none; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">
-                                    <i class="ri-file-copy-line"></i> Copy
-                                </button>
-                            </div>
-                            <div style="margin-top: 0.75rem; display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
-                                <span class="portal-pill portal-pill--sm"><i class="ri-key-line me-1"></i>Token:</span>
-                                <code id="tokenDisplay"
-                                    style="font-family: 'Courier New', monospace; font-size: 0.75rem; color: #1e293b; background: white; padding: 0.25rem 0.5rem; border-radius: 4px; border: 1px solid #e2e8f0; word-break: break-all;"></code>
-                                <button type="button" onclick="toggleTokenVisibility()" class="lux-btn"
-                                    style="background: var(--brand-light); color: var(--brand-primary); border: 1px solid var(--brand-primary); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;"
-                                    aria-label="Tampilkan atau sembunyikan token">
-                                    <i class="ri-eye-line"></i>
-                                </button>
-                                <span class="portal-pill portal-pill--sm"><i class="ri-server-line me-1"></i>Accept: application/json</span>
+                            <div class="api-token-row">
+                                <span class="portal-pill portal-pill--sm"><i class="ri-key-line"></i>Token:</span>
+                                <code id="tokenDisplay"></code>
+                                <button type="button" onclick="toggleTokenVisibility()" class="portal-icon-btn"
+                                    aria-label="Tampilkan atau sembunyikan token"><i class="ri-eye-line"></i></button>
+                                <span class="portal-pill portal-pill--sm"><i class="ri-server-line"></i>Accept: application/json</span>
                             </div>
                         </div>
 
-                        <div id="dataViewerBody" style="flex: 1; padding: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 59rem;"></div>
+                        <div id="dataViewerBody"></div>
 
-                        <div id="dataViewerFooter"
-                            style="padding: 1rem 2rem; border-top: 1px solid #e2e8f0; font-size: 0.875rem; color: #64748b; background: #f8fafc;">
+                        <div id="dataViewerFooter">
                             <span id="paginationInfo"></span>
+                            <span id="nullInfo"></span>
                         </div>
                     </div>
                 </div>
-            </div>
+            </main>
         </div>
     </div>
 
+    {{-- Lightbox gambar --}}
+    <dialog id="imgDialog" class="img-dialog" aria-label="Pratinjau gambar">
+        <button type="button" id="imgDialogClose" class="portal-icon-btn img-dialog-close" aria-label="Tutup"><i class="ri-close-line"></i></button>
+        <img id="imgDialogImg" alt="">
+        <p id="imgDialogCaption"></p>
+    </dialog>
+
     <style>
-        .portal-card {
-            background: #fff;
-            border-radius: 24px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+        .portal-page {
+            --p-primary: var(--zaitun-primary, #526E3B);
+            --p-deep: var(--zaitun-deep-dark, #1E2619);
+            --p-sand: var(--zaitun-sand, #FAF7EF);
+            --p-cream: var(--zaitun-cream, #F3EEDF);
+            --p-border: var(--zaitun-border, #DDD6C3);
+            --p-muted: var(--zaitun-text-secondary, #6B6F62);
+            --p-gold: var(--zaitun-gold, #C08A3E);
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 2.5rem 1.5rem 5rem;
         }
 
-        .portal-grid {
-            display: grid;
-            grid-template-columns: 320px 1fr;
-            gap: 2rem;
-            align-items: start;
+        .portal-bar {
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
+            padding: 0.9rem 0; margin-bottom: 1.5rem;
+            border-top: 1px solid var(--p-border); border-bottom: 1px solid var(--p-border);
         }
+        .portal-bar-left { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
 
         .portal-pill {
-            display: inline-flex;
-            align-items: center;
-            font-size: 0.875rem;
-            font-weight: 600;
-            padding: 0.5rem 1rem;
-            border-radius: 50px;
-            color: var(--brand-primary);
-            background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(6, 182, 212, 0.1));
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            padding: 0.4rem 0.85rem; border-radius: 2px;
+            font-size: 0.78rem; font-weight: 600; letter-spacing: 0.03em;
+            color: var(--p-primary); background: rgba(82, 110, 59, 0.1);
+        }
+        .portal-pill--sm { padding: 0.2rem 0.55rem; font-size: 0.7rem; }
+        .portal-pill--warn { color: var(--p-gold); background: rgba(192, 138, 62, 0.14); }
+
+        .portal-btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+            padding: 0.6rem 1.1rem; border-radius: 2px; cursor: pointer;
+            font-size: 0.85rem; font-weight: 600;
+            background: transparent; color: var(--p-deep); border: 1px solid var(--p-deep);
+            transition: background 0.2s, color 0.2s;
+        }
+        .portal-btn:hover:not(:disabled) { background: var(--p-deep); color: var(--p-sand); }
+        .portal-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .portal-btn--solid { width: 100%; margin-top: 1rem; padding: 0.85rem; background: var(--p-deep); color: var(--p-sand); }
+        .portal-btn--solid:hover:not(:disabled) { background: var(--p-primary); border-color: var(--p-primary); }
+
+        .portal-icon-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 30px; height: 30px; border-radius: 2px; cursor: pointer;
+            background: transparent; color: var(--p-deep); border: 1px solid var(--p-border);
+        }
+        .portal-icon-btn:hover { background: var(--p-deep); color: var(--p-sand); }
+
+        .portal-btn:focus-visible, .portal-icon-btn:focus-visible, .table-btn:focus-visible,
+        .thumb:focus-visible, #tableTokenInput:focus-visible {
+            outline: 2px solid var(--p-primary); outline-offset: 2px;
         }
 
-        .portal-pill--sm {
-            font-size: 0.75rem;
-            padding: 0.25rem 0.75rem;
+        .portal-flash {
+            display: flex; align-items: center; gap: 0.7rem; margin-bottom: 1.5rem;
+            padding: 0.9rem 1.2rem; border-left: 3px solid var(--p-primary);
+            background: rgba(82, 110, 59, 0.08); color: var(--p-deep); font-weight: 600; font-size: 0.92rem;
         }
+        .portal-flash i { font-size: 1.3rem; color: var(--p-primary); }
 
-        .portal-pill--warn {
-            color: var(--brand-accent);
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(249, 115, 22, 0.1));
+        .portal-grid { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 2rem; align-items: start; }
+        .portal-main { min-width: 0; }
+
+        /* Sidebar */
+        .portal-side { border: 1px solid var(--p-border); background: #fff; border-radius: 2px; overflow: hidden; }
+        .portal-side-head { padding: 1.25rem 1.25rem 1rem; border-bottom: 1px solid var(--p-border); background: var(--p-cream); }
+        .portal-side-head h3 {
+            margin: 0; display: flex; align-items: center; gap: 0.5rem;
+            font-family: 'Playfair Display', Georgia, serif; font-size: 1.15rem; font-weight: 600; color: var(--p-deep);
         }
+        .portal-side-head h3 i { color: var(--p-primary); }
+        .portal-side-head p { margin: 0.4rem 0 0; font-size: 0.78rem; color: var(--p-muted); line-height: 1.5; }
+        .portal-side-list { padding: 0.5rem; max-height: 70vh; overflow-y: auto; }
 
-        .portal-outline-btn {
-            background: #fff;
-            color: var(--brand-primary);
-            border: 2px solid var(--brand-primary);
-            padding: 0.5rem 1.25rem;
-            border-radius: 50px;
-            font-weight: 600;
-            font-size: 0.875rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            cursor: pointer;
-        }
-
-        /* Tombol tabel */
         .table-btn {
-            width: 100%;
-            text-align: left;
-            padding: 1rem 1.25rem;
-            border-radius: 16px;
-            margin-bottom: 0.5rem;
-            background: var(--brand-light);
-            border: 2px solid transparent;
-            cursor: pointer;
-            transition: all 0.25s ease;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 0.75rem;
+            width: 100%; text-align: left; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+            padding: 0.8rem 0.9rem; margin-bottom: 2px; border: 0; border-left: 3px solid transparent;
+            border-radius: 2px; background: transparent; cursor: pointer; transition: background 0.2s, border-color 0.2s;
         }
+        .table-btn:hover { background: var(--p-cream); border-left-color: var(--p-border); }
+        .table-btn-name { font-weight: 600; font-size: 0.9rem; color: var(--p-deep); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .table-btn-meta { display: inline-flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+        .lock-icon { color: #9a9a8c; font-size: 1.05rem; }
+        .table-btn.unlocked .lock-icon { color: var(--p-primary); }
+        .table-btn.active { background: var(--p-deep); border-left-color: var(--p-gold); }
+        .table-btn.active .table-btn-name, .table-btn.active .lock-icon { color: #fff; }
+        .table-btn.active .portal-pill { background: rgba(255, 255, 255, 0.14); color: #fff; }
 
-        .table-btn:hover {
-            border-color: var(--brand-primary);
-            transform: translateX(4px);
+        /* Viewer */
+        .portal-viewer {
+            min-height: 560px; display: flex; flex-direction: column; min-width: 0;
+            border: 1px solid var(--p-border); background: #fff; border-radius: 2px; overflow: hidden;
         }
+        .portal-empty { flex: 1; display: flex; align-items: center; justify-content: center; padding: 4rem 2rem; text-align: center; }
+        .portal-empty i { display: block; font-size: 3.5rem; color: var(--p-primary); opacity: 0.25; margin-bottom: 1rem; }
+        .portal-empty p { margin: 0; color: var(--p-muted); }
 
-        .table-btn-name {
-            font-weight: 600;
-            color: #1e293b;
-            font-size: 0.9375rem;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+        .portal-viewer-head {
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
+            padding: 1.1rem 1.5rem; border-bottom: 1px solid var(--p-border); background: var(--p-cream);
         }
-
-        .table-btn-meta {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            flex-shrink: 0;
+        .portal-viewer-head h3 {
+            margin: 0; display: flex; align-items: center; gap: 0.6rem;
+            font-family: 'Playfair Display', Georgia, serif; font-size: 1.3rem; font-weight: 600; color: var(--p-deep);
         }
+        .portal-viewer-head h3 i { color: var(--p-primary); }
 
-        .lock-icon {
-            color: #94a3b8;
-            font-size: 1.05rem;
+        /* Gate */
+        #tokenGate { padding: 2.5rem 1.5rem; }
+        .gate-box { max-width: 560px; margin: 0 auto; text-align: center; }
+        .gate-icon { font-size: 2.4rem; color: var(--p-primary); }
+        .gate-box h4 { margin: 0.5rem 0 0.3rem; font-family: 'Playfair Display', Georgia, serif; font-size: 1.2rem; color: var(--p-deep); }
+        .gate-box p { margin: 0 0 1.25rem; font-size: 0.9rem; color: var(--p-muted); }
+        #tableTokenInput {
+            width: 100%; padding: 0.75rem; border: 1px solid var(--p-border); border-radius: 2px;
+            font-family: ui-monospace, 'Courier New', monospace; font-size: 0.82rem; resize: vertical; background: var(--p-sand);
         }
+        #tokenGateMsg { margin-top: 0.75rem; padding: 0.7rem 1rem; border-radius: 2px; font-size: 0.85rem; text-align: left; }
 
-        .table-btn.unlocked .lock-icon {
-            color: #16a34a;
+        /* API info */
+        .api-info { padding: 1rem 1.5rem; background: var(--p-sand); border-bottom: 1px solid var(--p-border); min-width: 0; }
+        .api-info-title { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--p-deep); }
+        .api-info-title i { color: var(--p-primary); }
+        .api-code { position: relative; background: var(--p-deep); border-radius: 2px; padding: 0.8rem 5rem 0.8rem 1rem; overflow-x: auto; }
+        .api-code code { font-family: ui-monospace, 'Courier New', monospace; font-size: 0.78rem; color: #e8e4d4; white-space: nowrap; }
+        .api-code button {
+            position: absolute; top: 0.45rem; right: 0.45rem; padding: 0.25rem 0.6rem; border: 0; border-radius: 2px;
+            background: rgba(255, 255, 255, 0.12); color: #fff; font-size: 0.72rem; cursor: pointer;
         }
-
-        .table-btn.active {
-            background: var(--brand-primary);
-            border-color: var(--brand-primary);
-            box-shadow: 0 4px 20px rgba(79, 70, 229, 0.3);
-        }
-
-        .table-btn.active .table-btn-name,
-        .table-btn.active .lock-icon {
-            color: #fff;
+        .api-code button:hover { background: rgba(255, 255, 255, 0.25); }
+        .api-token-row { margin-top: 0.7rem; display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+        .api-token-row code {
+            font-family: ui-monospace, 'Courier New', monospace; font-size: 0.72rem; color: var(--p-deep);
+            background: #fff; padding: 0.25rem 0.5rem; border: 1px solid var(--p-border); border-radius: 2px; word-break: break-all;
         }
 
         /* Tabel data */
-        .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
-
-        .data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; min-width: 800px; }
-
-        .data-table thead tr { background: linear-gradient(135deg, #f8fafc, #e2e8f0); position: sticky; top: 0; z-index: 10; }
-
-        .data-table th {
-            padding: 1rem;
-            text-align: left;
-            border-bottom: 2px solid #cbd5e1;
-            font-weight: 700;
-            color: #475569;
-            text-transform: uppercase;
-            letter-spacing: 0.025em;
-            white-space: nowrap;
-            font-size: 0.75rem;
+        #dataViewerBody { flex: 1; min-width: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; min-width: 640px; }
+        .data-table thead th {
+            position: sticky; top: 0; z-index: 2; padding: 0.85rem 1rem; text-align: left; white-space: nowrap;
+            background: var(--p-cream); border-bottom: 1px solid var(--p-border);
+            font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--p-muted);
         }
-
         .data-table td {
-            padding: 0.875rem 1rem;
-            color: #1e293b;
-            vertical-align: top;
-            border-bottom: 1px solid #f1f5f9;
-            max-width: 250px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            padding: 0.7rem 1rem; vertical-align: middle; color: var(--p-deep);
+            border-bottom: 1px solid #efeadb; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .data-table tbody tr:hover { background: var(--p-sand); }
+
+        .cell-null {
+            display: inline-block; padding: 0.1rem 0.45rem; border-radius: 2px;
+            font-family: ui-monospace, 'Courier New', monospace; font-size: 0.7rem;
+            color: #b4532a; background: rgba(200, 90, 50, 0.1);
         }
 
-        .data-table tbody tr:nth-child(even) { background: #f8fafc; }
-        .data-table tbody tr:hover { background: #f1f5f9; }
+        .thumb {
+            display: inline-flex; padding: 0; border: 1px solid var(--p-border); border-radius: 2px;
+            background: var(--p-cream); cursor: zoom-in; overflow: hidden; vertical-align: middle;
+        }
+        .thumb img { width: 44px; height: 44px; object-fit: cover; object-position: center 25%; display: block; }
+        .thumb-broken {
+            display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px;
+            border: 1px dashed #c9733f; border-radius: 2px; color: #c9733f; font-size: 1.2rem; background: rgba(200, 90, 50, 0.06);
+        }
 
+        #dataViewerFooter {
+            display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+            padding: 0.85rem 1.5rem; border-top: 1px solid var(--p-border);
+            background: var(--p-sand); font-size: 0.82rem; color: var(--p-muted);
+        }
+        #nullInfo { color: #b4532a; }
+
+        .state-box { text-align: center; padding: 3rem 1.5rem; color: var(--p-muted); }
+        .state-box i { display: block; font-size: 2.6rem; margin-bottom: 0.75rem; }
+        .state-box--error { color: #b4532a; }
+        .spinner {
+            width: 36px; height: 36px; margin: 0 auto 1rem; border-radius: 50%;
+            border: 3px solid var(--p-primary); border-top-color: transparent; animation: spin 1s linear infinite;
+        }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        @media (max-width: 1024px) {
-            .portal-grid { grid-template-columns: 1fr; }
+        /* Lightbox */
+        .img-dialog {
+            position: fixed; inset: 0; margin: auto; padding: 1rem; border: 0; border-radius: 2px;
+            max-width: min(720px, calc(100% - 2rem)); background: var(--zaitun-sand, #FAF7EF); text-align: center;
         }
+        .img-dialog::backdrop { background: rgba(30, 38, 25, 0.7); }
+        .img-dialog img { max-width: 100%; max-height: 70vh; display: block; margin: 0 auto; border-radius: 2px; }
+        .img-dialog p { margin: 0.75rem 0 0; font-family: ui-monospace, monospace; font-size: 0.75rem; color: #6B6F62; word-break: break-all; }
+        .img-dialog-close { position: absolute; top: 0.5rem; right: 0.5rem; background: #fff; }
 
+        @media (max-width: 1024px) { .portal-grid { grid-template-columns: 1fr; } .portal-side-list { max-height: 260px; } }
         @media (max-width: 768px) {
-            .lux-container { padding: 1rem 1rem 3rem !important; }
-            #dataViewerHeader, #apiInfoBar, #dataViewerFooter, #tokenGate { padding-left: 1rem !important; padding-right: 1rem !important; }
-            .data-table { min-width: 600px; font-size: 0.75rem; }
-            .data-table th, .data-table td { padding: 0.625rem 0.75rem; font-size: 0.75rem; }
+            .portal-page { padding: 1.5rem 1rem 3rem; }
+            .portal-viewer-head, .api-info, #tokenGate, #dataViewerFooter { padding-left: 1rem; padding-right: 1rem; }
+            .data-table { font-size: 0.78rem; }
+            .data-table th, .data-table td { padding: 0.6rem 0.7rem; }
         }
     </style>
 @endsection
@@ -321,10 +340,10 @@
 @push('scripts')
     <script>
         const portalConfig = {
-            addTokenUrl: @json(route('data-portal.token.add')),
-            csrf: @json(csrf_token()),
+            addTokenUrl: @json($portalAddUrl),
+            csrf: @json($portalCsrf),
             tables: @json($tables),
-            tokens: @json((object) $table_tokens), // { nama_tabel: rawToken }
+            tokens: @json($portalTokens), // { nama_tabel: rawToken }
         };
 
         let currentTable = null;
@@ -334,9 +353,26 @@
         const tokenFor = table => portalConfig.tokens[table] || null;
 
         function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+            return String(text)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        // ===== GAMBAR =====
+        const IMG_EXT = /\.(jpe?g|png|gif|webp|avif|svg)(\?.*)?$/i;
+        const IMG_COL = /(foto|photo|gambar|image|img|avatar|logo|cover|thumbnail|banner)/i;
+        const IMG_PATH = /^(https?:)?\/\/|^\/?(public\/|storage\/|assets\/|images\/|uploads\/)/i;
+
+        function isImageCell(col, text) {
+            if (!text) return false;
+            return IMG_EXT.test(text) || (IMG_COL.test(col) && IMG_PATH.test(text));
+        }
+
+        function imageSrc(text) {
+            if (/^(https?:)?\/\//i.test(text) || text.startsWith('data:')) return text;
+            const p = text.replace(/^\/?public\//, '').replace(/^\/+/, '');
+            if (/^(storage|assets|images|uploads)\//.test(p)) return `${location.origin}/${p}`;
+            return `${location.origin}/storage/${p}`;
         }
 
         // ===== STATE TAMPILAN =====
@@ -345,7 +381,7 @@
             el('tokenGate').style.display = isGate ? 'block' : 'none';
             el('apiInfoBar').style.display = isGate ? 'none' : 'block';
             el('dataViewerBody').style.display = isGate ? 'none' : 'block';
-            el('dataViewerFooter').style.display = isGate ? 'none' : 'block';
+            el('dataViewerFooter').style.display = isGate ? 'none' : 'flex';
             el('btnRefresh').style.display = isGate ? 'none' : 'inline-flex';
         }
 
@@ -404,10 +440,7 @@
                 box.style.display = 'none';
                 return;
             }
-            const styles = {
-                error: ['#fef2f2', '#991b1b'],
-                info: ['#eff6ff', '#1e40af']
-            };
+            const styles = { error: ['#fdf0ea', '#9a3f1c'], info: ['#eef3e8', '#3d5429'] };
             const [bg, color] = styles[type] || styles.error;
             box.style.background = bg;
             box.style.color = color;
@@ -506,8 +539,9 @@
             updateTokenDisplay();
 
             const body = el('dataViewerBody');
-            body.innerHTML =
-                '<div style="text-align:center;padding:3rem;color:#64748b;"><div style="width:40px;height:40px;border:3px solid var(--brand-primary);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 1rem;"></div><p style="margin:0.5rem 0 0;">Memuat data...</p></div>';
+            body.innerHTML = '<div class="state-box"><div class="spinner"></div><p style="margin:0">Memuat data...</p></div>';
+            el('paginationInfo').textContent = '';
+            el('nullInfo').textContent = '';
 
             el('apiEndpointUrl').textContent = `${window.location.origin}/v1/data/${tableName}?token=${token}`;
 
@@ -521,7 +555,6 @@
                     const err = await response.json().catch(() => ({ error: response.statusText }));
                     const message = err.error || err.message || `HTTP ${response.status}`;
 
-                    // Token tidak cocok / ditolak untuk tabel ini -> minta token yang benar
                     if ([401, 403].includes(response.status) || /not allowed/i.test(message)) {
                         showGate(tableName, `Token untuk tabel ini ditolak (${message}). Masukkan token yang benar.`);
                         return;
@@ -532,61 +565,120 @@
                 renderDataTable(await response.json());
             } catch (error) {
                 body.innerHTML = `
-                    <div style="text-align:center;color:#ef4444;padding:3rem;">
-                        <i class="ri-error-warning-line" style="font-size:3rem;display:block;margin-bottom:1rem;"></i>
-                        <p style="margin:0 0 0.5rem;font-size:1.125rem;font-weight:600;">${escapeHtml(error.message)}</p>
-                        <button type="button" id="btnRetry" class="hero-btn" style="padding:0.625rem 1.5rem;border-radius:50px;font-weight:600;">Coba Lagi</button>
+                    <div class="state-box state-box--error">
+                        <i class="ri-error-warning-line"></i>
+                        <p style="margin:0 0 1rem;font-size:1.05rem;font-weight:600;">${escapeHtml(error.message)}</p>
+                        <button type="button" id="btnRetry" class="portal-btn">Coba Lagi</button>
                     </div>`;
                 el('btnRetry')?.addEventListener('click', () => loadTableData(tableName));
             }
         }
 
-        function renderDataTable(result) {
-            const { data, meta } = result;
-            const container = el('dataViewerBody');
+        function renderCell(col, value) {
+            if (value === null || value === undefined || value === '') {
+                return '<span class="cell-null">null</span>';
+            }
 
-            if (!meta || !meta.columns_returned) {
-                container.innerHTML = `<div style="text-align:center;color:#ef4444;padding:3rem;">
-                    <i class="ri-error-warning-line" style="font-size:3rem;display:block;margin-bottom:1rem;"></i>
-                    <p style="margin:0;font-size:1rem;">Format response API tidak valid</p></div>`;
+            const text = String(value);
+
+            if (isImageCell(col, text)) {
+                const src = imageSrc(text);
+                return `<button type="button" class="thumb" data-src="${escapeHtml(src)}" data-raw="${escapeHtml(text)}" title="${escapeHtml(text)}">
+                            <img src="${escapeHtml(src)}" alt="${escapeHtml(col)}" loading="lazy">
+                        </button>`;
+            }
+
+            const shown = text.length > 60 ? text.substring(0, 60) + '…' : text;
+            return `<span title="${escapeHtml(text)}">${escapeHtml(shown)}</span>`;
+        }
+
+        function renderDataTable(result) {
+            const data = result.data;
+            const meta = result.meta || {};
+            const container = el('dataViewerBody');
+            const columns = meta.columns_returned || meta.columns;
+
+            if (!columns) {
+                container.innerHTML = `<div class="state-box state-box--error"><i class="ri-error-warning-line"></i>
+                    <p style="margin:0">Format response API tidak valid</p></div>`;
                 return;
             }
 
-            el('tableNameDisplay').textContent = meta.table;
+            if (meta.table) el('tableNameDisplay').textContent = meta.table;
 
             if (!data || data.length === 0) {
-                container.innerHTML = `<div style="text-align:center;color:#94a3b8;padding:3rem;">
-                    <i class="ri-inbox-line" style="font-size:3rem;opacity:0.3;display:block;margin-bottom:1rem;"></i>
-                    <p style="margin:0;font-size:1rem;">Tidak ada data ditemukan</p></div>`;
+                container.innerHTML = `<div class="state-box"><i class="ri-inbox-line" style="opacity:.35"></i>
+                    <p style="margin:0">Tidak ada data ditemukan</p></div>`;
                 return;
             }
 
-            const columns = meta.columns_returned;
-            let html = '<div class="table-wrapper"><table class="data-table"><thead><tr>';
-            columns.forEach(col => { html += `<th>${escapeHtml(String(col))}</th>`; });
+            let html = '<table class="data-table"><thead><tr>';
+            columns.forEach(col => { html += `<th>${escapeHtml(col)}</th>`; });
             html += '</tr></thead><tbody>';
+
+            const imageNulls = {};
 
             data.forEach(row => {
                 html += '<tr>';
                 columns.forEach(col => {
-                    const value = row[col] ?? '';
-                    const text = String(value);
-                    const shown = text.length > 40 ? text.substring(0, 40) + '…' : text;
-                    html += `<td title="${escapeHtml(text)}">${escapeHtml(shown)}</td>`;
+                    const value = row[col];
+                    if (IMG_COL.test(col) && (value === null || value === undefined || value === '')) {
+                        imageNulls[col] = (imageNulls[col] || 0) + 1;
+                    }
+                    html += `<td>${renderCell(col, value)}</td>`;
                 });
                 html += '</tr>';
             });
 
-            html += '</tbody></table></div>';
+            html += '</tbody></table>';
             container.innerHTML = html;
 
-            el('paginationInfo').textContent =
-                `Total ${meta.total_records} record • ${meta.table} • ${new Date(meta.timestamp).toLocaleString('id-ID')}`;
+            const total = meta.total_records ?? meta.total ?? data.length;
+            const parts = [`Total ${total} record`, meta.table || currentTable];
+            const when = meta.timestamp ? new Date(meta.timestamp) : null;
+            if (when && !isNaN(when)) parts.push(when.toLocaleString('id-ID'));
+            if (meta.current_page && meta.last_page) parts.push(`Halaman ${meta.current_page}/${meta.last_page}`);
+            el('paginationInfo').textContent = parts.join(' • ');
+
+            const nullMsgs = Object.entries(imageNulls)
+                .map(([col, n]) => `Kolom "${col}": ${n} dari ${data.length} baris kosong (null)`);
+            el('nullInfo').textContent = nullMsgs.join(' • ');
+        }
+
+        // ===== LIGHTBOX + GAMBAR RUSAK =====
+        function initImageHandlers() {
+            const body = el('dataViewerBody');
+            const dialog = el('imgDialog');
+
+            body.addEventListener('click', e => {
+                const thumb = e.target.closest('.thumb');
+                if (!thumb) return;
+                el('imgDialogImg').src = thumb.dataset.src;
+                el('imgDialogCaption').textContent = thumb.dataset.raw;
+                dialog.showModal();
+            });
+
+            // error event tidak bubble, jadi pakai capture
+            body.addEventListener('error', e => {
+                const img = e.target;
+                if (img.tagName !== 'IMG') return;
+                const holder = img.closest('.thumb');
+                if (!holder) return;
+                const broken = document.createElement('span');
+                broken.className = 'thumb-broken';
+                broken.title = `Gambar tidak ditemukan: ${holder.dataset.src}`;
+                broken.innerHTML = '<i class="ri-image-line"></i>';
+                holder.replaceWith(broken);
+            }, true);
+
+            el('imgDialogClose').addEventListener('click', () => dialog.close());
+            dialog.addEventListener('click', e => { if (e.target === dialog) dialog.close(); });
         }
 
         // ===== INIT =====
         document.addEventListener('DOMContentLoaded', function() {
             refreshLocks();
+            initImageHandlers();
 
             document.querySelectorAll('.table-btn').forEach(btn => {
                 btn.addEventListener('click', () => selectTable(btn.dataset.table));

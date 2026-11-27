@@ -4,11 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ChurchProfile;
-use App\Models\Branch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-
 
 class ChurchProfileController extends Controller
 {
@@ -17,17 +15,43 @@ class ChurchProfileController extends Controller
         return Auth::user()?->roles->first()?->branch_id;
     }
 
-    public function index(Request $request)
+    protected function authorizeBranch(ChurchProfile $churchProfile): void
     {
         $branchId = $this->getBranchId();
 
-        $query = ChurchProfile::query()->with('branch');
+        if ($branchId && $churchProfile->branch_id !== $branchId) {
+            abort(403);
+        }
+    }
 
-        if ($branchId) {
+    protected function rules(): array
+    {
+        return [
+            'church_name' => 'required|string|max:255',
+            'address'     => 'nullable|string|max:1000',
+            'city'        => 'nullable|string|max:100',
+            'phone'       => 'nullable|string|max:50',
+            'email'       => 'nullable|email|max:255',
+            'history'     => 'nullable|string',
+            'vision'      => 'nullable|string',
+            'mission'     => 'nullable|string',
+            'logo'        => 'nullable|image|mimes:jpg,png,jpeg,webp|max:5120',
+            'facebook'    => 'nullable|url|max:255',
+            'instagram'   => 'nullable|url|max:255',
+            'youtube'     => 'nullable|url|max:255',
+            'tiktok'      => 'nullable|url|max:255',
+        ];
+    }
+
+    public function index(Request $request)
+    {
+        $query = ChurchProfile::query();
+
+        if ($branchId = $this->getBranchId()) {
             $query->where('branch_id', $branchId);
         }
 
-        if ($request->search) {
+        if ($request->filled('search')) {
             $query->where('church_name', 'like', "%{$request->search}%");
         }
 
@@ -38,51 +62,19 @@ class ChurchProfileController extends Controller
 
     public function create()
     {
-        $branchId = $this->getBranchId();
-        $branches = $branchId 
-            ? Branch::where('id', $branchId)->get() 
-            : Branch::orderBy('name')->get();
-
-        return view('admin.church_profile.form', [
-            'churchProfile' => null, 
-            'branches' => $branches
-        ]);
+        return view('admin.church_profile.form', ['churchProfile' => null]);
     }
 
     public function store(Request $request)
     {
-        $this->normalizeChurchProfileRequest($request);
+        $data = $request->validate($this->rules());
 
-        $branchId = $this->getBranchId();
-
-        $validated = $request->validate($this->churchProfileRules());
-
-        $data = $this->prepareChurchProfileData($request, $validated);
-
-        $data['branch_id'] = $branchId ?? ($validated['branch_id'] ?? null);
+        $data['branch_id']    = $this->getBranchId(); // otomatis dari user
+        $data['is_published'] = $request->boolean('is_published');
+        $data['published_at'] = $data['is_published'] ? now() : null;
 
         if ($request->hasFile('logo')) {
             $data['logo_path'] = $request->file('logo')->store('church-profiles/logos', 'public');
-        }
-
-        if ($request->hasFile('gallery_images')) {
-            $galleryPaths = [];
-
-            foreach ($request->file('gallery_images') as $file) {
-                $galleryPaths[] = $file->store('church-profiles/gallery', 'public');
-            }
-
-            $data['gallery_images'] = $galleryPaths;
-        }
-
-        if ($request->hasFile('documents')) {
-            $docPaths = [];
-
-            foreach ($request->file('documents') as $file) {
-                $docPaths[] = $file->store('church-profiles/documents', 'public');
-            }
-
-            $data['documents'] = $docPaths;
         }
 
         ChurchProfile::create($data);
@@ -94,73 +86,27 @@ class ChurchProfileController extends Controller
 
     public function edit(ChurchProfile $churchProfile)
     {
-        $branchId = $this->getBranchId();
+        $this->authorizeBranch($churchProfile);
 
-        if ($branchId && $churchProfile->branch_id !== $branchId) {
-            abort(403);
-        }
-
-        $branches = $branchId ? Branch::where('id', $branchId)->get() : Branch::orderBy('name')->get();
-
-        return view('admin.church_profile.form', compact('churchProfile', 'branches'));
+        return view('admin.church_profile.form', compact('churchProfile'));
     }
 
     public function update(Request $request, ChurchProfile $churchProfile)
     {
-        $this->normalizeChurchProfileRequest($request);
+        $this->authorizeBranch($churchProfile);
 
-        $branchId = $this->getBranchId();
+        $data = $request->validate($this->rules());
 
-        if ($branchId && $churchProfile->branch_id !== $branchId) {
-            abort(403);
-        }
-
-        $validated = $request->validate($this->churchProfileRules());
-
-        $data = $this->prepareChurchProfileData(
-            $request,
-            $validated,
-            $churchProfile
-        );
+        $data['is_published'] = $request->boolean('is_published');
+        $data['published_at'] = $data['is_published']
+            ? ($churchProfile->published_at ?? now())
+            : null;
 
         if ($request->hasFile('logo')) {
-
             if ($churchProfile->logo_path) {
                 Storage::disk('public')->delete($churchProfile->logo_path);
             }
-
-            $data['logo_path'] = $request->file('logo')
-                ->store('church-profiles/logos', 'public');
-        }
-
-        if ($request->hasFile('gallery_images')) {
-
-            $galleryPaths = [];
-
-            foreach ($request->file('gallery_images') as $file) {
-                $galleryPaths[] = $file
-                    ->store('church-profiles/gallery', 'public');
-            }
-
-            $data['gallery_images'] = array_merge(
-                $churchProfile->gallery_images ?? [],
-                $galleryPaths
-            );
-        }
-
-        if ($request->hasFile('documents')) {
-
-            $docPaths = [];
-
-            foreach ($request->file('documents') as $file) {
-                $docPaths[] = $file
-                    ->store('church-profiles/documents', 'public');
-            }
-
-            $data['documents'] = array_merge(
-                $churchProfile->documents ?? [],
-                $docPaths
-            );
+            $data['logo_path'] = $request->file('logo')->store('church-profiles/logos', 'public');
         }
 
         $churchProfile->update($data);
@@ -170,94 +116,12 @@ class ChurchProfileController extends Controller
             ->with('success', 'Profile gereja berhasil diupdate!');
     }
 
-
-    protected function churchProfileRules(): array
-    {
-        return [
-            'branch_id' => 'nullable|uuid|exists:branches,id',
-            'church_name' => 'required|string|max:255',
-            'tagline' => 'nullable|string|max:255',
-            'address' => 'nullable|string|max:1000',
-            'city' => 'nullable|string|max:100',
-            'province' => 'nullable|string|max:100',
-            'postal_code' => 'nullable|string|max:20',
-            'country' => 'nullable|string|max:100',
-            'phone' => 'nullable|string|max:50',
-            'whatsapp' => 'nullable|string|max:50',
-            'email' => 'nullable|email|max:255',
-            'website' => 'nullable|url|max:255',
-            'history' => 'nullable|string',
-            'vision' => 'nullable|string',
-            'mission' => 'nullable|string',
-            'values' => 'nullable|array',
-            'values.*.label' => 'required_with:values|string|max:100',
-            'values.*.description' => 'nullable|string|max:500',
-            'logo' => 'nullable|image|mimes:jpg,png,jpeg,webp|max:5120',
-            'gallery_images' => 'nullable|array',
-            'gallery_images.*' => 'image|mimes:jpg,png,jpeg,webp|max:5120',
-            'documents' => 'nullable|array',
-            'documents.*' => 'file|mimes:pdf,doc,docx|max:10240',
-            'facebook' => 'nullable|url|max:255',
-            'instagram' => 'nullable|url|max:255',
-            'youtube' => 'nullable|url|max:255',
-            'tiktok' => 'nullable|url|max:255',
-            'meta_title' => 'nullable|string|max:255',
-            'meta_description' => 'nullable|string|max:500',
-            'meta_keywords' => 'nullable|array',
-            'meta_keywords.*' => 'nullable|string|max:100',
-            'map_embed_code' => 'nullable|string|max:2000',
-            'map_latitude' => 'nullable|numeric',
-            'map_longitude' => 'nullable|numeric',
-            'service_time_sunday' => 'nullable|date_format:H:i',
-            'service_time_wednesday' => 'nullable|date_format:H:i',
-            'service_time_friday' => 'nullable|date_format:H:i',
-            'service_note' => 'nullable|string|max:500',
-            'is_published' => 'boolean',
-        ];
-    }
-
-    protected function prepareChurchProfileData(Request $request, array $validated, ChurchProfile $churchProfile = null): array
-    {
-        $data = $validated;
-        $data['is_published'] = $request->has('is_published');
-
-        if ($request->hasFile('logo') && $churchProfile?->logo_path) {
-            Storage::disk('public')->delete($churchProfile->logo_path);
-        }
-
-        $data['logo_path'] = $churchProfile?->logo_path ?? null;
-
-        if (empty($data['meta_title'])) {
-            $data['meta_title'] = $data['church_name'];
-        }
-
-        $data['published_at'] = $data['is_published'] ? now() : null;
-
-        return $data;
-    }
-
     public function destroy(ChurchProfile $churchProfile)
     {
-        $branchId = $this->getBranchId();
-
-        if ($branchId && $churchProfile->branch_id !== $branchId) {
-            abort(403);
-        }
+        $this->authorizeBranch($churchProfile);
 
         if ($churchProfile->logo_path) {
             Storage::disk('public')->delete($churchProfile->logo_path);
-        }
-
-        if ($churchProfile->gallery_images) {
-            foreach ($churchProfile->gallery_images as $img) {
-                Storage::disk('public')->delete($img);
-            }
-        }
-
-        if ($churchProfile->documents) {
-            foreach ($churchProfile->documents as $doc) {
-                Storage::disk('public')->delete($doc);
-            }
         }
 
         $churchProfile->delete();
@@ -265,90 +129,28 @@ class ChurchProfileController extends Controller
         return response()->json(['success' => true, 'message' => 'Profile gereja berhasil dihapus']);
     }
 
-    public function removeGalleryImage(Request $request, ChurchProfile $churchProfile)
-    {
-        $branchId = $this->getBranchId();
-
-        if ($branchId && $churchProfile->branch_id !== $branchId) {
-            abort(403);
-        }
-
-        $request->validate(['image_path' => 'required|string']);
-
-        $galleryImages = $churchProfile->gallery_images ?? [];
-        $imagePath = $request->image_path;
-
-        if (($key = array_search($imagePath, $galleryImages)) !== false) {
-            unset($galleryImages[$key]);
-            Storage::disk('public')->delete($imagePath);
-
-            $churchProfile->update(['gallery_images' => array_values($galleryImages)]);
-        }
-
-        return response()->json(['success' => true, 'message' => 'Gambar berhasil dihapus']);
-    }
-
-    public function removeDocument(Request $request, ChurchProfile $churchProfile)
-    {
-        $branchId = $this->getBranchId();
-
-        if ($branchId && $churchProfile->branch_id !== $branchId) {
-            abort(403);
-        }
-
-        $request->validate(['doc_path' => 'required|string']);
-
-        $documents = $churchProfile->documents ?? [];
-        $docPath = $request->doc_path;
-
-        if (($key = array_search($docPath, $documents)) !== false) {
-            unset($documents[$key]);
-            Storage::disk('public')->delete($docPath);
-
-            $churchProfile->update(['documents' => array_values($documents)]);
-        }
-
-        return response()->json(['success' => true, 'message' => 'Dokumen berhasil dihapus']);
-    }
-
     public function preview(ChurchProfile $churchProfile)
     {
-        $branchId = $this->getBranchId();
-
-        if ($branchId && $churchProfile->branch_id !== $branchId) {
-            abort(403);
-        }
+        $this->authorizeBranch($churchProfile);
 
         return view('admin.church_profile.preview', compact('churchProfile'));
     }
 
     public function togglePublish(ChurchProfile $churchProfile)
     {
-        $branchId = $this->getBranchId();
+        $this->authorizeBranch($churchProfile);
 
-        if ($branchId && $churchProfile->branch_id !== $branchId) {
-            abort(403);
-        }
+        $publish = !$churchProfile->is_published;
 
         $churchProfile->update([
-            'is_published' => !$churchProfile->is_published,
-            'published_at' => !$churchProfile->is_published ? now() : null,
+            'is_published' => $publish,
+            'published_at' => $publish ? now() : null,
         ]);
 
         return response()->json([
-            'success' => true,
-            'message' => $churchProfile->is_published ? 'Profile telah dipublikasikan' : 'Profile telah di-unpublish',
-            'is_published' => $churchProfile->is_published,
+            'success'      => true,
+            'message'      => $publish ? 'Profile telah dipublikasikan' : 'Profile telah di-unpublish',
+            'is_published' => $publish,
         ]);
     }
-    
-    protected function normalizeChurchProfileRequest(Request $request): void
-    {
-        $request->merge([
-            'meta_keywords' => $request->meta_keywords
-                ? array_filter(array_map('trim', explode(',', $request->meta_keywords)))
-                : [],
-        ]);
-    }
-
 }

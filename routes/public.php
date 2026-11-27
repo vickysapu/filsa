@@ -9,6 +9,7 @@ use App\Http\Controllers\Public\HomeController;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PublicChurchApiController;
 
 Route::get('/', [HomeController::class, 'index'])->name('public.home');
 Route::get('/tentang-kami', [HomeController::class, 'about'])->name('public.about');
@@ -37,10 +38,14 @@ Route::get('/join-meeting/{meeting}', function ($meetingId) {
 Route::prefix('v1/data')->name('api.data.')->middleware(['throttle:api-data'])->group(function () {
     Route::get('/{table}', [DataAccessController::class, 'index'])->name('index');
     Route::get('/{table}/{id}', [DataAccessController::class, 'show'])->name('show');
+    Route::get('/files/{table}/{id}/{column}', [DataAccessController::class, 'file'])->name('file')->middleware(['signed', 'throttle:120,1']);
 });
 
 Route::get('/request-data-access', [DataAccessRequestController::class, 'showForm'])->name('public.data-access.request');
 Route::post('/request-data-access', [DataAccessRequestController::class, 'store'])->name('public.data-access.store');
+Route::get('/request-data-access', [DataAccessRequestController::class, 'showForm'])->name('public.data-access.request');
+Route::post('/request-data-access', [DataAccessRequestController::class, 'store'])->name('public.data-access.store');
+Route::get('/request-data-access/confirm/{id}/{key}', [DataAccessRequestController::class, 'confirm'])->where('id', '[0-9a-fA-F\-]{36}')->middleware('throttle:10,1')->name('public.data-access.confirm');
 
 Route::prefix('data-portal')->name('data-portal.')->middleware(['throttle:60,1'])->group(function () {
     Route::get('/', [DataAccessPortalController::class, 'showVerification'])->name('verify');
@@ -55,3 +60,6 @@ Route::prefix('data-portal')->name('data-portal.')->middleware(['throttle:60,1']
         ->middleware('throttle:10,1');
     Route::post('/logout', [DataAccessPortalController::class, 'logout'])->name('logout');
 });
+
+Route::get('/api/public/church/jemaat', [PublicChurchApiController::class, 'jemaat'])->middleware('throttle:api_public');
+Route::get('/api/public/church/structures', [PublicChurchApiController::class, 'structures'])->middleware('throttle:api_public');
