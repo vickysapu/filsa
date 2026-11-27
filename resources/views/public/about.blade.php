@@ -473,6 +473,13 @@
         </div>
     </section>
 
+    @php
+        $jemaatUrl = $jemaatUrl ?? 'https://musa.gpsdifiladelfia.site/v1/data/jemaats';
+        $structureUrl = $structureUrl ?? 'https://musa.gpsdifiladelfia.site/v1/data/church_structures';
+        $jemaatToken = $jemaatToken ?? 'dap_ZN7hht_tbQTPzZylnyjfZMCFWTTGr5vtBYojUmm_34861efa-6646-4342-8a46-eec303cbb9d2';
+        $structureToken = $structureToken ?? 'dap_Pcy0E4_5lrFG1fya5wrOzzIuQNzNdicOiTjqPyw_e297752d-b47a-4959-a7d6-908e2ea802c0';
+    @endphp
+
     @include('public.partials.church-structure')
 
     <!-- Warm Call to Action -->

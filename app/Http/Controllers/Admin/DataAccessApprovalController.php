@@ -104,6 +104,7 @@ class DataAccessApprovalController extends Controller
                 'name' => $tableName,
                 'columns' => array_values($allowedColumns),
                 'all_columns' => $allColumns,
+                
             ];
         }
 
