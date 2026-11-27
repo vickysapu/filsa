@@ -370,17 +370,20 @@
             return null;
         }
 
+        // Jika sudah berupa URL atau Base64, gunakan langsung
         if (preg_match('#^(https?:)?//#i', $path) || str_starts_with($path, 'data:')) {
             return $path;
         }
 
-        $path = ltrim((string) preg_replace('#^/?public/?storage/#', '', $path), '/');
+        // Hilangkan prefix public/storage jika sudah ada
+        $path = preg_replace('#^/?public/storage/#', '', $path);
 
-        if (preg_match('#^(storage|assets|images|uploads)/#', $path)) {
-            return $assetBase . '/' . $path;
-        }
+        // Hilangkan prefix storage jika ada
+        $path = preg_replace('#^/?storage/#', '', $path);
 
-        return $assetBase . '/storage/' . $path;
+        $path = ltrim($path, '/');
+
+        return rtrim($assetBase, '/') . '/public/storage/' . $path;
     };
 
     // ===============================================================

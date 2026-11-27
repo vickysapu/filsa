@@ -55,24 +55,25 @@ class DataAccessPortalController extends Controller
      */
     protected function grantForTable(string $table)
     {
-        $raw = session('portal_tokens', [])[$table] ?? null;
+        $raw = session('portal_tokens', [])[$table] ?? session('portal_token');
         if (!$raw) {
             return null;
         }
 
         [$apiToken] = $this->findValidToken($raw);
 
-        if (!$apiToken || $apiToken->grant->table_name !== $table) {
+        if (!$apiToken) {
             return null;
         }
 
-        return $apiToken->grant;
-    }
+        if ($apiToken->grant->table_name === $table) {
+            return $apiToken->grant;
+        }
 
-    protected function quotaExhaustedMessage(): string
-    {
-        return 'Token ini sudah dipakai login ' . DataAccessSecurityService::PORTAL_LOGIN_LIMIT
-            . ' kali. Silakan hubungi admin untuk mendapatkan token baru.';
+        // 1 token bisa mengakses semua tabel yang disetujui dalam 1 permohonan akses
+        return $apiToken->grant->request?->grants
+            ->where('table_name', $table)
+            ->first(fn($g) => $g->isActive());
     }
 
     public function verifyToken(Request $request)
@@ -89,25 +90,34 @@ class DataAccessPortalController extends Controller
             return back()->with('error', $error);
         }
 
-        if ($this->securityService->portalLoginsLeft($apiToken->id) < 1) {
-            return back()->with('error', $this->quotaExhaustedMessage());
-        }
-
+        // Catat aktivitas login untuk audit log
         $this->securityService->recordPortalLogin($apiToken, $request->ip(), $request->userAgent());
-        $left = $this->securityService->portalLoginsLeft($apiToken->id);
 
         $request->session()->regenerate();
+
+        // Buka otomatis seluruh tabel yang telah disetujui untuk permohonan akses ini
+        $tableTokens = [];
+        if ($apiToken->grant && $apiToken->grant->request) {
+            foreach ($apiToken->grant->request->grants as $g) {
+                if ($g->isActive()) {
+                    $tableTokens[$g->table_name] = $rawToken;
+                }
+            }
+        }
+        if (empty($tableTokens)) {
+            $tableTokens[$apiToken->grant->table_name] = $rawToken;
+        }
 
         session([
             'portal_token' => $rawToken,
             'portal_api_token_id' => $apiToken->id,
             'portal_branch_id' => $apiToken->grant->request->branch_id,
             'portal_request_id' => $apiToken->grant->request_id,
-            'portal_tokens' => [$apiToken->grant->table_name => $rawToken],
+            'portal_tokens' => $tableTokens,
         ]);
 
         return redirect()->route('data-portal.dashboard')
-            ->with('success', "Token terverifikasi! Sisa penggunaan token ini: {$left} kali login.");
+            ->with('success', 'Token berhasil diverifikasi! Seluruh tabel yang disetujui siap digunakan.');
     }
 
     /**
@@ -146,17 +156,8 @@ class DataAccessPortalController extends Controller
         $tokens = session('portal_tokens', []);
 
         if (($tokens[$table] ?? null) !== $rawToken) {
-            if ($this->securityService->portalLoginsLeft($apiToken->id) < 1) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $this->quotaExhaustedMessage(),
-                ], 429);
-            }
-
             $this->securityService->recordPortalLogin($apiToken, $request->ip(), $request->userAgent());
         }
-
-        $left = $this->securityService->portalLoginsLeft($apiToken->id);
 
         $tokens[$table] = $rawToken;
         session(['portal_tokens' => $tokens]);
@@ -165,7 +166,7 @@ class DataAccessPortalController extends Controller
             'success' => true,
             'table' => $table,
             'token' => $rawToken,
-            'message' => "Token untuk tabel {$table} berhasil ditambahkan. Sisa penggunaan token ini: {$left} kali login.",
+            'message' => "Token untuk tabel {$table} berhasil ditambahkan.",
         ]);
     }
 
@@ -186,6 +187,17 @@ class DataAccessPortalController extends Controller
 
         $branch = $dataRequest->branch;
         $tableTokens = session('portal_tokens', []);
+        $portalToken = session('portal_token');
+
+        // Pastikan seluruh tabel yang disetujui terisi token otomatis
+        if ($portalToken) {
+            foreach ($dataRequest->grants as $g) {
+                if ($g->isActive() && !isset($tableTokens[$g->table_name])) {
+                    $tableTokens[$g->table_name] = $portalToken;
+                }
+            }
+            session(['portal_tokens' => $tableTokens]);
+        }
 
         $availableTables = $dataRequest->grants->map(function ($g) use ($tableTokens) {
             return [

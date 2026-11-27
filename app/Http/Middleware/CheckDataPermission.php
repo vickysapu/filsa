@@ -18,6 +18,13 @@ class CheckDataPermission
         }
 
         $grant = $apiToken->grant;
+        $table = $request->route('table');
+        if ($table && $grant->table_name !== $table) {
+            $matchingGrant = $apiToken->grant->request?->grants?->where('table_name', $table)->first(fn($g) => $g->isActive());
+            if ($matchingGrant) {
+                $grant = $matchingGrant;
+            }
+        }
         $permissionMap = [
             'read' => true, 
             'write' => $grant->allow_create || $grant->allow_update || $grant->allow_delete,

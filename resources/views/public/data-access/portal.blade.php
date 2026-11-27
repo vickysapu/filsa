@@ -32,6 +32,10 @@
                     <span class="portal-pill portal-pill--warn">
                         <i class="ri-time-line"></i>Exp: {{ \Carbon\Carbon::parse($expires_at)->format('d M Y') }}
                     </span>
+                @else
+                    <span class="portal-pill" style="background:#eef7ee;color:#2e6930;border:1px solid #b7dfb9;">
+                        <i class="ri-shield-check-line"></i>Aktif Selamanya
+                    </span>
                 @endif
             </div>
             <button type="button" onclick="copyTableToken()" class="portal-btn">
@@ -51,7 +55,7 @@
             <aside class="portal-side">
                 <div class="portal-side-head">
                     <h3><i class="ri-database-2-line"></i>Tabel Tersedia</h3>
-                    <p>Setiap tabel punya token sendiri. Tabel bergembok perlu token.</p>
+                    <p>Semua tabel yang disetujui dalam permohonan ini dapat diakses langsung.</p>
                 </div>
                 <div class="portal-side-list">
                     @foreach ($tables as $table)

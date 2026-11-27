@@ -131,7 +131,7 @@ class DataAccessApprovalController extends Controller
                 'grants.*.filters.column' => 'nullable|string',
                 'grants.*.filters.value' => 'nullable|string',
                 'grants.*.rate_limit_per_minute' => 'integer|min:1|max:1000',
-                'expires_at' => 'nullable|date|after:now',
+                'expires_at' => 'nullable|date',
                 'allowed_ips' => 'nullable|array',
                 'allowed_ips.*' => 'ip',
             ]);
@@ -211,7 +211,7 @@ class DataAccessApprovalController extends Controller
                         'table' => $tableName,
                         'token' => $tokenData['raw_token'],
                         'prefix' => $tokenData['token_prefix'],
-                        'expires_at' => $validated['expires_at'],
+                        'expires_at' => $validated['expires_at'] ?? null,
                     ];
                 }
 

@@ -11,7 +11,8 @@ use Symfony\Component\HttpFoundation\IpUtils;
 
 class DataAccessSecurityService
 {
-    public const PORTAL_LOGIN_LIMIT = 3;
+    // Kuota login portal tidak lagi dibatasi (unlimited / bisa dipakai selamanya)
+    public const PORTAL_LOGIN_LIMIT = null;
 
     private const KEY_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
@@ -77,7 +78,8 @@ class DataAccessSecurityService
 
     public function portalLoginsLeft(string $tokenId): int
     {
-        return max(0, self::PORTAL_LOGIN_LIMIT - $this->portalLoginsUsed($tokenId));
+        // Token dapat digunakan selamanya tanpa batas kuota
+        return PHP_INT_MAX;
     }
 
     public function recordPortalLogin($apiToken, ?string $ip, ?string $userAgent): void

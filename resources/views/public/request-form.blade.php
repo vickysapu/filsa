@@ -599,7 +599,7 @@
                 </div>
 
                 <div class="da-card-body">
-                    <form action="{{ route('public.data-access.store', ['token' => request('token')]) }}" method="POST"
+                    <form action="{{ route('public.data-access.store') }}" method="POST"
                         id="requestForm" novalidate>
                         @csrf
                         <input type="hidden" name="_token_access" value="{{ request('token') }}">

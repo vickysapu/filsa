@@ -56,6 +56,8 @@ return [
 
     'data_access_secret' => env('DATA_ACCESS_SECRET'),
 
+    'data_access_tokens_permanent' => env('DATA_ACCESS_TOKENS_PERMANENT', true),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

@@ -190,10 +190,16 @@
 
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <label for="expiresAt" class="field-label">Kedaluwarsa</label>
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <label for="expiresAt" class="field-label mb-0">Masa Berlaku Token</label>
+                                        <div class="form-check form-switch mb-0">
+                                            <input class="form-check-input" type="checkbox" id="noExpirySwitch" checked>
+                                            <label class="form-check-label small text-success fw-bold" for="noExpirySwitch">Selamanya (Permanen)</label>
+                                        </div>
+                                    </div>
                                     <input type="datetime-local" id="expiresAt" class="form-control form-control-custom"
-                                        value="{{ now()->addDays(30)->format('Y-m-d\TH:i') }}">
-                                    <p class="hint">Kosongkan jika tidak ada batas waktu.</p>
+                                        value="" disabled>
+                                    <p class="hint" id="expiresAtHint">Token berlaku selamanya tanpa batas waktu kedaluwarsa.</p>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="allowedIps" class="field-label">IP whitelist (opsional)</label>
@@ -829,6 +835,22 @@
                     visible > 0 || tableSelectors.length === 0);
             });
 
+            // ===== NO EXPIRY SWITCH =====
+            const noExpirySwitch = document.getElementById('noExpirySwitch');
+            const expiresAtInput = document.getElementById('expiresAt');
+            const expiresAtHint = document.getElementById('expiresAtHint');
+
+            noExpirySwitch?.addEventListener('change', function() {
+                if (this.checked) {
+                    expiresAtInput.disabled = true;
+                    expiresAtInput.value = '';
+                    if (expiresAtHint) expiresAtHint.textContent = 'Token berlaku selamanya tanpa batas waktu kedaluwarsa.';
+                } else {
+                    expiresAtInput.disabled = false;
+                    if (expiresAtHint) expiresAtHint.textContent = 'Tentukan batas tanggal & waktu kedaluwarsa token ini.';
+                }
+            });
+
             // ===== REJECT MODAL =====
             const rejectionReason = document.getElementById('rejectionReason');
             const btnConfirmReject = document.getElementById('btnConfirmReject');
@@ -945,7 +967,8 @@
                     formData.append(`grants[${index}][rate_limit_per_minute]`, '60');
                 });
 
-                const expiresAt = document.getElementById('expiresAt')?.value;
+                const isNoExpiry = document.getElementById('noExpirySwitch')?.checked;
+                const expiresAt = isNoExpiry ? '' : (document.getElementById('expiresAt')?.value || '');
                 if (expiresAt) formData.append('expires_at', expiresAt);
 
                 const allowedIps = document.getElementById('allowedIps')?.value;

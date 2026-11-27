@@ -49,11 +49,16 @@ class DataAccessGrant extends Model
 
     public function isExpired(): bool
     {
-        return $this->expires_at && now()->gt($this->expires_at);
+        // Jika token dikonfigurasi permanen (bisa dipakai selamanya), jangan pernah kedaluwarsa otomatis
+        if (config('app.data_access_tokens_permanent', true)) {
+            return false;
+        }
+
+        return !is_null($this->expires_at) && now()->gt($this->expires_at);
     }
 
     public function isActive(): bool
     {
-        return !$this->isExpired() && $this->request->status === 'approved';
+        return !$this->isExpired() && ($this->request?->status === 'approved');
     }
 }

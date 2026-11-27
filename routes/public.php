@@ -43,8 +43,6 @@ Route::prefix('v1/data')->name('api.data.')->middleware(['throttle:api-data'])->
 
 Route::get('/request-data-access', [DataAccessRequestController::class, 'showForm'])->name('public.data-access.request');
 Route::post('/request-data-access', [DataAccessRequestController::class, 'store'])->name('public.data-access.store');
-Route::get('/request-data-access', [DataAccessRequestController::class, 'showForm'])->name('public.data-access.request');
-Route::post('/request-data-access', [DataAccessRequestController::class, 'store'])->name('public.data-access.store');
 Route::get('/request-data-access/confirm/{id}/{key}', [DataAccessRequestController::class, 'confirm'])->where('id', '[0-9a-fA-F\-]{36}')->middleware('throttle:10,1')->name('public.data-access.confirm');
 
 Route::prefix('data-portal')->name('data-portal.')->middleware(['throttle:60,1'])->group(function () {

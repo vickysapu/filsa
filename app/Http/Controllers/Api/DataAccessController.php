@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class DataAccessController extends Controller
 {
@@ -33,13 +34,23 @@ class DataAccessController extends Controller
         $branchId = $grant->request->branch_id;
 
         if ($grant->table_name !== $table) {
-            return response()->json(
-                [
-                    'error' => 'Table not allowed for this token',
-                    'allowed_table' => $grant->table_name,
-                ],
-                403,
-            );
+            // Cek apakah ada grant aktif untuk tabel ini di dalam pengajuan (request) yang sama
+            $matchingGrant = $apiToken->grant->request?->grants
+                ?->where('table_name', $table)
+                ->first(fn($g) => $g->isActive());
+
+            if ($matchingGrant) {
+                $grant = $matchingGrant;
+            } else {
+                $allowedTables = $apiToken->grant->request?->grants?->filter(fn($g) => $g->isActive())->pluck('table_name')->values()->all() ?: [$grant->table_name];
+                return response()->json(
+                    [
+                        'error' => 'Table not allowed for this token',
+                        'allowed_tables' => $allowedTables,
+                    ],
+                    403,
+                );
+            }
         }
 
         if (!Schema::hasTable($table)) {
@@ -107,7 +118,15 @@ class DataAccessController extends Controller
         $branchId = $grant->request->branch_id;
 
         if ($grant->table_name !== $table) {
-            return response()->json(['error' => 'Table not allowed'], 403);
+            $matchingGrant = $apiToken->grant->request?->grants
+                ?->where('table_name', $table)
+                ->first(fn($g) => $g->isActive());
+
+            if ($matchingGrant) {
+                $grant = $matchingGrant;
+            } else {
+                return response()->json(['error' => 'Table not allowed'], 403);
+            }
         }
 
         if (!Schema::hasTable($table)) {
@@ -194,11 +213,56 @@ class DataAccessController extends Controller
             }
         }
 
+        $apiToken->update(['last_used_at' => now()]);
+
         return [
             'success' => true,
             'token' => $apiToken,
             'full_token' => $bearerToken, 
             'code' => 200,
         ];
+    }
+
+    public function file(Request $request, string $table, string $id, string $column)
+    {
+        $authResult = $this->authenticateToken($request);
+        if (!$authResult['success']) {
+            return response()->json(['error' => $authResult['message']], $authResult['code']);
+        }
+
+        $apiToken = $authResult['token'];
+        $grant = $apiToken->grant;
+
+        if ($grant->table_name !== $table) {
+            $matchingGrant = $apiToken->grant->request?->grants
+                ?->where('table_name', $table)
+                ->first(fn($g) => $g->isActive());
+
+            if ($matchingGrant) {
+                $grant = $matchingGrant;
+            } else {
+                return response()->json(['error' => 'Table not allowed for this token'], 403);
+            }
+        }
+
+        if (!Schema::hasTable($table) || !Schema::hasColumn($table, $column)) {
+            return response()->json(['error' => 'Not found'], 404);
+        }
+
+        $record = DB::table($table)->where('id', $id)->first();
+        if (!$record || empty($record->$column)) {
+            return response()->json(['error' => 'File not found'], 404);
+        }
+
+        $filePath = $record->$column;
+        if (Storage::disk('public')->exists($filePath)) {
+            return Storage::disk('public')->response($filePath);
+        }
+
+        if (file_exists(public_path($filePath))) {
+            return response()->file(public_path($filePath));
+        }
+
+        return response()->json(['error' => 'File not found on disk'], 404);
     }
 }

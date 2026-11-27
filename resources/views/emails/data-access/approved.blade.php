@@ -26,10 +26,7 @@
         style="margin:0 0 8px;border-left:4px solid #C5A66A;background-color:#FBF6EA;">
         <tr>
             <td style="padding:14px 18px;font-size:13px;line-height:1.7;color:#5B4A22;">
-                <strong>Simpan di tempat aman.</strong> Token hanya ditampilkan sekali di email ini dan tidak bisa dilihat
-                lagi. Setiap token hanya bisa dipakai login portal <strong>{{ $limit }} kali</strong>. Jika sudah
-                habis, hubungi admin di <a href="mailto:{{ $adminMail }}" style="color:#174C35;">{{ $adminMail }}</a>
-                dan admin akan mengirimkan token baru.
+                <strong>Simpan di tempat aman.</strong> Token akses ini berlaku selamanya tanpa batas waktu kedaluwarsa selama mematuhi prosedur dan kebijakan akses data. Anda dapat menggunakannya untuk integrasi API maupun masuk ke Portal Data kapan saja.
             </td>
         </tr>
     </table>
@@ -80,8 +77,7 @@
                     style="width:24px;height:24px;line-height:24px;text-align:center;background-color:#174C35;color:#F5F1E7;font-size:12px;font-weight:700;border-radius:12px;">
                     3</div>
             </td>
-            <td style="padding:6px 0;">Pilih tabel yang ingin dilihat atau diunduh. Token tabel lain dimasukkan satu per
-                satu lewat tombol tambah token di portal.</td>
+            <td style="padding:6px 0;">Pilih tabel yang ingin dilihat atau diunduh. Seluruh tabel yang disetujui dalam permohonan ini langsung terbuka secara otomatis.</td>
         </tr>
     </table>
 

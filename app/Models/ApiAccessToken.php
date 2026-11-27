@@ -46,7 +46,7 @@ class ApiAccessToken extends Model
 
     public function isActive(): bool
     {
-        return !$this->isRevoked() && $this->grant->isActive();
+        return !$this->isRevoked() && ($this->grant ? $this->grant->isActive() : false);
     }
 
     public function revoke(): void

@@ -40,12 +40,6 @@ class DataAccessRequestController extends Controller
 
     public function showForm(Request $request)
     {
-        $token = $request->query('token');
-
-        if (!$this->isValidAccessToken($token)) {
-            return response()->view('errors.403', ['message' => '🔐 Link akses tidak valid atau sudah kedaluwarsa.'], 403);
-        }
-
         $availableTables = DataTable::where('status', true)->select('id', 'table_name')->orderBy('table_name')->pluck('table_name', 'id');
 
         $branches = Branch::where('is_active', true)->select('id', 'name', 'code')->orderBy('name')->pluck('name', 'id');
@@ -55,13 +49,6 @@ class DataAccessRequestController extends Controller
 
     public function store(Request $request)
     {
-        $token = $request->query('token') ?? $request->input('_token_access');
-
-        if (!$this->isValidAccessToken($token)) {
-            Log::warning('Token validation failed');
-            abort(403, 'Permintaan tidak valid.');
-        }
-
         try {
             $validated = $request->validate([
                 'requester_name' => 'required|string|max:100',
@@ -105,7 +92,7 @@ class DataAccessRequestController extends Controller
             $this->sendEmails($dataRequest, $tableNames, $oneTimeKey, $confirmUrl);
 
             return redirect()
-                ->route('public.data-access.request', ['token' => $token])
+                ->route('public.data-access.request')
                 ->with('success', '✅ Permintaan akses data Anda telah diterima. Silakan cek email Anda untuk konfirmasi.');
         } catch (\Illuminate\Validation\ValidationException $e) {
             return redirect()->back()->withInput()->withErrors($e->errors());
@@ -131,11 +118,15 @@ class DataAccessRequestController extends Controller
                 ->with('error', 'Kunci konfirmasi tidak valid, sudah dipakai, atau sudah kedaluwarsa.');
         }
 
+        $dataRequest->update([
+            'email_verified_at' => now(),
+        ]);
+
         Log::info('Email peminta akses data terkonfirmasi', ['request_id' => $id]);
 
         return redirect()
             ->route('data-portal.verify')
-            ->with('success', 'Email Anda berhasil dikonfirmasi. Token akan dikirim ke email ini setelah permintaan disetujui admin.');
+            ->with('success', 'Email Anda berhasil dikonfirmasi. Token akses permanen akan dikirim ke email ini setelah permintaan disetujui admin.');
     }
 
     private function sendEmails(DataAccessRequest $dataRequest, array $tableNames, string $oneTimeKey, string $confirmUrl): void

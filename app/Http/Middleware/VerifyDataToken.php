@@ -28,11 +28,11 @@ class VerifyDataToken
         }
 
         $providedToken = substr($authHeader, 7);
-        $prefix = substr($providedToken, 0, 8);
+        $prefix = substr($providedToken, 0, 10);
 
         $apiToken = ApiAccessToken::where('token_prefix', $prefix)
             ->whereNull('revoked_at')
-            ->with(['grant.request'])
+            ->with(['grant.request.grants'])
             ->first();
 
         if (!$apiToken) {
@@ -43,7 +43,7 @@ class VerifyDataToken
             return $this->jsonError('Invalid token', 401);
         }
 
-        if ($apiToken->grant->expires_at && now()->gt($apiToken->grant->expires_at)) {
+        if ($apiToken->grant->isExpired()) {
             return $this->jsonError('Token has expired', 401);
         }
 
